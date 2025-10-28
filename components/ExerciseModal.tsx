@@ -13,37 +13,37 @@ type ExerciseModalProps = {
   editor: ReturnType<typeof useWorkoutEditor>;
 };
 
-type CategorizedExercises = {
-  [key in ExerciseEquipment | 'other']?: typeof EXERCISE_SUGGESTIONS;
-};
-
 const ExerciseModal: React.FC<ExerciseModalProps> = ({ isOpen, onClose, mode, exerciseToEdit, index, editor }) => {
   const { plan } = editor;
 
   const categorizedSuggestions = useMemo((): [string, typeof EXERCISE_SUGGESTIONS][] => {
-    const categories: CategorizedExercises = EXERCISE_SUGGESTIONS.reduce((acc, ex) => {
-        // Group 'weighted-rope' under the 'rope' category for a unified "Jump Rope" section
-        const key = ex.equipment === 'weighted-rope' ? 'rope' : ex.equipment;
-        if (!acc[key]) {
-            acc[key] = [];
+    const gymEquipmentTypes: ExerciseEquipment[] = ['barbell', 'kettlebell', 'cable-machine', 'leg-press-machine'];
+
+    const categories: { [key: string]: typeof EXERCISE_SUGGESTIONS } = EXERCISE_SUGGESTIONS.reduce((acc, ex) => {
+        let categoryName: string;
+
+        if (ex.equipment === 'rope' || ex.equipment === 'weighted-rope') {
+            categoryName = 'Jump Rope';
+        } else if (ex.equipment === 'bodyweight') {
+            categoryName = 'Bodyweight';
+        } else if (ex.equipment === 'dumbbell') {
+            categoryName = 'Dumbbell';
+        } else if (ex.equipment === 'resistance-band') {
+            categoryName = 'Resistance Band';
+        } else if (gymEquipmentTypes.includes(ex.equipment)) {
+            categoryName = 'Gym Equipment';
+        } else {
+            categoryName = 'Other';
         }
-        acc[key]!.push(ex);
+        
+        if (!acc[categoryName]) {
+            acc[categoryName] = [];
+        }
+        acc[categoryName].push(ex);
         return acc;
-    }, {} as CategorizedExercises);
+    }, {} as { [key: string]: typeof EXERCISE_SUGGESTIONS });
 
-    const equipmentNameMapping: Record<string, string> = {
-        'rope': 'Jump Rope',
-        'bodyweight': 'Bodyweight',
-        'dumbbell': 'Dumbbell',
-        'resistance-band': 'Resistance Band'
-    }
-
-    return Object.entries(categories)
-        // FIX: Explicitly type the return of map to be a tuple [string, ExerciseSuggestion[]].
-        // This prevents TypeScript from widening the type to (string | ExerciseSuggestion[])[],
-        // which was causing errors in type assignment and in the subsequent .sort() method.
-        .map(([equipment, exercises]): [string, typeof EXERCISE_SUGGESTIONS] => [equipmentNameMapping[equipment] || 'Other', exercises || []])
-        .sort((a,b) => a[0].localeCompare(b[0]));
+    return Object.entries(categories).sort((a,b) => a[0].localeCompare(b[0]));
   }, []);
 
   if (!isOpen) return null;

@@ -134,49 +134,71 @@ const EditableWorkoutPlan: React.FC<EditableWorkoutPlanProps> = ({ editor }) => 
       
       {selectedIds.length > 0 && <BulkActionToolbar editor={editor} selectedIds={selectedIds} clearSelection={() => setSelectedIds([])}/>}
 
+      {/* Warm-up Section */}
+      {plan.warmUp && plan.warmUp.length > 0 && (
+        <div className="bg-gray-700/50 p-4 rounded-lg my-4">
+            <h3 className="font-bold text-lg text-orange-300 mb-2">Warm-up ({plan.warmUpDuration} min)</h3>
+            <ul className="list-disc list-inside text-gray-300 space-y-1">
+                {plan.warmUp.map((ex, i) => <li key={`warmup-${i}`}>{ex}</li>)}
+            </ul>
+        </div>
+      )}
+
       {/* Exercise List */}
       <div className="space-y-2">
-        {plan.rounds.map((round, index) => (
-          <div
-            key={round.id}
-            className={`p-2 rounded-lg flex items-center gap-2 shadow-sm transition-all duration-200 ${selectedIds.includes(round.id) ? 'bg-orange-500/20 ring-2 ring-orange-400' : 'bg-gray-700/80'}`}
-            draggable
-            onDragStart={(e) => handleDragStart(e, index)}
-            onDragEnter={() => handleDragEnter(index)}
-            onDragEnd={handleDragEnd}
-            onDragOver={(e) => e.preventDefault()}
-          >
-            <div className="cursor-move text-gray-400 p-2"><DragHandleIcon className="w-5 h-5" /></div>
-            <input type="checkbox" checked={selectedIds.includes(round.id)} onChange={() => handleSelection(round.id)} className="w-5 h-5 rounded bg-gray-600 border-gray-500 text-orange-500 focus:ring-orange-500/50" />
+        {plan.rounds.map((round, index) => {
+            const isRoundBased = (plan.numberOfRounds || 1) > 1 && (plan.exercisesPerRound || 0) > 0;
+            const roundNumber = isRoundBased ? Math.floor(index / plan.exercisesPerRound) + 1 : 1;
+            const isFirstOfRound = isRoundBased ? index % plan.exercisesPerRound === 0 : false;
             
-            <div className="flex-1 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 ml-2">
-              <div className="flex items-center gap-3">
-                 <span className={`w-3 h-3 rounded-full ${difficultyColors[round.difficulty]}`}></span>
-                 <span className="font-semibold text-white text-sm sm:text-base">{round.exercise}</span>
-              </div>
-              <div className="flex items-center gap-4">
-                <div>
-                  <label htmlFor={`duration-${round.id}`} className="text-xs text-gray-400">Duration</label>
-                  <div className="flex items-center gap-1">
-                    <input id={`duration-${round.id}`} type="number" min="0" value={round.duration} onChange={e => updateExercise(round.id, {duration: Math.max(0, parseInt(e.target.value) || 0)})} className="w-16 bg-gray-900/50 text-center rounded-md p-1" aria-label="Work duration"/>
-                    <span className="text-xs text-gray-400">s</span>
-                  </div>
-                </div>
-                <div>
-                  <label htmlFor={`rest-${round.id}`} className="text-xs text-gray-400">Rest</label>
-                  <div className="flex items-center gap-1">
-                     <input id={`rest-${round.id}`} type="number" min="0" value={round.rest} onChange={e => updateExercise(round.id, {rest: Math.max(0, parseInt(e.target.value) || 0)})} className="w-16 bg-gray-900/50 text-center rounded-md p-1" aria-label="Rest duration"/>
-                     <span className="text-xs text-gray-400">s</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="flex gap-1">
-                <button onClick={() => setModalState({mode: 'replace', exerciseToEdit: round})} className="p-2 hover:bg-gray-600 rounded-md" title="Replace Exercise"><ArrowPathIcon className="w-5 h-5"/></button>
-                <button onClick={() => setConfirmDelete(round)} className="p-2 hover:bg-gray-600 rounded-md text-red-400" title="Delete Exercise"><TrashIcon className="w-5 h-5"/></button>
-            </div>
-          </div>
-        ))}
+            return (
+                <React.Fragment key={round.id}>
+                    {isFirstOfRound && (
+                         <div className="text-center font-bold text-orange-400 py-2 my-2 border-t border-b border-gray-700/80 bg-gray-900/30">
+                            Round {roundNumber} / {plan.numberOfRounds}
+                        </div>
+                    )}
+                     <div
+                        className={`p-2 rounded-lg flex items-center gap-2 shadow-sm transition-all duration-200 ${selectedIds.includes(round.id) ? 'bg-orange-500/20 ring-2 ring-orange-400' : 'bg-gray-700/80'}`}
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, index)}
+                        onDragEnter={() => handleDragEnter(index)}
+                        onDragEnd={handleDragEnd}
+                        onDragOver={(e) => e.preventDefault()}
+                    >
+                        <div className="cursor-move text-gray-400 p-2"><DragHandleIcon className="w-5 h-5" /></div>
+                        <input type="checkbox" checked={selectedIds.includes(round.id)} onChange={() => handleSelection(round.id)} className="w-5 h-5 rounded bg-gray-600 border-gray-500 text-orange-500 focus:ring-orange-500/50" />
+                        
+                        <div className="flex-1 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 ml-2">
+                        <div className="flex items-center gap-3">
+                            <span className={`w-3 h-3 rounded-full ${difficultyColors[round.difficulty]}`}></span>
+                            <span className="font-semibold text-white text-sm sm:text-base">{round.exercise}</span>
+                        </div>
+                        <div className="flex items-center gap-4">
+                            <div>
+                            <label htmlFor={`duration-${round.id}`} className="text-xs text-gray-400">Duration</label>
+                            <div className="flex items-center gap-1">
+                                <input id={`duration-${round.id}`} type="number" min="0" value={round.duration} onChange={e => updateExercise(round.id, {duration: Math.max(0, parseInt(e.target.value) || 0)})} className="w-16 bg-gray-900/50 text-center rounded-md p-1" aria-label="Work duration"/>
+                                <span className="text-xs text-gray-400">s</span>
+                            </div>
+                            </div>
+                            <div>
+                            <label htmlFor={`rest-${round.id}`} className="text-xs text-gray-400">Rest</label>
+                            <div className="flex items-center gap-1">
+                                <input id={`rest-${round.id}`} type="number" min="0" value={round.rest} onChange={e => updateExercise(round.id, {rest: Math.max(0, parseInt(e.target.value) || 0)})} className="w-16 bg-gray-900/50 text-center rounded-md p-1" aria-label="Rest duration"/>
+                                <span className="text-xs text-gray-400">s</span>
+                            </div>
+                            </div>
+                        </div>
+                        </div>
+                        <div className="flex gap-1">
+                            <button onClick={() => setModalState({mode: 'replace', exerciseToEdit: round})} className="p-2 hover:bg-gray-600 rounded-md" title="Replace Exercise"><ArrowPathIcon className="w-5 h-5"/></button>
+                            <button onClick={() => setConfirmDelete(round)} className="p-2 hover:bg-gray-600 rounded-md text-red-400" title="Delete Exercise"><TrashIcon className="w-5 h-5"/></button>
+                        </div>
+                    </div>
+                </React.Fragment>
+            )
+        })}
       </div>
       
       <button 
@@ -185,6 +207,16 @@ const EditableWorkoutPlan: React.FC<EditableWorkoutPlanProps> = ({ editor }) => 
             <PlusIcon className="w-5 h-5" />
             Add Exercise
       </button>
+
+        {/* Cool-down Section */}
+        {plan.coolDown && plan.coolDown.length > 0 && (
+            <div className="bg-gray-700/50 p-4 rounded-lg my-4">
+                <h3 className="font-bold text-lg text-indigo-400 mb-2">Cool-down (~2 min)</h3>
+                <ul className="list-disc list-inside text-gray-300 space-y-1">
+                    {plan.coolDown.map((ex, i) => <li key={`cooldown-${i}`}>{ex}</li>)}
+                </ul>
+            </div>
+        )}
       
       {/* Modals and Panels */}
       {modalState && <ExerciseModal isOpen={!!modalState} onClose={() => setModalState(null)} {...modalState} editor={editor}/>}

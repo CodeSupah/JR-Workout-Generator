@@ -37,7 +37,7 @@ const LiveSession: React.FC = () => {
     previousExercise,
   } = timer;
 
-  const { currentExerciseName, nextExerciseName, totalRounds, currentRoundNum } = displayInfo;
+  const { currentStageDisplay, currentExerciseName, nextExerciseName, totalRounds, currentRoundNum } = displayInfo;
 
   const renderTimerDisplay = () => {
     const minutes = Math.floor(timeRemaining / 60).toString().padStart(2, '0');
@@ -88,8 +88,6 @@ const LiveSession: React.FC = () => {
     );
   }
 
-  const displayStage = stage === 'Work' ? 'Time' : stage;
-
   return (
     <div className={`fixed inset-0 flex flex-col items-center justify-center transition-all duration-500 bg-gradient-to-br ${stageColors[stage] || 'from-gray-800 to-gray-900'}`}>
         <div className="absolute top-5 right-5 z-20">
@@ -127,11 +125,11 @@ const LiveSession: React.FC = () => {
             />
           </svg>
           <div className="z-10">
-            <p className="text-xl font-semibold uppercase tracking-widest text-white/80">{displayStage}</p>
+            <p className="text-xl font-semibold uppercase tracking-widest text-white/80">{currentStageDisplay}</p>
             <p className="text-7xl font-bold tabular-nums text-white my-2">{renderTimerDisplay()}</p>
-            {totalRounds > 0 && <p className="text-lg text-white/80">
+            {stage === 'Work' || stage === 'Rest' ? <p className="text-lg text-white/80">
               Exercise {currentRoundNum} / {totalRounds}
-            </p>}
+            </p> : <p className="text-lg text-white/80">&nbsp;</p>}
           </div>
         </div>
         
@@ -150,7 +148,7 @@ const LiveSession: React.FC = () => {
             <button
                 onClick={previousExercise}
                 className="p-3 text-white transition-transform transform hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={currentRoundNum <= 1}
+                disabled={currentRoundNum <= 1 && stage !== 'Work'}
                 title="Previous Exercise"
             >
                 <SkipPreviousIcon className="w-6 h-6" />

@@ -144,8 +144,10 @@ export const generateWorkoutPlan = async (prefs: WorkoutPreferences): Promise<Wo
     });
     
     const jsonText = response.text.trim();
-    const parsedPlan = JSON.parse(jsonText) as Omit<WorkoutPlan, 'id' | 'mode' | 'warmUpDuration'>;
+    const parsedPlan = JSON.parse(jsonText) as Omit<WorkoutPlan, 'id' | 'mode' | 'warmUpDuration' | 'exercisesPerRound' | 'numberOfRounds'>;
     
+    const exercisesPerRound = parsedPlan.rounds.length;
+
     // The AI generates one circuit. We duplicate it here to build the full workout list
     // for the live session based on the user's requested number of rounds.
     let finalRounds: Exercise[] = [];
@@ -163,6 +165,8 @@ export const generateWorkoutPlan = async (prefs: WorkoutPreferences): Promise<Wo
       mode: prefs.mode,
       warmUpDuration: prefs.includeWarmUp ? prefs.warmUpDuration : 0,
       rounds: finalRounds,
+      exercisesPerRound: exercisesPerRound,
+      numberOfRounds: prefs.rounds,
     };
 
     if (!workoutPlan.rounds || workoutPlan.rounds.length === 0) {

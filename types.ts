@@ -60,6 +60,8 @@ export interface WorkoutPlan {
   estimatedCalories: number;
   difficultyScore: number;
   motivationalQuote: string;
+  exercisesPerRound: number;
+  numberOfRounds: number;
 }
 
 export interface SessionSummary {
