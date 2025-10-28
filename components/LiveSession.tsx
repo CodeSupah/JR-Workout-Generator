@@ -55,9 +55,14 @@ const LiveSession: React.FC = () => {
   };
 
   const handleStop = () => {
-      if (window.confirm("Are you sure you want to end the workout? Your progress will be saved.")) {
-          stopWorkout();
-      }
+    stopWorkout();
+  };
+
+  const handleOpenReplaceModal = () => {
+    if (isRunning) {
+      togglePause();
+    }
+    setReplaceModalOpen(true);
   };
 
   const handleExerciseReplaced = (exerciseData: Omit<Exercise, 'id' | 'status'>) => {
@@ -208,7 +213,7 @@ const LiveSession: React.FC = () => {
             <button
                 onClick={previousExercise}
                 className="p-3 text-white transition-transform transform hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={isRunning || (currentRoundNum <= 1 && stage !== 'Work')}
+                disabled={(stage === 'Work' || stage === 'Rest') && currentRoundNum <= 1}
                 title="Previous Exercise"
             >
                 <SkipPreviousIcon className="w-6 h-6" />
@@ -223,15 +228,14 @@ const LiveSession: React.FC = () => {
             <button
                 onClick={skipExercise}
                 className="p-3 text-white transition-transform transform hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={isRunning}
                 title="Skip Exercise"
             >
                 <SkipNextIcon className="w-6 h-6" />
             </button>
              <div className="w-px h-8 bg-white/20 mx-2"></div>
             <button
-                onClick={() => setReplaceModalOpen(true)}
-                disabled={isRunning || stage !== 'Work'}
+                onClick={handleOpenReplaceModal}
+                disabled={stage !== 'Work'}
                 className="p-3 text-white transition-transform transform hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
                 title="Replace Exercise"
             >

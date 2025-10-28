@@ -124,71 +124,75 @@ export const useWorkoutTimer = (initialWorkoutPlan: WorkoutPlan | undefined, isS
   const currentExercise: Exercise | undefined = exercises[exerciseIndex];
   
   const finalizeWorkout = useCallback((currentState: SessionState): SessionState => {
-    const { workoutPlan } = currentState;
-    if (!workoutPlan || currentState.summary) {
+    // If there's no plan or we've already generated a summary, do nothing.
+    if (!currentState.workoutPlan || currentState.summary) {
         return currentState;
     }
 
-    const { exercises } = currentState;
+    const { workoutPlan, exercises, stage, subIndex, exerciseIndex, timeRemaining, initialStageDuration } = currentState;
 
-    // --- Accurate Time Calculation ---
-    let workTime = exercises
-        .filter(e => e.status === 'completed')
-        .reduce((sum, e) => sum + e.duration + e.rest, 0);
-
-    // Adjust for current stage if stopped mid-way
-    if (currentState.stage === 'Rest') {
-        workTime -= currentState.timeRemaining; // Full rest was added for completed exercise, so subtract remaining time.
-    } else if (currentState.stage === 'Work') {
-        const currentEx = exercises[currentState.exerciseIndex];
-        if (currentEx) {
-            workTime += (currentEx.duration - currentState.timeRemaining); // Add elapsed time for pending exercise.
-        }
-    }
-
-    let warmUpTime = 0;
+    // 1. Calculate Warm-up Time
+    let elapsedWarmUpTime = 0;
     if (workoutPlan.warmUp && workoutPlan.warmUp.length > 0) {
-        if (currentState.stage !== 'Warm-up') {
-            warmUpTime = workoutPlan.warmUpDuration * 60; // Completed
+        // If we're past the warm-up stage, the full duration was completed.
+        if (stage !== 'Warm-up') {
+            elapsedWarmUpTime = workoutPlan.warmUpDuration * 60;
         } else {
-            const totalDuration = workoutPlan.warmUpDuration * 60;
-            const exercisesInStage = workoutPlan.warmUp.length;
-            if (exercisesInStage > 0) {
-                const timePerExercise = totalDuration / exercisesInStage;
-                const completedExercisesTime = currentState.subIndex * timePerExercise;
-                const currentExerciseTimeSpent = currentState.initialStageDuration - currentState.timeRemaining;
-                warmUpTime = completedExercisesTime + currentExerciseTimeSpent;
-            }
-        }
-    }
-    
-    let coolDownTime = 0;
-    if (workoutPlan.coolDown && workoutPlan.coolDown.length > 0 && currentState.stage === 'Cool-down') {
-        const totalDuration = workoutPlan.coolDownDuration * 60;
-        const exercisesInStage = workoutPlan.coolDown.length;
-        if (exercisesInStage > 0) {
-            const timePerExercise = totalDuration / exercisesInStage;
-            const completedExercisesTime = currentState.subIndex * timePerExercise;
-            const currentExerciseTimeSpent = currentState.initialStageDuration - currentState.timeRemaining;
-            coolDownTime = completedExercisesTime + currentExerciseTimeSpent;
+            // If stopped during warm-up, calculate partial time.
+            const timePerExercise = (workoutPlan.warmUpDuration * 60) / workoutPlan.warmUp.length;
+            const completedExercisesTime = subIndex * timePerExercise;
+            const currentExerciseTimeSpent = initialStageDuration - timeRemaining;
+            elapsedWarmUpTime = completedExercisesTime + currentExerciseTimeSpent;
         }
     }
 
-    const totalTime = warmUpTime + workTime + coolDownTime;
+    // 2. Calculate Main Workout Time (Work + Rest periods)
+    let elapsedWorkAndRestTime = 0;
+    // Add time for all fully completed exercises
+    const completedExercises = exercises.filter(e => e.status === 'completed');
+    elapsedWorkAndRestTime = completedExercises.reduce((sum, e) => sum + e.duration + e.rest, 0);
 
-    // --- Accurate Calorie Calculation ---
-    const planWorkDuration = workoutPlan.rounds.reduce((s, r) => s + r.duration, 1) || 1;
-    const caloriesPerSecond = (workoutPlan.estimatedCalories || 0) / planWorkDuration;
-    
-    const totalWorkSeconds = exercises.reduce((sum, e, idx) => {
-        if (e.status === 'completed') return sum + e.duration;
-        if (idx === currentState.exerciseIndex && currentState.stage === 'Work') {
-            return sum + (e.duration - currentState.timeRemaining);
+    // Now, adjust based on the stage where the user stopped.
+    if (stage === 'Work') {
+        // The user stopped mid-exercise. 'completedExercises' doesn't include this one.
+        // Add the time spent on the current exercise.
+        const currentExercise = exercises[exerciseIndex];
+        if (currentExercise) {
+            const elapsedTime = currentExercise.duration - timeRemaining;
+            elapsedWorkAndRestTime += elapsedTime;
         }
-        return sum;
+    } else if (stage === 'Rest') {
+        // The user stopped mid-rest. The `reduce` above included the FULL rest for the
+        // last completed exercise. We need to subtract the time that WASN'T spent.
+        elapsedWorkAndRestTime -= timeRemaining;
+    }
+
+    // 3. Calculate Cool-down Time
+    let elapsedCoolDownTime = 0;
+    if (workoutPlan.coolDown && workoutPlan.coolDown.length > 0 && stage === 'Cool-down') {
+        const timePerExercise = (workoutPlan.coolDownDuration * 60) / workoutPlan.coolDown.length;
+        const completedExercisesTime = subIndex * timePerExercise;
+        const currentExerciseTimeSpent = initialStageDuration - timeRemaining;
+        elapsedCoolDownTime = completedExercisesTime + currentExerciseTimeSpent;
+    }
+
+    // 4. Calculate Total Time
+    const totalTime = elapsedWarmUpTime + elapsedWorkAndRestTime + elapsedCoolDownTime;
+
+    // 5. Calculate Calories Burned (based on *work* seconds only)
+    const planTotalWorkSeconds = workoutPlan.rounds.reduce((sum, r) => sum + r.duration, 0);
+    const caloriesPerSecond = planTotalWorkSeconds > 0 ? (workoutPlan.estimatedCalories || 0) / planTotalWorkSeconds : 0;
+    
+    let actualWorkSeconds = exercises.reduce((sum, e) => {
+        return e.status === 'completed' ? sum + e.duration : sum;
     }, 0);
-    const totalCalories = Math.round(totalWorkSeconds * caloriesPerSecond);
-    
+
+    if (stage === 'Work' && exercises[exerciseIndex]) {
+        actualWorkSeconds += (exercises[exerciseIndex].duration - timeRemaining);
+    }
+    const totalCalories = Math.round(actualWorkSeconds * caloriesPerSecond);
+
+    // 6. Construct Final Summary
     const finalSummary: SessionSummary = {
         id: crypto.randomUUID(),
         date: new Date().toISOString(),
@@ -198,9 +202,11 @@ export const useWorkoutTimer = (initialWorkoutPlan: WorkoutPlan | undefined, isS
         skippedRounds: exercises.filter(e => e.status === 'skipped').length,
         totalCalories,
         planId: workoutPlan.id || '',
-        workoutPlan: { ...workoutPlan, rounds: currentState.exercises },
+        // Store the final state of the exercises (completed, skipped, pending)
+        workoutPlan: { ...workoutPlan, rounds: exercises },
     };
-
+    
+    // 7. Persist summary, clean up, and set final state
     saveWorkoutSummary(finalSummary);
     localStorage.removeItem(SESSION_STORAGE_KEY);
     speak('Workout ended.', isSoundOn);
@@ -212,7 +218,7 @@ export const useWorkoutTimer = (initialWorkoutPlan: WorkoutPlan | undefined, isS
         initialStageDuration: 0,
         timeRemaining: 0,
     };
-  }, [isSoundOn]);
+}, [isSoundOn]);
 
 
   const stopWorkout = useCallback(() => {
