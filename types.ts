@@ -29,6 +29,8 @@ export interface WorkoutPreferences {
   availableEquipment: string[];
   includeWarmUp: boolean;
   warmUpDuration: number;
+  includeCoolDown: boolean;
+  coolDownDuration: number;
 }
 
 export type ExerciseDifficulty = 'Easy' | 'Medium' | 'Hard';
@@ -57,6 +59,7 @@ export interface WorkoutPlan {
   warmUpDuration: number;
   rounds: Exercise[];
   coolDown: string[];
+  coolDownDuration: number;
   estimatedCalories: number;
   difficultyScore: number;
   motivationalQuote: string;

@@ -10,7 +10,7 @@ import EquipmentSelector from './EquipmentSelector';
 import { toastStore } from '../store/toastStore';
 
 const WorkoutGenerator: React.FC = () => {
-  const [preferences, setPreferences] = useState<Omit<WorkoutPreferences, 'mode' | 'includeJumpRopeIntervals' | 'rounds' | 'availableEquipment' | 'includeWarmUp' | 'warmUpDuration'>>({
+  const [preferences, setPreferences] = useState<Omit<WorkoutPreferences, 'mode' | 'includeJumpRopeIntervals' | 'rounds' | 'availableEquipment' | 'includeWarmUp' | 'warmUpDuration' | 'includeCoolDown' | 'coolDownDuration'>>({
     duration: 15,
     skillLevel: SkillLevel.Beginner,
     goal: WorkoutGoal.FatBurn,
@@ -22,6 +22,8 @@ const WorkoutGenerator: React.FC = () => {
   const [availableEquipment, setAvailableEquipment] = useState<string[]>(['Dumbbell']);
   const [includeWarmUp, setIncludeWarmUp] = useState(true);
   const [warmUpDuration, setWarmUpDuration] = useState(3);
+  const [includeCoolDown, setIncludeCoolDown] = useState(true);
+  const [coolDownDuration, setCoolDownDuration] = useState(2);
   
   const [originalPreferences, setOriginalPreferences] = useState<WorkoutPreferences | null>(null);
 
@@ -51,6 +53,8 @@ const WorkoutGenerator: React.FC = () => {
       setAvailableEquipment(parsedPrefs.availableEquipment || ['Dumbbell']);
       setIncludeWarmUp(parsedPrefs.includeWarmUp !== undefined ? parsedPrefs.includeWarmUp : true);
       setWarmUpDuration(parsedPrefs.warmUpDuration || 3);
+      setIncludeCoolDown(parsedPrefs.includeCoolDown !== undefined ? parsedPrefs.includeCoolDown : true);
+      setCoolDownDuration(parsedPrefs.coolDownDuration || 2);
     }
   }, []);
 
@@ -62,17 +66,19 @@ const WorkoutGenerator: React.FC = () => {
       availableEquipment,
       includeWarmUp,
       warmUpDuration,
+      includeCoolDown,
+      coolDownDuration,
   });
   
   const hasChanges = useMemo(() => {
     if (!originalPreferences) return false;
     return JSON.stringify(getFullPreferences()) !== JSON.stringify(originalPreferences);
-  }, [preferences, mode, includeIntervals, rounds, availableEquipment, includeWarmUp, warmUpDuration, originalPreferences]);
+  }, [preferences, mode, includeIntervals, rounds, availableEquipment, includeWarmUp, warmUpDuration, includeCoolDown, coolDownDuration, originalPreferences]);
 
 
-  const handlePreferenceChange = <K extends keyof Omit<WorkoutPreferences, 'mode' | 'includeJumpRopeIntervals' | 'rounds' | 'availableEquipment' | 'includeWarmUp' | 'warmUpDuration'>>(
+  const handlePreferenceChange = <K extends keyof Omit<WorkoutPreferences, 'mode' | 'includeJumpRopeIntervals' | 'rounds' | 'availableEquipment' | 'includeWarmUp' | 'warmUpDuration' | 'includeCoolDown' | 'coolDownDuration'>>(
     key: K,
-    value: Omit<WorkoutPreferences, 'mode' | 'includeJumpRopeIntervals' | 'rounds' | 'availableEquipment' | 'includeWarmUp' | 'warmUpDuration'>[K]
+    value: Omit<WorkoutPreferences, 'mode' | 'includeJumpRopeIntervals' | 'rounds' | 'availableEquipment' | 'includeWarmUp' | 'warmUpDuration' | 'includeCoolDown' | 'coolDownDuration'>[K]
   ) => {
     setPreferences(prev => {
         const newPreferences = { ...prev, [key]: value };
@@ -188,32 +194,61 @@ const WorkoutGenerator: React.FC = () => {
                     </div>
                 )}
 
-                {/* Warm-up Settings */}
-                <div className="bg-gray-900/50 p-4 rounded-lg animate-fade-in space-y-3">
-                    <div className="flex items-center justify-between">
-                         <div className="flex items-center gap-3">
-                            <FlameIcon className="w-6 h-6 text-orange-400" />
-                            <div>
-                                <label htmlFor="include-warmup" className="font-semibold text-white">Include Warm-up</label>
-                                <p className="text-xs text-gray-400">Recommended to prevent injury.</p>
+                {/* Warm-up & Cool-down Settings */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-gray-900/50 p-4 rounded-lg animate-fade-in space-y-3">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <FlameIcon className="w-6 h-6 text-orange-400" />
+                                <div>
+                                    <label htmlFor="include-warmup" className="font-semibold text-white">Include Warm-up</label>
+                                    <p className="text-xs text-gray-400">Recommended to prevent injury.</p>
+                                </div>
                             </div>
+                            <label htmlFor="include-warmup" className="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="include-warmup" className="sr-only peer" checked={includeWarmUp} onChange={(e) => handleStateChange(setIncludeWarmUp, e.target.checked)} />
+                                <div className="w-11 h-6 bg-gray-600 rounded-full peer peer-focus:ring-2 peer-focus:ring-orange-500/50 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
+                            </label>
                         </div>
-                        <label htmlFor="include-warmup" className="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" id="include-warmup" className="sr-only peer" checked={includeWarmUp} onChange={(e) => handleStateChange(setIncludeWarmUp, e.target.checked)} />
-                            <div className="w-11 h-6 bg-gray-600 rounded-full peer peer-focus:ring-2 peer-focus:ring-orange-500/50 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
-                        </label>
+                        {includeWarmUp && (
+                            <div className="space-y-2 animate-fade-in">
+                                <label className="text-sm font-medium">Warm-up Duration: <span className="text-orange-400">{warmUpDuration} mins</span></label>
+                                <input
+                                    type="range" min="1" max="10" step="1"
+                                    value={warmUpDuration}
+                                    onChange={(e) => handleStateChange(setWarmUpDuration, parseInt(e.target.value))}
+                                    className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer range-lg accent-orange-500"
+                                />
+                            </div>
+                        )}
                     </div>
-                    {includeWarmUp && (
-                        <div className="space-y-2 animate-fade-in">
-                            <label className="text-sm font-medium">Warm-up Duration: <span className="text-orange-400">{warmUpDuration} mins</span></label>
-                            <input
-                                type="range" min="1" max="10" step="1"
-                                value={warmUpDuration}
-                                onChange={(e) => handleStateChange(setWarmUpDuration, parseInt(e.target.value))}
-                                className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer range-lg accent-orange-500"
-                            />
+
+                    <div className="bg-gray-900/50 p-4 rounded-lg animate-fade-in space-y-3">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <SparklesIcon className="w-6 h-6 text-blue-400" />
+                                <div>
+                                    <label htmlFor="include-cooldown" className="font-semibold text-white">Include Cool-down</label>
+                                    <p className="text-xs text-gray-400">Aids in muscle recovery.</p>
+                                </div>
+                            </div>
+                            <label htmlFor="include-cooldown" className="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="include-cooldown" className="sr-only peer" checked={includeCoolDown} onChange={(e) => handleStateChange(setIncludeCoolDown, e.target.checked)} />
+                                <div className="w-11 h-6 bg-gray-600 rounded-full peer peer-focus:ring-2 peer-focus:ring-blue-500/50 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
+                            </label>
                         </div>
-                    )}
+                        {includeCoolDown && (
+                            <div className="space-y-2 animate-fade-in">
+                                <label className="text-sm font-medium">Cool-down Duration: <span className="text-blue-400">{coolDownDuration} mins</span></label>
+                                <input
+                                    type="range" min="1" max="10" step="1"
+                                    value={coolDownDuration}
+                                    onChange={(e) => handleStateChange(setCoolDownDuration, parseInt(e.target.value))}
+                                    className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer range-lg accent-blue-500"
+                                />
+                            </div>
+                        )}
+                    </div>
                 </div>
                
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">

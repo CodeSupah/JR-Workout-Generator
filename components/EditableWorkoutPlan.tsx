@@ -8,6 +8,7 @@ import ConfirmModal from './ConfirmModal';
 import BulkActionToolbar from './BulkActionToolbar';
 import RestSettingsPanel from './RestSettingsPanel';
 import LoadTemplateModal from './LoadTemplateModal';
+import SaveRoutineModal from './SaveRoutineModal';
 import { toastStore } from '../store/toastStore';
 import { saveCustomWorkout } from '../services/workoutService';
 
@@ -25,6 +26,7 @@ const EditableWorkoutPlan: React.FC<EditableWorkoutPlanProps> = ({ editor }) => 
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [showRestSettings, setShowRestSettings] = useState(false);
   const [showLoadTemplate, setShowLoadTemplate] = useState(false);
+  const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
   
   const dragItem = useRef<number | null>(null);
   const dragOverItem = useRef<number | null>(null);
@@ -33,7 +35,7 @@ const EditableWorkoutPlan: React.FC<EditableWorkoutPlanProps> = ({ editor }) => 
     if (!plan) return 0;
     const warmUpTime = plan.warmUpDuration * 60;
     const roundsTime = plan.rounds.reduce((acc, round) => acc + round.duration + round.rest, 0);
-    const coolDownTime = 120; // 2 minutes fixed cool-down
+    const coolDownTime = plan.coolDownDuration * 60;
     return Math.floor((warmUpTime + roundsTime + coolDownTime) / 60);
   }, [plan]);
 
@@ -86,10 +88,8 @@ const EditableWorkoutPlan: React.FC<EditableWorkoutPlanProps> = ({ editor }) => 
     setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
   }
 
-  const handleSave = async () => {
-    const workoutName = prompt("Enter a name for this workout routine:", plan.name || `Custom Workout - ${new Date().toLocaleDateString()}`);
-    if(!workoutName) return;
-
+  const handleSave = async (workoutName: string) => {
+    if (!plan) return;
     setIsSaving(true);
     try {
         const routineToSave: WorkoutPlan = {
@@ -105,6 +105,15 @@ const EditableWorkoutPlan: React.FC<EditableWorkoutPlanProps> = ({ editor }) => 
         setIsSaving(false);
     }
   }
+
+  const handleExerciseSelect = (exerciseData: Omit<Exercise, 'id' | 'status'>) => {
+    if (!modalState) return;
+    if (modalState.mode === 'add') {
+      editor.addExercise(exerciseData, modalState.index);
+    } else if (modalState.mode === 'replace' && modalState.exerciseToEdit) {
+      editor.updateExercise(modalState.exerciseToEdit.id, { ...modalState.exerciseToEdit, ...exerciseData });
+    }
+  };
 
   const startWorkout = () => {
     navigate('/session', { state: { workout: plan } });
@@ -211,7 +220,7 @@ const EditableWorkoutPlan: React.FC<EditableWorkoutPlanProps> = ({ editor }) => 
         {/* Cool-down Section */}
         {plan.coolDown && plan.coolDown.length > 0 && (
             <div className="bg-gray-700/50 p-4 rounded-lg my-4">
-                <h3 className="font-bold text-lg text-indigo-400 mb-2">Cool-down (~2 min)</h3>
+                <h3 className="font-bold text-lg text-indigo-400 mb-2">Cool-down ({plan.coolDownDuration} min)</h3>
                 <ul className="list-disc list-inside text-gray-300 space-y-1">
                     {plan.coolDown.map((ex, i) => <li key={`cooldown-${i}`}>{ex}</li>)}
                 </ul>
@@ -219,15 +228,27 @@ const EditableWorkoutPlan: React.FC<EditableWorkoutPlanProps> = ({ editor }) => 
         )}
       
       {/* Modals and Panels */}
-      {modalState && <ExerciseModal isOpen={!!modalState} onClose={() => setModalState(null)} {...modalState} editor={editor}/>}
+      {modalState && <ExerciseModal 
+          isOpen={!!modalState} 
+          onClose={() => setModalState(null)} 
+          onSelectExercise={handleExerciseSelect}
+          mode={modalState.mode}
+          exerciseToEdit={modalState.exerciseToEdit}
+      />}
       {confirmDelete && <ConfirmModal isOpen={!!confirmDelete} onClose={() => setConfirmDelete(null)} onConfirm={() => { editor.removeExercise(confirmDelete.id); setConfirmDelete(null);}} title="Delete Exercise?" message={`Are you sure you want to remove "${confirmDelete.exercise}"?`} />}
       {showRestSettings && <RestSettingsPanel isOpen={showRestSettings} onClose={() => setShowRestSettings(false)} editor={editor} />}
       {showLoadTemplate && <LoadTemplateModal isOpen={showLoadTemplate} onClose={() => setShowLoadTemplate(false)} editor={editor} />}
+      <SaveRoutineModal 
+        isOpen={isSaveModalOpen}
+        onClose={() => setIsSaveModalOpen(false)}
+        onSave={handleSave}
+        defaultName={plan.name || `Custom Workout - ${new Date().toLocaleDateString()}`}
+      />
 
     {/* Floating Action Bar */}
     <div className="fixed bottom-0 left-0 right-0 p-4 bg-gray-900/80 backdrop-blur-md border-t border-gray-700">
         <div className="container mx-auto flex gap-4">
-             <button onClick={handleSave} disabled={isSaving} className="w-full flex items-center justify-center gap-2 bg-gray-600 hover:bg-gray-500 text-white font-bold py-3 px-6 rounded-lg transition-transform transform hover:scale-105">
+             <button onClick={() => setIsSaveModalOpen(true)} disabled={isSaving} className="w-full flex items-center justify-center gap-2 bg-gray-600 hover:bg-gray-500 text-white font-bold py-3 px-6 rounded-lg transition-transform transform hover:scale-105">
                 {isSaving ? 'Saving...' : <><SaveIcon className="w-5 h-5"/> Save as Routine</>}
             </button>
             <button onClick={startWorkout} className="w-full flex items-center justify-center gap-2 bg-green-500 hover:bg-green-400 text-white font-bold py-3 px-6 rounded-lg transition-transform transform hover:scale-105 shadow-lg shadow-green-500/20">

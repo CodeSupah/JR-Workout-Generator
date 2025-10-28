@@ -1,25 +1,22 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Exercise, ExerciseDifficulty, WorkoutMode, ExerciseEquipment } from '../types';
-import { useWorkoutEditor } from '../hooks/useWorkoutEditor';
+import React, { useMemo } from 'react';
+import { Exercise } from '../types';
 import { EXERCISE_SUGGESTIONS } from '../data/exercises';
 import { SparklesIcon } from './icons/Icons';
 
 type ExerciseModalProps = {
   isOpen: boolean;
   onClose: () => void;
+  onSelectExercise: (exerciseData: Omit<Exercise, 'id' | 'status'>) => void;
   mode: 'add' | 'replace';
   exerciseToEdit?: Exercise;
-  index?: number;
-  editor: ReturnType<typeof useWorkoutEditor>;
 };
 
-const ExerciseModal: React.FC<ExerciseModalProps> = ({ isOpen, onClose, mode, exerciseToEdit, index, editor }) => {
-  const { plan } = editor;
+const ExerciseModal: React.FC<ExerciseModalProps> = ({ isOpen, onClose, onSelectExercise, mode, exerciseToEdit }) => {
 
-  const categorizedSuggestions = useMemo((): [string, typeof EXERCISE_SUGGESTIONS][] => {
-    const gymEquipmentTypes: ExerciseEquipment[] = ['barbell', 'kettlebell', 'cable-machine', 'leg-press-machine'];
+  const categorizedSuggestions = useMemo(() => {
+    const gymEquipmentTypes = ['barbell', 'kettlebell', 'cable-machine', 'leg-press-machine'];
 
-    const categories: { [key: string]: typeof EXERCISE_SUGGESTIONS } = EXERCISE_SUGGESTIONS.reduce((acc, ex) => {
+    const categories = EXERCISE_SUGGESTIONS.reduce((acc, ex) => {
         let categoryName: string;
 
         if (ex.equipment === 'rope' || ex.equipment === 'weighted-rope') {
@@ -48,7 +45,7 @@ const ExerciseModal: React.FC<ExerciseModalProps> = ({ isOpen, onClose, mode, ex
 
   if (!isOpen) return null;
 
-  const handleSelectExercise = (exerciseName: string) => {
+  const handleSelect = (exerciseName: string) => {
     const selectedExercise = EXERCISE_SUGGESTIONS.find(ex => ex.name === exerciseName);
     if (!selectedExercise) return;
 
@@ -59,12 +56,7 @@ const ExerciseModal: React.FC<ExerciseModalProps> = ({ isOpen, onClose, mode, ex
         equipment: selectedExercise.equipment,
         difficulty: selectedExercise.difficulty,
     };
-
-    if (mode === 'add') {
-      editor.addExercise(fullExerciseData, index);
-    } else if (exerciseToEdit) {
-      editor.updateExercise(exerciseToEdit.id, { ...exerciseToEdit, ...fullExerciseData });
-    }
+    onSelectExercise(fullExerciseData);
     onClose();
   };
   
@@ -73,7 +65,7 @@ const ExerciseModal: React.FC<ExerciseModalProps> = ({ isOpen, onClose, mode, ex
     if (allSuggestions.length === 0) return;
     
     const randomExercise = allSuggestions[Math.floor(Math.random() * allSuggestions.length)];
-    handleSelectExercise(randomExercise.name);
+    handleSelect(randomExercise.name);
   }
 
   const title = mode === 'add' ? 'Add Exercise' : `Replace "${exerciseToEdit?.exercise}"`;
@@ -99,7 +91,7 @@ const ExerciseModal: React.FC<ExerciseModalProps> = ({ isOpen, onClose, mode, ex
                             <button
                                 key={ex.name}
                                 type="button"
-                                onClick={() => handleSelectExercise(ex.name)}
+                                onClick={() => handleSelect(ex.name)}
                                 className="p-3 bg-gray-700 hover:bg-orange-500 text-left rounded-lg text-sm transition-colors"
                             >
                                 {ex.name}

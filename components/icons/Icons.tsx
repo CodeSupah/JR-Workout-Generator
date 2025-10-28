@@ -204,3 +204,9 @@ export const KettlebellIcon: React.FC<IconProps> = ({ className }) => (
       <path strokeLinecap="round" strokeLinejoin="round" d="M21 13.255A23.44 23.44 0 0112 15c-3.793 0-7.33-1.06-10-2.845M4 10a8 8 0 1116 0v1a8 8 0 11-16 0v-1zM4 10h16" />
     </svg>
   );
+
+export const ChevronDoubleRightIcon: React.FC<IconProps> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+    </svg>
+);

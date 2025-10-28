@@ -34,7 +34,7 @@ const workoutSchema = {
     coolDown: {
       type: Type.ARRAY,
       items: { type: Type.STRING },
-      description: 'A list of 2-3 cool-down exercises.',
+      description: 'A list of 2-3 cool-down exercises. This array MUST be empty if the user preference "includeCoolDown" is false.',
     },
     estimatedCalories: {
       type: Type.INTEGER,
@@ -77,8 +77,8 @@ const getModeInstructions = (prefs: WorkoutPreferences): string => {
 
 
 export const generateWorkoutPlan = async (prefs: WorkoutPreferences): Promise<WorkoutPlan> => {
-  const coolDownMinutes = 2;
   const warmUpMinutes = prefs.includeWarmUp ? prefs.warmUpDuration : 0;
+  const coolDownMinutes = prefs.includeCoolDown ? prefs.coolDownDuration : 0;
   const targetExerciseMinutes = prefs.duration - warmUpMinutes - coolDownMinutes;
   
   if (targetExerciseMinutes <= 0) {
@@ -108,12 +108,13 @@ export const generateWorkoutPlan = async (prefs: WorkoutPreferences): Promise<Wo
     - User's Available Equipment: ${prefs.availableEquipment.join(', ')}
     - Include Jump Rope Intervals: ${prefs.includeJumpRopeIntervals}
     - Include Warm-up: ${prefs.includeWarmUp}
+    - Include Cool-down: ${prefs.includeCoolDown}
 
     ---
 
     **RULE 2: WARM-UP & COOL-DOWN**
     - If 'Include Warm-up' is 'true', provide 3-5 dynamic stretches for the 'warmUp' array, suitable for a ${warmUpMinutes}-minute warm-up. The 'warmUp' array MUST be empty if 'false'.
-    - ALWAYS provide 2-3 static stretches for the 'coolDown' array, suitable for a ${coolDownMinutes}-minute cool-down.
+    - If 'Include Cool-down' is 'true', provide 2-3 static stretches for the 'coolDown' array, suitable for a ${coolDownMinutes}-minute cool-down. The 'coolDown' array MUST be empty if 'false'.
 
     **RULE 3: EXERCISE SELECTION & STRUCTURE**
     - **Mode Logic:** ${getModeInstructions(prefs)}
@@ -164,6 +165,7 @@ export const generateWorkoutPlan = async (prefs: WorkoutPreferences): Promise<Wo
       id: crypto.randomUUID(),
       mode: prefs.mode,
       warmUpDuration: prefs.includeWarmUp ? prefs.warmUpDuration : 0,
+      coolDownDuration: prefs.includeCoolDown ? prefs.coolDownDuration : 0, // Add cool down duration to plan
       rounds: finalRounds,
       exercisesPerRound: exercisesPerRound,
       numberOfRounds: prefs.rounds,
