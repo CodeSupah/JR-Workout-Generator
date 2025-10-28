@@ -51,6 +51,10 @@ const LiveSession: React.FC = () => {
     'bodyweight': 'from-sky-500 to-blue-500', // Work - Bodyweight
     'dumbbell': 'from-teal-500 to-cyan-500', // Work - Equipment
     'resistance-band': 'from-teal-500 to-cyan-500', // Work - Equipment
+    'kettlebell': 'from-purple-500 to-indigo-500',
+    'barbell': 'from-rose-500 to-pink-500',
+    'cable-machine': 'from-amber-500 to-yellow-500',
+    'leg-press-machine': 'from-lime-500 to-green-500',
   };
 
   const stageColors: { [key: string]: string } = {
@@ -69,7 +73,7 @@ const LiveSession: React.FC = () => {
           <h2 className="text-4xl font-bold text-orange-400 mb-4">Workout Complete!</h2>
           <p className="text-gray-300 mb-6">Great job! Here's your summary:</p>
           <div className="my-6 space-y-3 text-left bg-gray-900/50 p-4 rounded-lg">
-              <p className="flex justify-between text-lg"><span className="text-gray-400">Completed:</span> <strong className="text-white">{summary.completedRounds} / {totalRounds} Rounds</strong></p>
+              <p className="flex justify-between text-lg"><span className="text-gray-400">Completed:</span> <strong className="text-white">{summary.completedRounds} / {totalRounds} Exercises</strong></p>
               <p className="flex justify-between text-lg"><span className="text-gray-400">Time:</span> <strong className="text-white">{Math.floor(summary.totalTime / 60)}m {summary.totalTime % 60}s</strong></p>
               <p className="flex justify-between text-lg"><span className="text-gray-400">Calories Burned:</span><strong className="text-white">~{summary.totalCalories} kcal</strong></p>
           </div>
@@ -83,6 +87,8 @@ const LiveSession: React.FC = () => {
       </div>
     );
   }
+
+  const displayStage = stage === 'Work' ? 'Time' : stage;
 
   return (
     <div className={`fixed inset-0 flex flex-col items-center justify-center transition-all duration-500 bg-gradient-to-br ${stageColors[stage] || 'from-gray-800 to-gray-900'}`}>
@@ -121,10 +127,10 @@ const LiveSession: React.FC = () => {
             />
           </svg>
           <div className="z-10">
-            <p className="text-xl font-semibold uppercase tracking-widest text-white/80">{stage}</p>
+            <p className="text-xl font-semibold uppercase tracking-widest text-white/80">{displayStage}</p>
             <p className="text-7xl font-bold tabular-nums text-white my-2">{renderTimerDisplay()}</p>
             {totalRounds > 0 && <p className="text-lg text-white/80">
-              Round {currentRoundNum} / {totalRounds}
+              Exercise {currentRoundNum} / {totalRounds}
             </p>}
           </div>
         </div>
@@ -144,7 +150,7 @@ const LiveSession: React.FC = () => {
             <button
                 onClick={previousExercise}
                 className="p-3 text-white transition-transform transform hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={stage === 'Warm-up' || currentRoundNum <= 1}
+                disabled={currentRoundNum <= 1}
                 title="Previous Exercise"
             >
                 <SkipPreviousIcon className="w-6 h-6" />

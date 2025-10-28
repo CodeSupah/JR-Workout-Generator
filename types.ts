@@ -22,14 +22,18 @@ export interface WorkoutPreferences {
   duration: number;
   skillLevel: SkillLevel;
   goal: WorkoutGoal;
-  equipment: Equipment;
+  equipment: Equipment[]; // Can select multiple ropes
   mode: WorkoutMode;
   includeJumpRopeIntervals: boolean;
+  rounds: number;
+  availableEquipment: string[];
+  includeWarmUp: boolean;
+  warmUpDuration: number;
 }
 
 export type ExerciseDifficulty = 'Easy' | 'Medium' | 'Hard';
 
-export type ExerciseEquipment = 'bodyweight' | 'rope' | 'weighted-rope' | 'dumbbell' | 'resistance-band';
+export type ExerciseEquipment = 'bodyweight' | 'rope' | 'weighted-rope' | 'dumbbell' | 'resistance-band' | 'kettlebell' | 'barbell' | 'cable-machine' | 'leg-press-machine';
 
 export type WorkoutMode = 'jump-rope' | 'equipment' | 'no-equipment';
 
@@ -50,6 +54,7 @@ export interface WorkoutPlan {
   name?: string;
   mode: WorkoutMode;
   warmUp: string[];
+  warmUpDuration: number;
   rounds: Exercise[];
   coolDown: string[];
   estimatedCalories: number;

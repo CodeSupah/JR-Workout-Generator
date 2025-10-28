@@ -22,7 +22,8 @@ const ExerciseModal: React.FC<ExerciseModalProps> = ({ isOpen, onClose, mode, ex
 
   const categorizedSuggestions = useMemo((): [string, typeof EXERCISE_SUGGESTIONS][] => {
     const categories: CategorizedExercises = EXERCISE_SUGGESTIONS.reduce((acc, ex) => {
-        const key = ex.equipment;
+        // Group 'weighted-rope' under the 'rope' category for a unified "Jump Rope" section
+        const key = ex.equipment === 'weighted-rope' ? 'rope' : ex.equipment;
         if (!acc[key]) {
             acc[key] = [];
         }
@@ -32,7 +33,6 @@ const ExerciseModal: React.FC<ExerciseModalProps> = ({ isOpen, onClose, mode, ex
 
     const equipmentNameMapping: Record<string, string> = {
         'rope': 'Jump Rope',
-        'weighted-rope': 'Weighted Rope',
         'bodyweight': 'Bodyweight',
         'dumbbell': 'Dumbbell',
         'resistance-band': 'Resistance Band'

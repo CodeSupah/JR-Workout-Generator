@@ -1,7 +1,7 @@
 import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useWorkoutEditor } from '../hooks/useWorkoutEditor';
-import { Exercise } from '../types';
+import { Exercise, WorkoutPlan } from '../types';
 import { PlusIcon, ArrowPathIcon, TrashIcon, DragHandleIcon, UndoIcon, RedoIcon, SaveIcon, ZapIcon, FolderOpenIcon, CogIcon } from './icons/Icons';
 import ExerciseModal from './ExerciseModal';
 import ConfirmModal from './ConfirmModal';
@@ -19,7 +19,7 @@ const EditableWorkoutPlan: React.FC<EditableWorkoutPlanProps> = ({ editor }) => 
   const navigate = useNavigate();
   const { plan, reorderExercises, undo, redo, canUndo, canRedo, updateExercise } = editor;
 
-  const [modalState, setModalState] = useState<{ mode: 'add' | 'replace'; exercise?: Exercise, index?: number } | null>(null);
+  const [modalState, setModalState] = useState<{ mode: 'add' | 'replace'; exerciseToEdit?: Exercise, index?: number } | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<Exercise | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -31,8 +31,10 @@ const EditableWorkoutPlan: React.FC<EditableWorkoutPlanProps> = ({ editor }) => 
   
   const totalTime = useMemo(() => {
     if (!plan) return 0;
-    const totalSeconds = plan.rounds.reduce((acc, round) => acc + round.duration + round.rest, 0);
-    return Math.floor(totalSeconds / 60);
+    const warmUpTime = plan.warmUpDuration * 60;
+    const roundsTime = plan.rounds.reduce((acc, round) => acc + round.duration + round.rest, 0);
+    const coolDownTime = 120; // 2 minutes fixed cool-down
+    return Math.floor((warmUpTime + roundsTime + coolDownTime) / 60);
   }, [plan]);
 
   useEffect(() => {
@@ -90,7 +92,12 @@ const EditableWorkoutPlan: React.FC<EditableWorkoutPlanProps> = ({ editor }) => 
 
     setIsSaving(true);
     try {
-        await saveCustomWorkout({...plan, name: workoutName });
+        const routineToSave: WorkoutPlan = {
+            ...plan,
+            id: crypto.randomUUID(), // Assign a new ID to make it a distinct saved entity
+            name: workoutName
+        };
+        await saveCustomWorkout(routineToSave);
         toastStore.addToast('Custom workout saved!');
     } catch (e) {
         toastStore.addToast('Failed to save workout', 'error');
@@ -149,23 +156,23 @@ const EditableWorkoutPlan: React.FC<EditableWorkoutPlanProps> = ({ editor }) => 
               </div>
               <div className="flex items-center gap-4">
                 <div>
-                  <label htmlFor={`duration-${round.id}`} className="text-xs text-gray-400">Work</label>
+                  <label htmlFor={`duration-${round.id}`} className="text-xs text-gray-400">Duration</label>
                   <div className="flex items-center gap-1">
-                    <input id={`duration-${round.id}`} type="number" value={round.duration} onChange={e => updateExercise(round.id, {duration: parseInt(e.target.value) || 0})} className="w-16 bg-gray-900/50 text-center rounded-md p-1" aria-label="Work duration"/>
+                    <input id={`duration-${round.id}`} type="number" min="0" value={round.duration} onChange={e => updateExercise(round.id, {duration: Math.max(0, parseInt(e.target.value) || 0)})} className="w-16 bg-gray-900/50 text-center rounded-md p-1" aria-label="Work duration"/>
                     <span className="text-xs text-gray-400">s</span>
                   </div>
                 </div>
                 <div>
                   <label htmlFor={`rest-${round.id}`} className="text-xs text-gray-400">Rest</label>
                   <div className="flex items-center gap-1">
-                     <input id={`rest-${round.id}`} type="number" value={round.rest} onChange={e => updateExercise(round.id, {rest: parseInt(e.target.value) || 0})} className="w-16 bg-gray-900/50 text-center rounded-md p-1" aria-label="Rest duration"/>
+                     <input id={`rest-${round.id}`} type="number" min="0" value={round.rest} onChange={e => updateExercise(round.id, {rest: Math.max(0, parseInt(e.target.value) || 0)})} className="w-16 bg-gray-900/50 text-center rounded-md p-1" aria-label="Rest duration"/>
                      <span className="text-xs text-gray-400">s</span>
                   </div>
                 </div>
               </div>
             </div>
             <div className="flex gap-1">
-                <button onClick={() => setModalState({mode: 'replace', exercise: round})} className="p-2 hover:bg-gray-600 rounded-md" title="Replace Exercise"><ArrowPathIcon className="w-5 h-5"/></button>
+                <button onClick={() => setModalState({mode: 'replace', exerciseToEdit: round})} className="p-2 hover:bg-gray-600 rounded-md" title="Replace Exercise"><ArrowPathIcon className="w-5 h-5"/></button>
                 <button onClick={() => setConfirmDelete(round)} className="p-2 hover:bg-gray-600 rounded-md text-red-400" title="Delete Exercise"><TrashIcon className="w-5 h-5"/></button>
             </div>
           </div>

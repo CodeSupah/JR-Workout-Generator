@@ -183,7 +183,7 @@ export const BandIcon: React.FC<IconProps> = ({ className }) => (
 
 export const RopeIcon: React.FC<IconProps> = ({ className }) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M5.5 14.5h-2a1 1 0 01-1-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 01-1 1zM18.5 14.5h2a1 1 0 001-1v-2a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5.5 11.5v-5a6.5 6.5 0 1113 0v5" />
     </svg>
 );
 
@@ -198,3 +198,9 @@ export const SkipPreviousIcon: React.FC<IconProps> = ({ className }) => (
         <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" />
     </svg>
 );
+
+export const KettlebellIcon: React.FC<IconProps> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M21 13.255A23.44 23.44 0 0112 15c-3.793 0-7.33-1.06-10-2.845M4 10a8 8 0 1116 0v1a8 8 0 11-16 0v-1zM4 10h16" />
+    </svg>
+  );
