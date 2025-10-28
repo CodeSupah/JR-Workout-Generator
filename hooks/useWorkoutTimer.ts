@@ -41,6 +41,7 @@ const speak = (text: string, isSoundOn: boolean) => {
 };
 
 interface SessionState {
+    workoutPlan: WorkoutPlan | undefined;
     stage: WorkoutStage;
     exerciseIndex: number; // for main rounds
     subIndex: number; // for warm-up/cool-down
@@ -50,15 +51,49 @@ interface SessionState {
     summary: SessionSummary | null;
 }
 
-const getInitialState = (plan: WorkoutPlan | undefined) => {
+const getInitialState = (initialPlan: WorkoutPlan | undefined): { sessionState: SessionState; isRunning: boolean } => {
+    // Case 1: A new workout is being started from navigation.
+    if (initialPlan) {
+        localStorage.removeItem(SESSION_STORAGE_KEY); // Clear any old session
+        const hasWarmUp = initialPlan.warmUp && initialPlan.warmUp.length > 0;
+        const initialState: SessionState = hasWarmUp
+            ? {
+                workoutPlan: initialPlan,
+                stage: 'Warm-up',
+                exerciseIndex: -1,
+                subIndex: 0,
+                timeRemaining: (initialPlan.warmUpDuration * 60) / initialPlan.warmUp.length,
+                initialStageDuration: (initialPlan.warmUpDuration * 60) / initialPlan.warmUp.length,
+                exercises: initialPlan.rounds.map(ex => ({ ...ex, status: 'pending' })),
+                summary: null,
+            }
+            : {
+                workoutPlan: initialPlan,
+                stage: 'Work',
+                exerciseIndex: 0,
+                subIndex: -1,
+                timeRemaining: initialPlan.rounds[0]?.duration || 0,
+                initialStageDuration: initialPlan.rounds[0]?.duration || 0,
+                exercises: initialPlan.rounds.map(ex => ({ ...ex, status: 'pending' })),
+                summary: null,
+            };
+        return { sessionState: initialState, isRunning: true };
+    }
+
+    // Case 2: A session is being restored from localStorage.
     const savedSessionRaw = localStorage.getItem(SESSION_STORAGE_KEY);
     if (savedSessionRaw) {
         try {
             const savedData = JSON.parse(savedSessionRaw);
-            // Check if the saved plan matches the one passed in.
-            if (savedData.workoutPlan?.id === plan?.id) {
+            // Handle both old and new formats for backward compatibility
+            if (savedData.sessionState) {
+                 const fullSessionState: SessionState = {
+                    ...savedData.sessionState,
+                    // If workoutPlan is at top level (old format), merge it in.
+                    workoutPlan: savedData.sessionState.workoutPlan || savedData.workoutPlan,
+                };
                 return {
-                    sessionState: savedData.sessionState as SessionState,
+                    sessionState: fullSessionState,
                     isRunning: false, // Always start paused when restoring.
                 };
             }
@@ -67,31 +102,9 @@ const getInitialState = (plan: WorkoutPlan | undefined) => {
         }
     }
 
-    if (plan) {
-        const hasWarmUp = plan.warmUp && plan.warmUp.length > 0;
-        const initialState: SessionState = hasWarmUp
-            ? {
-                stage: 'Warm-up',
-                exerciseIndex: -1,
-                subIndex: 0,
-                timeRemaining: (plan.warmUpDuration * 60) / plan.warmUp.length,
-                initialStageDuration: (plan.warmUpDuration * 60) / plan.warmUp.length,
-                exercises: plan.rounds.map(ex => ({ ...ex, status: 'pending' })),
-                summary: null,
-            }
-            : {
-                stage: 'Work',
-                exerciseIndex: 0,
-                subIndex: -1,
-                timeRemaining: plan.rounds[0]?.duration || 0,
-                initialStageDuration: plan.rounds[0]?.duration || 0,
-                exercises: plan.rounds.map(ex => ({ ...ex, status: 'pending' })),
-                summary: null,
-            };
-        return { sessionState: initialState, isRunning: true };
-    }
-
+    // Case 3: No workout, no saved session. Default state.
     const defaultState: SessionState = {
+        workoutPlan: undefined,
         stage: 'Warm-up', exerciseIndex: -1, subIndex: -1, timeRemaining: 0,
         initialStageDuration: 0, exercises: [], summary: null,
     };
@@ -99,40 +112,82 @@ const getInitialState = (plan: WorkoutPlan | undefined) => {
 };
 
 
-export const useWorkoutTimer = (workoutPlan: WorkoutPlan | undefined, isSoundOn: boolean) => {
-  const [initialState] = useState(() => getInitialState(workoutPlan));
+export const useWorkoutTimer = (initialWorkoutPlan: WorkoutPlan | undefined, isSoundOn: boolean) => {
+  const [initialState] = useState(() => getInitialState(initialWorkoutPlan));
   const [sessionState, setSessionState] = useState<SessionState>(initialState.sessionState);
   const [isRunning, setIsRunning] = useState(initialState.isRunning);
   
   const intervalRef = useRef<number | null>(null);
   const announcedRef = useRef(false);
   
-  const { stage, exerciseIndex, subIndex, timeRemaining, initialStageDuration, exercises, summary } = sessionState;
+  const { workoutPlan, stage, exerciseIndex, subIndex, timeRemaining, initialStageDuration, exercises, summary } = sessionState;
   const currentExercise: Exercise | undefined = exercises[exerciseIndex];
   
   const finalizeWorkout = useCallback((currentState: SessionState): SessionState => {
+    const { workoutPlan } = currentState;
     if (!workoutPlan || currentState.summary) {
         return currentState;
     }
 
     const { exercises } = currentState;
-    const workTime = exercises
+
+    // --- Accurate Time Calculation ---
+    let workTime = exercises
         .filter(e => e.status === 'completed')
         .reduce((sum, e) => sum + e.duration + e.rest, 0);
 
-    const warmUpTime = (workoutPlan.warmUp?.length || 0) > 0 && currentState.stage !== 'Warm-up' ? workoutPlan.warmUpDuration * 60 : 0;
+    // Adjust for current stage if stopped mid-way
+    if (currentState.stage === 'Rest') {
+        workTime -= currentState.timeRemaining; // Full rest was added for completed exercise, so subtract remaining time.
+    } else if (currentState.stage === 'Work') {
+        const currentEx = exercises[currentState.exerciseIndex];
+        if (currentEx) {
+            workTime += (currentEx.duration - currentState.timeRemaining); // Add elapsed time for pending exercise.
+        }
+    }
+
+    let warmUpTime = 0;
+    if (workoutPlan.warmUp && workoutPlan.warmUp.length > 0) {
+        if (currentState.stage !== 'Warm-up') {
+            warmUpTime = workoutPlan.warmUpDuration * 60; // Completed
+        } else {
+            const totalDuration = workoutPlan.warmUpDuration * 60;
+            const exercisesInStage = workoutPlan.warmUp.length;
+            if (exercisesInStage > 0) {
+                const timePerExercise = totalDuration / exercisesInStage;
+                const completedExercisesTime = currentState.subIndex * timePerExercise;
+                const currentExerciseTimeSpent = currentState.initialStageDuration - currentState.timeRemaining;
+                warmUpTime = completedExercisesTime + currentExerciseTimeSpent;
+            }
+        }
+    }
     
     let coolDownTime = 0;
-    if (currentState.stage === 'Cool-down' && workoutPlan.coolDown && workoutPlan.coolDown.length > 0) {
-        const totalCoolDownDuration = workoutPlan.coolDownDuration * 60;
-        coolDownTime = totalCoolDownDuration - currentState.timeRemaining;
+    if (workoutPlan.coolDown && workoutPlan.coolDown.length > 0 && currentState.stage === 'Cool-down') {
+        const totalDuration = workoutPlan.coolDownDuration * 60;
+        const exercisesInStage = workoutPlan.coolDown.length;
+        if (exercisesInStage > 0) {
+            const timePerExercise = totalDuration / exercisesInStage;
+            const completedExercisesTime = currentState.subIndex * timePerExercise;
+            const currentExerciseTimeSpent = currentState.initialStageDuration - currentState.timeRemaining;
+            coolDownTime = completedExercisesTime + currentExerciseTimeSpent;
+        }
     }
 
     const totalTime = warmUpTime + workTime + coolDownTime;
 
+    // --- Accurate Calorie Calculation ---
     const planWorkDuration = workoutPlan.rounds.reduce((s, r) => s + r.duration, 1) || 1;
     const caloriesPerSecond = (workoutPlan.estimatedCalories || 0) / planWorkDuration;
-    const totalCalories = Math.round(exercises.filter(e => e.status === 'completed').reduce((sum, e) => sum + e.duration, 0) * caloriesPerSecond);
+    
+    const totalWorkSeconds = exercises.reduce((sum, e, idx) => {
+        if (e.status === 'completed') return sum + e.duration;
+        if (idx === currentState.exerciseIndex && currentState.stage === 'Work') {
+            return sum + (e.duration - currentState.timeRemaining);
+        }
+        return sum;
+    }, 0);
+    const totalCalories = Math.round(totalWorkSeconds * caloriesPerSecond);
     
     const finalSummary: SessionSummary = {
         id: crypto.randomUUID(),
@@ -157,7 +212,7 @@ export const useWorkoutTimer = (workoutPlan: WorkoutPlan | undefined, isSoundOn:
         initialStageDuration: 0,
         timeRemaining: 0,
     };
-  }, [workoutPlan, isSoundOn]);
+  }, [isSoundOn]);
 
 
   const stopWorkout = useCallback(() => {
@@ -172,7 +227,9 @@ export const useWorkoutTimer = (workoutPlan: WorkoutPlan | undefined, isSoundOn:
 
   const nextStage = useCallback(() => {
     setSessionState(prev => {
+        const { workoutPlan } = prev;
         if (!workoutPlan) return prev;
+
         const { stage, exerciseIndex, subIndex, exercises } = prev;
         const { warmUp, coolDown } = workoutPlan;
         const hasCoolDown = coolDown && coolDown.length > 0;
@@ -240,7 +297,7 @@ export const useWorkoutTimer = (workoutPlan: WorkoutPlan | undefined, isSoundOn:
             return finalizeWorkout(prev);
         }
     });
-  }, [isSoundOn, workoutPlan, finalizeWorkout]);
+  }, [isSoundOn, finalizeWorkout]);
 
   // Effect for initial announcement on new workouts
   useEffect(() => {
@@ -256,6 +313,7 @@ export const useWorkoutTimer = (workoutPlan: WorkoutPlan | undefined, isSoundOn:
 
 
   const getDisplayInfo = useCallback((state: SessionState = sessionState) => {
+    const { workoutPlan } = state;
     if (!workoutPlan) return { currentStageDisplay: '', currentExerciseName: '', nextExerciseName: '', totalRounds: 0, currentRoundNum: 0 };
 
     const { stage, exerciseIndex, subIndex, exercises } = state;
@@ -310,7 +368,7 @@ export const useWorkoutTimer = (workoutPlan: WorkoutPlan | undefined, isSoundOn:
         totalRounds,
         currentRoundNum
     };
-  }, [sessionState, workoutPlan]);
+  }, [sessionState]);
 
 
   useEffect(() => {
@@ -341,8 +399,7 @@ export const useWorkoutTimer = (workoutPlan: WorkoutPlan | undefined, isSoundOn:
 
         const newTime = prev.timeRemaining - 1;
         const newState = {...prev, timeRemaining: newTime};
-        const dataToSave = { sessionState: newState, workoutPlan };
-        localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(dataToSave));
+        localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify({ sessionState: newState }));
         return newState;
       });
     }, 1000);
@@ -350,9 +407,9 @@ export const useWorkoutTimer = (workoutPlan: WorkoutPlan | undefined, isSoundOn:
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [isRunning, stage, nextStage, isSoundOn, getDisplayInfo, workoutPlan]);
+  }, [isRunning, stage, nextStage, isSoundOn, getDisplayInfo]);
 
-  const togglePause = () => setIsRunning(!isRunning);
+  const togglePause = useCallback(() => setIsRunning(prev => !prev), []);
   
   const skipExercise = () => {
       if (stage === 'Warm-up' && workoutPlan?.warmUp) {
@@ -462,9 +519,9 @@ export const useWorkoutTimer = (workoutPlan: WorkoutPlan | undefined, isSoundOn:
   }, [nextStage]);
 
   const replaceCurrentExercise = useCallback((newExerciseDetails: Omit<Exercise, 'id' | 'status'>) => {
-    if (sessionState.stage !== 'Work' || sessionState.exerciseIndex < 0) return;
-    
     setSessionState(prev => {
+        if (prev.stage !== 'Work' || prev.exerciseIndex < 0) return prev;
+    
         const updatedExercises = [...prev.exercises];
         const current = updatedExercises[prev.exerciseIndex];
         
@@ -477,14 +534,17 @@ export const useWorkoutTimer = (workoutPlan: WorkoutPlan | undefined, isSoundOn:
             equipment: newExerciseDetails.equipment,
         };
 
-        return {
+        const newState = {
             ...prev,
             exercises: updatedExercises,
             timeRemaining: newExerciseDetails.duration,
             initialStageDuration: newExerciseDetails.duration,
         };
+        // Save state to local storage to persist changes when paused
+        localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify({ sessionState: newState }));
+        return newState;
     });
-  }, [sessionState.stage, sessionState.exerciseIndex]);
+  }, []);
   
   const calculateStageProgress = () => {
     if (stage === 'Finished' || !initialStageDuration) return 1;
@@ -494,6 +554,7 @@ export const useWorkoutTimer = (workoutPlan: WorkoutPlan | undefined, isSoundOn:
   
   
   return {
+    workoutPlan,
     stage,
     timeRemaining,
     isRunning,

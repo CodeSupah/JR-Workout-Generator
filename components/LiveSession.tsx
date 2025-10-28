@@ -8,50 +8,25 @@ import { toastStore } from '../store/toastStore';
 import ExerciseModal from './ExerciseModal';
 import SaveRoutineModal from './SaveRoutineModal';
 
-const SESSION_STORAGE_KEY = 'ropeflow-live-session';
-
 const LiveSession: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [workout, setWorkout] = useState<WorkoutPlan | undefined>(() => {
-    const newWorkout = location.state?.workout as WorkoutPlan | undefined;
-    if (newWorkout) {
-      return newWorkout;
-    }
-    const savedSessionRaw = localStorage.getItem(SESSION_STORAGE_KEY);
-    if (savedSessionRaw) {
-      try {
-        const savedData = JSON.parse(savedSessionRaw);
-        return savedData.workoutPlan;
-      } catch (e) {
-        localStorage.removeItem(SESSION_STORAGE_KEY);
-      }
-    }
-    return undefined;
-  });
-  
   const [isSoundOn, setIsSoundOn] = useState(true);
   const [isReplaceModalOpen, setReplaceModalOpen] = useState(false);
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
 
-  // This effect handles clearing old session data when a new workout is started.
+  const timer = useWorkoutTimer(location.state?.workout as WorkoutPlan | undefined, isSoundOn);
+  const { workoutPlan: workout } = timer;
+  
   useEffect(() => {
-    if (location.state?.workout) {
-      localStorage.removeItem(SESSION_STORAGE_KEY);
-    }
-  }, [location.state?.workout]);
-
-
-  const timer = useWorkoutTimer(workout, isSoundOn);
-
-  useEffect(() => {
-    if (!workout && !timer) {
+    // If the hook initializes and finds no workout (neither new nor saved), navigate away.
+    if (!workout) {
       navigate('/');
     }
-  }, [workout, timer, navigate]);
+  }, [workout, navigate]);
 
-  if (!workout || !timer) {
+  if (!workout) {
     return <div className="flex items-center justify-center min-h-screen">Loading Session...</div>;
   }
 
@@ -88,7 +63,6 @@ const LiveSession: React.FC = () => {
   const handleExerciseReplaced = (exerciseData: Omit<Exercise, 'id' | 'status'>) => {
     replaceCurrentExercise(exerciseData);
     setReplaceModalOpen(false);
-    togglePause(); // Automatically resume after replacing
   };
 
   const handleSaveRoutine = async (workoutName: string) => {
@@ -166,32 +140,6 @@ const LiveSession: React.FC = () => {
 
   return (
     <div className={`fixed inset-0 flex flex-col items-center justify-center transition-all duration-500 bg-gradient-to-br ${stageColors[stage] || 'from-gray-800 to-gray-900'}`}>
-        {!isRunning && stage !== 'Finished' && (
-            <div className="absolute inset-0 bg-black/70 backdrop-blur-sm z-20 flex flex-col items-center justify-center gap-6 animate-fade-in p-4">
-                <h2 className="text-5xl font-bold text-white/80 tracking-widest uppercase">Paused</h2>
-                <div className="bg-gray-800/50 rounded-2xl p-6 w-full max-w-sm space-y-3">
-                    <button 
-                        onClick={togglePause} 
-                        className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-lg bg-green-500 hover:bg-green-600 text-white font-bold text-lg transition-colors"
-                    >
-                        <PlayIcon className="w-6 h-6" /> Resume Workout
-                    </button>
-                    <button 
-                        onClick={() => setReplaceModalOpen(true)} 
-                        disabled={stage !== 'Work'}
-                        className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-lg bg-blue-500 hover:bg-blue-600 text-white font-bold transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed"
-                    >
-                        <ArrowPathIcon className="w-5 h-5" /> Replace
-                    </button>
-                    <button 
-                        onClick={handleStop} 
-                        className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-lg bg-gray-600 hover:bg-gray-700 text-white font-bold transition-colors"
-                    >
-                        <StopIcon className="w-5 h-5" /> End Workout
-                    </button>
-                </div>
-            </div>
-        )}
         {isReplaceModalOpen && <ExerciseModal
             isOpen={isReplaceModalOpen}
             onClose={() => setReplaceModalOpen(false)}
@@ -256,11 +204,11 @@ const LiveSession: React.FC = () => {
       </div>
 
       <div className="absolute bottom-10 inset-x-0 px-4 z-10">
-        <div className="bg-black/20 p-2 rounded-full max-w-xs mx-auto flex justify-around items-center backdrop-blur-sm">
+        <div className="bg-black/20 p-2 rounded-full max-w-md mx-auto flex justify-around items-center backdrop-blur-sm">
             <button
                 onClick={previousExercise}
                 className="p-3 text-white transition-transform transform hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={currentRoundNum <= 1 && stage !== 'Work'}
+                disabled={isRunning || (currentRoundNum <= 1 && stage !== 'Work')}
                 title="Previous Exercise"
             >
                 <SkipPreviousIcon className="w-6 h-6" />
@@ -274,12 +222,21 @@ const LiveSession: React.FC = () => {
             </button>
             <button
                 onClick={skipExercise}
-                className="p-3 text-white transition-transform transform hover:scale-110"
+                className="p-3 text-white transition-transform transform hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isRunning}
                 title="Skip Exercise"
             >
                 <SkipNextIcon className="w-6 h-6" />
             </button>
              <div className="w-px h-8 bg-white/20 mx-2"></div>
+            <button
+                onClick={() => setReplaceModalOpen(true)}
+                disabled={isRunning || stage !== 'Work'}
+                className="p-3 text-white transition-transform transform hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Replace Exercise"
+            >
+                <ArrowPathIcon className="w-6 h-6" />
+            </button>
             <button
                 onClick={handleStop}
                 className="p-3 text-red-400 transition-transform transform hover:scale-110"
