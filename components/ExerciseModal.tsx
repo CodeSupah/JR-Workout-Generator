@@ -1,0 +1,120 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import { Exercise, ExerciseDifficulty, WorkoutMode, ExerciseEquipment } from '../types';
+import { useWorkoutEditor } from '../hooks/useWorkoutEditor';
+import { EXERCISE_SUGGESTIONS } from '../data/exercises';
+import { SparklesIcon } from './icons/Icons';
+
+type ExerciseModalProps = {
+  isOpen: boolean;
+  onClose: () => void;
+  mode: 'add' | 'replace';
+  exerciseToEdit?: Exercise;
+  index?: number;
+  editor: ReturnType<typeof useWorkoutEditor>;
+};
+
+type CategorizedExercises = {
+  [key in ExerciseEquipment | 'other']?: typeof EXERCISE_SUGGESTIONS;
+};
+
+const ExerciseModal: React.FC<ExerciseModalProps> = ({ isOpen, onClose, mode, exerciseToEdit, index, editor }) => {
+  const { plan } = editor;
+
+  const categorizedSuggestions = useMemo((): [string, typeof EXERCISE_SUGGESTIONS][] => {
+    const categories: CategorizedExercises = EXERCISE_SUGGESTIONS.reduce((acc, ex) => {
+        const key = ex.equipment;
+        if (!acc[key]) {
+            acc[key] = [];
+        }
+        acc[key]!.push(ex);
+        return acc;
+    }, {} as CategorizedExercises);
+
+    const equipmentNameMapping: Record<string, string> = {
+        'rope': 'Jump Rope',
+        'weighted-rope': 'Weighted Rope',
+        'bodyweight': 'Bodyweight',
+        'dumbbell': 'Dumbbell',
+        'resistance-band': 'Resistance Band'
+    }
+
+    return Object.entries(categories)
+        // FIX: Explicitly type the return of map to be a tuple [string, ExerciseSuggestion[]].
+        // This prevents TypeScript from widening the type to (string | ExerciseSuggestion[])[],
+        // which was causing errors in type assignment and in the subsequent .sort() method.
+        .map(([equipment, exercises]): [string, typeof EXERCISE_SUGGESTIONS] => [equipmentNameMapping[equipment] || 'Other', exercises || []])
+        .sort((a,b) => a[0].localeCompare(b[0]));
+  }, []);
+
+  if (!isOpen) return null;
+
+  const handleSelectExercise = (exerciseName: string) => {
+    const selectedExercise = EXERCISE_SUGGESTIONS.find(ex => ex.name === exerciseName);
+    if (!selectedExercise) return;
+
+    const fullExerciseData = {
+        exercise: selectedExercise.name,
+        duration: 45,
+        rest: 15,
+        equipment: selectedExercise.equipment,
+        difficulty: selectedExercise.difficulty,
+    };
+
+    if (mode === 'add') {
+      editor.addExercise(fullExerciseData, index);
+    } else if (exerciseToEdit) {
+      editor.updateExercise(exerciseToEdit.id, { ...exerciseToEdit, ...fullExerciseData });
+    }
+    onClose();
+  };
+  
+  const handleSurpriseMe = () => {
+    const allSuggestions = categorizedSuggestions.flatMap(cat => cat[1]);
+    if (allSuggestions.length === 0) return;
+    
+    const randomExercise = allSuggestions[Math.floor(Math.random() * allSuggestions.length)];
+    handleSelectExercise(randomExercise.name);
+  }
+
+  const title = mode === 'add' ? 'Add Exercise' : `Replace "${exerciseToEdit?.exercise}"`;
+
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in" onClick={onClose}>
+      <div className="bg-gray-800 rounded-2xl shadow-xl w-full max-w-lg flex flex-col" onClick={e => e.stopPropagation()}>
+          <div className="p-6 border-b border-gray-700">
+            <div className="flex justify-between items-center">
+                <h2 className="text-xl font-bold">{title}</h2>
+                <button type="button" onClick={handleSurpriseMe} className="flex items-center gap-2 text-sm bg-orange-500/20 text-orange-300 hover:bg-orange-500/40 px-3 py-1.5 rounded-md">
+                    <SparklesIcon className="w-4 h-4" />
+                    Surprise Me
+                </button>
+            </div>
+          </div>
+          <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
+            {categorizedSuggestions.map(([category, exercises]) => (
+                <div key={category}>
+                    <h3 className="font-bold text-orange-400 mb-2">{category}</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                        {exercises.map(ex => (
+                            <button
+                                key={ex.name}
+                                type="button"
+                                onClick={() => handleSelectExercise(ex.name)}
+                                className="p-3 bg-gray-700 hover:bg-orange-500 text-left rounded-lg text-sm transition-colors"
+                            >
+                                {ex.name}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            ))}
+          </div>
+          <div className="bg-gray-700/50 px-6 py-3 flex justify-end gap-3 border-t border-gray-700">
+            <button type="button" onClick={onClose} className="py-2 px-4 rounded-md text-white hover:bg-gray-600">Cancel</button>
+          </div>
+      </div>
+    </div>
+  );
+};
+
+export default ExerciseModal;
