@@ -38,11 +38,14 @@ const Profile: React.FC = () => {
         if (profile && profile.preferences.units === 'Imperial') {
             if (profile.height > 0) {
                 const totalInches = profile.height / 2.54;
-                const ft = Math.floor(totalInches / 12);
-                // Use a more robust calculation for inches and round for display.
-                const inch = (totalInches - (ft * 12)).toFixed(1);
+                let ft = Math.floor(totalInches / 12);
+                let inch = Math.round(totalInches % 12);
+                if (inch === 12) {
+                    ft += 1;
+                    inch = 0;
+                }
                 setFeet(ft.toString());
-                setInches(inch);
+                setInches(inch.toString());
             } else {
                 setFeet('');
                 setInches('');
@@ -55,8 +58,8 @@ const Profile: React.FC = () => {
     // It runs whenever the user types.
     useEffect(() => {
         if (profile?.preferences.units === 'Imperial') {
-            const ftNum = parseFloat(feet);
-            const inNum = parseFloat(inches);
+            const ftNum = parseInt(feet, 10);
+            const inNum = parseInt(inches, 10);
             
             // Treat empty or invalid strings as 0 for calculation
             const ftValue = isNaN(ftNum) ? 0 : ftNum;
@@ -198,29 +201,26 @@ const Profile: React.FC = () => {
                     </div>
 
                     {profile.preferences.units === 'Imperial' ? (
-                        <div className="form-group">
-                            <label>Height</label>
-                            <div className="flex items-stretch bg-[#1F2937] border border-[#4B5563] rounded-lg focus-within:border-orange-500 focus-within:ring-1 focus-within:ring-orange-500 overflow-hidden">
-                                <div className="relative flex-1 border-r border-[#4B5563]">
-                                    <input 
-                                        type="number" 
-                                        value={feet} 
-                                        onChange={e => setFeet(e.target.value)} 
-                                        placeholder="ft" 
-                                        className="w-full h-full bg-transparent p-3 text-white text-center outline-none" 
-                                        aria-label="Height in feet"
-                                    />
-                                </div>
-                                <div className="relative flex-1">
-                                    <input 
-                                        type="number" 
-                                        value={inches} 
-                                        onChange={e => setInches(e.target.value)} 
-                                        placeholder="in" 
-                                        className="w-full h-full bg-transparent p-3 text-white text-center outline-none" 
-                                        aria-label="Height in inches"
-                                    />
-                                </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="form-group">
+                                <label>Height (ft)</label>
+                                <input 
+                                    type="number" 
+                                    value={feet} 
+                                    onChange={e => setFeet(e.target.value.replace(/\D/g, ''))} 
+                                    placeholder="ft" 
+                                    aria-label="Height in feet"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Height (in)</label>
+                                <input 
+                                    type="number" 
+                                    value={inches} 
+                                    onChange={e => setInches(e.target.value.replace(/\D/g, ''))} 
+                                    placeholder="in" 
+                                    aria-label="Height in inches"
+                                />
                             </div>
                         </div>
                     ) : (
