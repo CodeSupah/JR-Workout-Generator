@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { WorkoutPlan, Exercise, SessionSummary } from '../types';
 import { saveWorkoutSummary } from '../services/workoutService';
 
@@ -96,7 +96,14 @@ export const useWorkoutTimer = (initialWorkoutPlan: WorkoutPlan | undefined, isS
   const announcedRef = useRef(false);
   
   const { workoutPlan, stage, exerciseIndex, subIndex, timeRemaining, initialStageDuration, exercises, summary } = sessionState;
-  const currentExercise: Exercise | undefined = exercises[exerciseIndex];
+  
+  const currentExercise: Exercise | undefined = useMemo(() => {
+      if (!workoutPlan) return undefined;
+      if (stage === 'Warm-up') return workoutPlan.warmUp?.[subIndex];
+      if (stage === 'Work' || stage === 'Rest') return exercises?.[exerciseIndex];
+      if (stage === 'Cool-down') return workoutPlan.coolDown?.[subIndex];
+      return undefined;
+  }, [stage, workoutPlan, subIndex, exerciseIndex, exercises]);
   
   const finalizeWorkout = useCallback((currentState: SessionState): SessionState => {
     // If there's no plan or we've already generated a summary, do nothing.
@@ -499,27 +506,38 @@ export const useWorkoutTimer = (initialWorkoutPlan: WorkoutPlan | undefined, isS
 
   const replaceCurrentExercise = useCallback((newExerciseDetails: Omit<Exercise, 'id' | 'status'>) => {
     setSessionState(prev => {
-        if (prev.stage !== 'Work' || prev.exerciseIndex < 0) return prev;
+        const { stage, workoutPlan, exerciseIndex, subIndex } = prev;
+        if (!workoutPlan) return prev;
     
-        const updatedExercises = [...prev.exercises];
-        const current = updatedExercises[prev.exerciseIndex];
-        
-        updatedExercises[prev.exerciseIndex] = {
-            ...current, // keep id and status
-            exercise: newExerciseDetails.exercise,
-            duration: newExerciseDetails.duration,
-            rest: newExerciseDetails.rest,
-            difficulty: newExerciseDetails.difficulty,
-            equipment: newExerciseDetails.equipment,
-        };
+        const newPlan = JSON.parse(JSON.stringify(workoutPlan));
+        const newDuration = newExerciseDetails.duration;
+        let wasReplaced = false;
 
-        const newState = {
-            ...prev,
-            exercises: updatedExercises,
-            timeRemaining: newExerciseDetails.duration,
-            initialStageDuration: newExerciseDetails.duration,
-        };
-        return newState;
+        if (stage === 'Warm-up' && newPlan.warmUp?.[subIndex]) {
+            const current = newPlan.warmUp[subIndex];
+            newPlan.warmUp[subIndex] = { ...current, ...newExerciseDetails };
+            wasReplaced = true;
+        } else if ((stage === 'Work' || stage === 'Rest') && newPlan.rounds?.[exerciseIndex]) {
+            const current = newPlan.rounds[exerciseIndex];
+            newPlan.rounds[exerciseIndex] = { ...current, ...newExerciseDetails };
+            wasReplaced = true;
+        } else if (stage === 'Cool-down' && newPlan.coolDown?.[subIndex]) {
+            const current = newPlan.coolDown[subIndex];
+            newPlan.coolDown[subIndex] = { ...current, ...newExerciseDetails };
+            wasReplaced = true;
+        }
+
+        if (wasReplaced) {
+            return {
+                ...prev,
+                workoutPlan: newPlan,
+                exercises: [...newPlan.rounds], // Resync exercises from the updated plan
+                timeRemaining: newDuration,
+                initialStageDuration: newDuration,
+            };
+        }
+
+        return prev;
     });
   }, []);
   

@@ -9,14 +9,19 @@ type ExerciseModalProps = {
   onSelectExercise: (exerciseData: Omit<Exercise, 'id' | 'status'>) => void;
   mode: 'add' | 'replace';
   exerciseToEdit?: Exercise;
+  purposeFilter?: 'warmup' | 'cooldown' | 'main';
 };
 
-const ExerciseModal: React.FC<ExerciseModalProps> = ({ isOpen, onClose, onSelectExercise, mode, exerciseToEdit }) => {
+const ExerciseModal: React.FC<ExerciseModalProps> = ({ isOpen, onClose, onSelectExercise, mode, exerciseToEdit, purposeFilter }) => {
 
   const categorizedSuggestions = useMemo(() => {
     const gymEquipmentTypes = ['barbell', 'kettlebell', 'cable-machine', 'leg-press-machine'];
 
-    const categories = EXERCISE_SUGGESTIONS.reduce((acc, ex) => {
+    const suggestions = EXERCISE_SUGGESTIONS.filter(ex => {
+        return purposeFilter ? ex.purpose === purposeFilter : ex.purpose === 'main';
+    });
+
+    const categories = suggestions.reduce((acc, ex) => {
         let categoryName: string;
 
         if (ex.purpose === 'warmup' || ex.purpose === 'cooldown') {
@@ -51,7 +56,7 @@ const ExerciseModal: React.FC<ExerciseModalProps> = ({ isOpen, onClose, onSelect
         if (indexB === -1) return -1;
         return indexA - indexB;
     });
-  }, []);
+  }, [purposeFilter]);
 
   if (!isOpen) return null;
 

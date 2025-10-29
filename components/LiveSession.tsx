@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { WorkoutPlan, Exercise, UnlockedAchievementInfo } from '../types';
 import { useWorkoutTimer } from '../hooks/useWorkoutTimer';
@@ -73,6 +73,12 @@ const LiveSession: React.FC = () => {
     };
   }, [isRunning, stage]); // Dependencies ensure we have the latest state
 
+  const exercisePurpose = useMemo(() => {
+    if (stage === 'Warm-up') return 'warmup';
+    if (stage === 'Cool-down') return 'cooldown';
+    return 'main';
+  }, [stage]);
+
   if (!workout) {
     return <div className="flex items-center justify-center min-h-screen">Loading Session...</div>;
   }
@@ -93,13 +99,11 @@ const LiveSession: React.FC = () => {
     if (isRunning) {
       togglePause();
     }
-    // FIX: Corrected state setter typo
     setIsReplaceModalOpen(true);
   };
 
   const handleExerciseReplaced = (exerciseData: Omit<Exercise, 'id' | 'status'>) => {
     replaceCurrentExercise(exerciseData);
-    // FIX: Corrected state setter typo
     setIsReplaceModalOpen(false);
   };
 
@@ -191,11 +195,11 @@ const LiveSession: React.FC = () => {
     <div className={`fixed inset-0 flex flex-col items-center justify-center transition-all duration-500 bg-gradient-to-br ${stageColors[stage] || 'from-gray-800 to-gray-900'}`}>
         {isReplaceModalOpen && <ExerciseModal
             isOpen={isReplaceModalOpen}
-            // FIX: Corrected state setter typo
             onClose={() => setIsReplaceModalOpen(false)}
             onSelectExercise={handleExerciseReplaced}
             mode='replace'
             exerciseToEdit={currentExercise}
+            purposeFilter={exercisePurpose}
         />}
         <div className="absolute top-5 right-5 z-10">
             <button onClick={() => setIsSoundOn(!isSoundOn)} className="p-3 bg-black/20 rounded-full text-white">
@@ -280,7 +284,7 @@ const LiveSession: React.FC = () => {
              <div className="w-px h-8 bg-white/20 mx-2"></div>
             <button
                 onClick={handleOpenReplaceModal}
-                disabled={stage !== 'Work'}
+                disabled={stage === 'Finished'}
                 className="p-3 text-white transition-transform transform hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
                 title="Replace Exercise"
             >

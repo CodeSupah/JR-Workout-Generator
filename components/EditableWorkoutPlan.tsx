@@ -41,6 +41,13 @@ const EditableWorkoutPlan: React.FC<EditableWorkoutPlanProps> = ({ editor }) => 
     return Math.floor((warmUpTime + roundsTime + coolDownTime) / 60);
   }, [plan]);
 
+  const purpose = useMemo(() => {
+    if (!modalState) return 'main';
+    if (modalState.section === 'warmUp') return 'warmup';
+    if (modalState.section === 'coolDown') return 'cooldown';
+    return 'main';
+  }, [modalState]);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
         const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
@@ -101,6 +108,7 @@ const EditableWorkoutPlan: React.FC<EditableWorkoutPlanProps> = ({ editor }) => 
   };
 
   const startWorkout = () => {
+    sessionStorage.removeItem('suggestedWorkoutPlan');
     navigate('/session', { state: { workout: plan } });
   };
   
@@ -226,6 +234,7 @@ const EditableWorkoutPlan: React.FC<EditableWorkoutPlanProps> = ({ editor }) => 
             onSelectExercise={handleExerciseSelect}
             mode={modalState.mode}
             exerciseToEdit={modalState.exerciseToEdit}
+            purposeFilter={purpose}
         />}
         {confirmDelete && <ConfirmModal isOpen={!!confirmDelete} onClose={() => setConfirmDelete(null)} onConfirm={() => { removeExercise(confirmDelete.id); setConfirmDelete(null);}} title="Delete Exercise?" message={`Are you sure you want to remove "${confirmDelete.exercise}"?`} />}
         {showRestSettings && <RestSettingsPanel isOpen={showRestSettings} onClose={() => setShowRestSettings(false)} editor={editor} />}

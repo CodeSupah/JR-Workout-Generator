@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { UserProfile, WorkoutGoal } from '../types';
 import { getUserProfile, saveUserProfile } from '../services/profileService';
 import { toastStore } from '../store/toastStore';
@@ -11,6 +11,11 @@ const Profile: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const avatarInputRef = useRef<HTMLInputElement>(null);
 
+    // State for imperial height inputs
+    const [feet, setFeet] = useState<string>('');
+    const [inches, setInches] = useState<string>('');
+
+
     useEffect(() => {
         const loadProfile = async () => {
             setIsLoading(true);
@@ -22,13 +27,56 @@ const Profile: React.FC = () => {
         loadProfile();
     }, []);
 
+    const handleInputChange = useCallback(<K extends keyof UserProfile>(key: K, value: UserProfile[K]) => {
+        setProfile(prev => prev ? { ...prev, [key]: value } : null);
+    }, []);
+
+    // This effect populates the imperial fields from the canonical CM height.
+    // It runs ONLY when the unit system is changed, or when the initial profile data is loaded.
+    // It does NOT run when the user is typing in the ft/in fields, which breaks the update loop.
+    useEffect(() => {
+        if (profile && profile.preferences.units === 'Imperial') {
+            if (profile.height > 0) {
+                const totalInches = profile.height / 2.54;
+                const ft = Math.floor(totalInches / 12);
+                // Use a more robust calculation for inches and round for display.
+                const inch = (totalInches - (ft * 12)).toFixed(1);
+                setFeet(ft.toString());
+                setInches(inch);
+            } else {
+                setFeet('');
+                setInches('');
+            }
+        }
+    }, [profile?.preferences.units, initialProfile]);
+
+
+    // This effect syncs the user's input from ft/in fields back to the canonical CM height.
+    // It runs whenever the user types.
+    useEffect(() => {
+        if (profile?.preferences.units === 'Imperial') {
+            const ftNum = parseFloat(feet);
+            const inNum = parseFloat(inches);
+            
+            // Treat empty or invalid strings as 0 for calculation
+            const ftValue = isNaN(ftNum) ? 0 : ftNum;
+            const inValue = isNaN(inNum) ? 0 : inNum;
+
+            const totalInches = ftValue * 12 + inValue;
+            const heightInCm = totalInches * 2.54;
+            
+            // Only update if the calculated value is different from the stored one
+            // to prevent infinite loops from floating point inaccuracies.
+            if (Math.abs(heightInCm - (profile.height || 0)) > 0.01) {
+                handleInputChange('height', heightInCm);
+            }
+        }
+    }, [feet, inches, profile?.preferences.units, profile?.height, handleInputChange]);
+
+
     const hasChanges = useMemo(() => {
         return JSON.stringify(profile) !== JSON.stringify(initialProfile);
     }, [profile, initialProfile]);
-
-    const handleInputChange = <K extends keyof UserProfile>(key: K, value: UserProfile[K]) => {
-        setProfile(prev => prev ? { ...prev, [key]: value } : null);
-    };
 
     const handleNestedChange = (path: string, value: any) => {
         setProfile(prev => {
@@ -76,27 +124,21 @@ const Profile: React.FC = () => {
         setProfile(initialProfile);
     };
     
-    // Unit conversion helpers
+    // Unit conversion helpers for WEIGHT
     const displayWeight = profile?.preferences.units === 'Imperial'
         ? (profile.weight * 2.20462).toFixed(1)
         : profile?.weight.toString();
+        
     const handleWeightChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = parseFloat(e.target.value);
-        if (isNaN(value) || !profile) return;
+        if (isNaN(value) || !profile) {
+            handleInputChange('weight', 0);
+            return;
+        }
         const newWeightInKg = profile.preferences.units === 'Imperial' ? value / 2.20462 : value;
         handleInputChange('weight', newWeightInKg);
     }
     
-    const displayHeight = profile?.preferences.units === 'Imperial'
-        ? (profile.height / 2.54).toFixed(1)
-        : profile?.height.toString();
-    const handleHeightChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = parseFloat(e.target.value);
-        if (isNaN(value) || !profile) return;
-        const newHeightInCm = profile.preferences.units === 'Imperial' ? value * 2.54 : value;
-        handleInputChange('height', newHeightInCm);
-    }
-
 
     if (isLoading || !profile) {
         return <div className="text-center p-10">Loading profile...</div>;
@@ -154,10 +196,40 @@ const Profile: React.FC = () => {
                         <label>Weight ({profile.preferences.units === 'Metric' ? 'kg' : 'lbs'})</label>
                         <input type="number" value={displayWeight} onChange={handleWeightChange} />
                     </div>
-                    <div className="form-group">
-                        <label>Height ({profile.preferences.units === 'Metric' ? 'cm' : 'in'})</label>
-                        <input type="number" value={displayHeight} onChange={handleHeightChange} />
-                    </div>
+
+                    {profile.preferences.units === 'Imperial' ? (
+                        <div className="form-group">
+                            <label>Height</label>
+                            <div className="flex items-stretch bg-[#1F2937] border border-[#4B5563] rounded-lg focus-within:border-orange-500 focus-within:ring-1 focus-within:ring-orange-500 overflow-hidden">
+                                <div className="relative flex-1 border-r border-[#4B5563]">
+                                    <input 
+                                        type="number" 
+                                        value={feet} 
+                                        onChange={e => setFeet(e.target.value)} 
+                                        placeholder="ft" 
+                                        className="w-full h-full bg-transparent p-3 text-white text-center outline-none" 
+                                        aria-label="Height in feet"
+                                    />
+                                </div>
+                                <div className="relative flex-1">
+                                    <input 
+                                        type="number" 
+                                        value={inches} 
+                                        onChange={e => setInches(e.target.value)} 
+                                        placeholder="in" 
+                                        className="w-full h-full bg-transparent p-3 text-white text-center outline-none" 
+                                        aria-label="Height in inches"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="form-group">
+                            <label>Height (cm)</label>
+                            <input type="number" value={profile.height > 0 ? profile.height.toFixed(0) : ''} onChange={e => handleInputChange('height', parseFloat(e.target.value) || 0)} />
+                        </div>
+                    )}
+                    
                     <div className="form-group md:col-span-2">
                         <label>Primary Fitness Goal</label>
                         <div className="select-wrapper">
@@ -227,6 +299,15 @@ const Profile: React.FC = () => {
                 }
                 .select-wrapper { position: relative; }
                 .select-wrapper select { appearance: none; -webkit-appearance: none; }
+                /* Hide number input spinners */
+                input[type=number]::-webkit-inner-spin-button, 
+                input[type=number]::-webkit-outer-spin-button { 
+                  -webkit-appearance: none; 
+                  margin: 0; 
+                }
+                input[type=number] {
+                  -moz-appearance: textfield;
+                }
             `}</style>
         </div>
     );

@@ -86,7 +86,16 @@ const Home: React.FC = () => {
         setIsGenerating(true);
         try {
             const plan = await generateWorkoutPlan(suggestedWorkout.preferences as WorkoutPreferences);
-            navigate('/session', { state: { workout: plan } });
+            
+            // Store plan and the preferences used to generate it.
+            const storageObject = {
+                plan,
+                preferences: suggestedWorkout.preferences,
+                date: new Date().toISOString().split('T')[0],
+            };
+            sessionStorage.setItem('suggestedWorkoutPlan', JSON.stringify(storageObject));
+
+            navigate('/generator');
         } catch (error: any) {
             toastStore.addToast(error.message || 'Failed to generate workout', 'error');
             console.error(error);
