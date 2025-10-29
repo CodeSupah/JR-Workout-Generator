@@ -122,7 +122,7 @@ const Dashboard: React.FC = () => {
         </>
       ) : (
         <div className="text-center p-10 bg-gray-800/50 rounded-lg">
-          <h2 className="text-2xl font-bold mb-2">Welcome to RopeFlow!</h2>
+          <h2 className="text-2xl font-bold mb-2">Welcome to Jump!</h2>
           <p>Complete a workout session to see your stats here.</p>
         </div>
       )}

@@ -4,8 +4,6 @@ import { saveWorkoutSummary } from '../services/workoutService';
 
 type WorkoutStage = 'Warm-up' | 'Work' | 'Rest' | 'Cool-down' | 'Finished';
 
-const SESSION_STORAGE_KEY = 'ropeflow-live-session';
-
 let audioCtx: AudioContext | null = null;
 const getAudioContext = () => {
     if (!audioCtx) {
@@ -52,9 +50,8 @@ interface SessionState {
 }
 
 const getInitialState = (initialPlan: WorkoutPlan | undefined): { sessionState: SessionState; isRunning: boolean } => {
-    // Case 1: A new workout is being started from navigation.
+    // A workout can only be started if a plan is passed from navigation.
     if (initialPlan) {
-        localStorage.removeItem(SESSION_STORAGE_KEY); // Clear any old session
         const hasWarmUp = initialPlan.warmUp && initialPlan.warmUp.length > 0;
         const initialState: SessionState = hasWarmUp
             ? {
@@ -80,29 +77,7 @@ const getInitialState = (initialPlan: WorkoutPlan | undefined): { sessionState: 
         return { sessionState: initialState, isRunning: true };
     }
 
-    // Case 2: A session is being restored from localStorage.
-    const savedSessionRaw = localStorage.getItem(SESSION_STORAGE_KEY);
-    if (savedSessionRaw) {
-        try {
-            const savedData = JSON.parse(savedSessionRaw);
-            // Handle both old and new formats for backward compatibility
-            if (savedData.sessionState) {
-                 const fullSessionState: SessionState = {
-                    ...savedData.sessionState,
-                    // If workoutPlan is at top level (old format), merge it in.
-                    workoutPlan: savedData.sessionState.workoutPlan || savedData.workoutPlan,
-                };
-                return {
-                    sessionState: fullSessionState,
-                    isRunning: false, // Always start paused when restoring.
-                };
-            }
-        } catch (e) {
-            localStorage.removeItem(SESSION_STORAGE_KEY);
-        }
-    }
-
-    // Case 3: No workout, no saved session. Default state.
+    // No workout plan, return a default empty state.
     const defaultState: SessionState = {
         workoutPlan: undefined,
         stage: 'Warm-up', exerciseIndex: -1, subIndex: -1, timeRemaining: 0,
@@ -203,9 +178,8 @@ export const useWorkoutTimer = (initialWorkoutPlan: WorkoutPlan | undefined, isS
         workoutPlan: { ...workoutPlan, rounds: exercises },
     };
     
-    // 7. Persist summary, clean up, and set final state
+    // 7. Persist summary and set final state
     saveWorkoutSummary(finalSummary);
-    localStorage.removeItem(SESSION_STORAGE_KEY);
     speak('Workout ended.', isSoundOn);
 
     return {
@@ -405,7 +379,6 @@ export const useWorkoutTimer = (initialWorkoutPlan: WorkoutPlan | undefined, isS
 
         const newTime = prev.timeRemaining - 1;
         const newState = {...prev, timeRemaining: newTime};
-        localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify({ sessionState: newState }));
         return newState;
       });
     }, 1000);
@@ -546,8 +519,6 @@ export const useWorkoutTimer = (initialWorkoutPlan: WorkoutPlan | undefined, isS
             timeRemaining: newExerciseDetails.duration,
             initialStageDuration: newExerciseDetails.duration,
         };
-        // Save state to local storage to persist changes when paused
-        localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify({ sessionState: newState }));
         return newState;
     });
   }, []);

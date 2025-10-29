@@ -1,5 +1,5 @@
 import React from 'react';
-import { Achievement, UserAchievementProgress, UnlockedAchievementInfo } from '../types';
+import { Achievement, UserAchievementProgress, UnlockedAchievementInfo, AchievementTier } from '../types';
 import { getWorkoutStats } from './workoutService';
 import { DumbbellIcon, ClockIcon, FlameIcon, SaveIcon, MedalIcon } from '../components/icons/Icons';
 
@@ -12,10 +12,10 @@ export const ACHIEVEMENTS: Achievement[] = [
     tiers: [
       { tier: 1, name: 'First Skip', description: 'Complete your first workout.', goal: 1 },
       { tier: 2, name: 'Consistent Jumper', description: 'Complete 5 workouts.', goal: 5 },
-      { tier: 3, name: 'RopeFlow Regular', description: 'Complete 10 workouts.', goal: 10 },
+      { tier: 3, name: 'Jump Regular', description: 'Complete 10 workouts.', goal: 10 },
       { tier: 4, name: 'Jump Master', description: 'Complete 25 workouts.', goal: 25 },
       { tier: 5, name: 'Workout Warrior', description: 'Complete 50 workouts.', goal: 50 },
-      { tier: 6, name: 'RopeFlow Legend', description: 'Complete 100 workouts.', goal: 100 },
+      { tier: 6, name: 'Jump Legend', description: 'Complete 100 workouts.', goal: 100 },
       { tier: 7, name: 'Centurion', description: 'Complete 250 workouts.', goal: 250 },
       { tier: 8, name: 'Elite Skipper', description: 'Complete 500 workouts.', goal: 500 },
     ]
@@ -62,7 +62,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   },
 ];
 
-const ACHIEVEMENT_PROGRESS_KEY = 'ropeflow-achievements';
+const ACHIEVEMENT_PROGRESS_KEY = 'jump-achievements';
 
 export const getAchievements = (): Achievement[] => {
     return ACHIEVEMENTS;
@@ -124,4 +124,37 @@ export const checkAndUnlockAchievements = async (): Promise<UnlockedAchievementI
 
   await saveUserAchievementProgress(progress);
   return newlyUnlocked;
+};
+
+export const getNextChallenge = async (): Promise<{ achievement: Achievement, tier: AchievementTier } | null> => {
+    const progress = await getUserAchievementProgress();
+    const stats = await getWorkoutStats();
+    let nextChallenge = null;
+    let maxProgressRatio = -1;
+
+    for (const achievement of ACHIEVEMENTS) {
+        const userAchievement = progress[achievement.id] || { currentProgress: 0, unlockedTiers: [] };
+        let statValue = 0;
+        switch(achievement.category) {
+            case 'Volume': statValue = stats.totalWorkouts; break;
+            case 'Duration': statValue = stats.totalMinutes; break;
+            case 'Streak': statValue = stats.currentStreak; break;
+            case 'Customization': statValue = stats.customWorkouts; break;
+        }
+
+        for (const tier of achievement.tiers) {
+            const isUnlocked = userAchievement.unlockedTiers.some(ut => ut.tier === tier.tier);
+            if (!isUnlocked) {
+                if (tier.goal > 0) {
+                    const progressRatio = statValue / tier.goal;
+                    if (progressRatio > maxProgressRatio) {
+                        maxProgressRatio = progressRatio;
+                        nextChallenge = { achievement, tier };
+                    }
+                }
+                break; // only consider the next uncompleted tier for each achievement
+            }
+        }
+    }
+    return nextChallenge;
 };

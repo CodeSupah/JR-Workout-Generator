@@ -1,7 +1,7 @@
 import { WorkoutStats, WorkoutPlan, SessionSummary } from '../types';
 
-const CUSTOM_WORKOUTS_KEY = 'ropeflow-custom-workouts';
-const WORKOUT_HISTORY_KEY = 'ropeflow-workout-history';
+const CUSTOM_WORKOUTS_KEY = 'jump-custom-workouts';
+const WORKOUT_HISTORY_KEY = 'jump-workout-history';
 
 // --- Custom Workout Management ---
 

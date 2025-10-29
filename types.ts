@@ -5,10 +5,10 @@ export enum SkillLevel {
 }
 
 export enum WorkoutGoal {
-  FatBurn = 'Fat Burn',
-  Stamina = 'Stamina',
-  Footwork = 'Footwork',
-  Strength = 'Strength',
+  FullBody = 'Full Body',
+  CardioEndurance = 'Cardio Endurance',
+  Power = 'Power',
+  CoreStrength = 'Core Strength',
   Freestyle = 'Freestyle',
 }
 
@@ -131,3 +131,34 @@ export interface UserAchievementProgress {
 export type UnlockedAchievementInfo = AchievementTier & {
     icon: React.FC<{className?: string}>;
 };
+
+// --- User Profile Types ---
+
+export type Units = 'Metric' | 'Imperial';
+
+export interface UserProfile {
+  name: string;
+  email: string;
+  joinDate: string; // ISO string
+  avatar: string | null; // base64 string
+  gender: 'Male' | 'Female' | 'Non-binary' | 'Prefer not to say';
+  dob: string | null; // YYYY-MM-DD format
+  height: number; // Always stored in cm
+  weight: number; // Always stored in kg
+  primaryGoal: WorkoutGoal;
+  preferences: {
+    units: Units;
+    sound: {
+      voiceCues: boolean;
+      voiceVolume: number; // 0 to 1
+      effects: boolean;
+      effectsVolume: number; // 0 to 1
+    };
+    notifications: {
+      reminders: boolean;
+      achievements: boolean;
+      challenges: boolean;
+    };
+    adaptiveDifficulty: boolean;
+  };
+}

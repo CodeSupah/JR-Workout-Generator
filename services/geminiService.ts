@@ -121,11 +121,11 @@ export const generateWorkoutPlan = async (prefs: WorkoutPreferences): Promise<Wo
     **RULE 3: EXERCISE SELECTION & STRUCTURE**
     - **Mode Logic:** ${getModeInstructions(prefs)}
     - **Goal-Specific Exercises:**
-        - **Fat Burn:** Prioritize High-Intensity Interval Training (HIIT). Use shorter, more intense work periods (e.g. 30s work, 15s rest) to maximize calorie burn.
-        - **Stamina:** Emphasize longer work periods (e.g., 45-60 seconds) with moderate rest to build cardiovascular endurance.
-        - **Footwork (for Jump Rope mode):** Focus on agile movements like Boxer Step, Side Swings, and other coordination-based drills.
-        - **Strength:** Focus on resistance exercises using the user's available equipment or challenging bodyweight movements.
-        - **Freestyle (for Jump Rope mode):** Provide a creative mix of skills, including Criss-Cross, Side Swings, and other tricks to encourage creativity.
+        - **Full Body:** Create a balanced, varied workout targeting all major muscle groups. This is the default, well-rounded option.
+        - **Cardio Endurance:** Prioritize High-Intensity Interval Training (HIIT). Emphasize longer work periods (e.g., 45-60 seconds) with shorter rest to build cardiovascular endurance and maximize calorie burn.
+        - **Power:** Focus on explosive movements. For jump rope, this means Double Unders or high-intensity bursts. For equipment/bodyweight, include exercises like Kettlebell Swings or Burpees.
+        - **Core Strength:** Integrate jump rope variations that engage the core (e.g., high knees, twists) and add core-focused bodyweight exercises like planks or leg raises.
+        - **Freestyle (for Jump Rope mode):** Provide a creative mix of skills, including Criss-Cross, Side Swings, and other tricks to encourage creativity and rhythm.
     - **Skill Level Adherence:**
         - **Beginner:** All exercises must be 'Easy'. Work durations should be around 30s. Use simple movements.
         - **Intermediate:** Exercises can be 'Easy' or 'Medium'. Work durations around 40s.

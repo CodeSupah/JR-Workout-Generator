@@ -1,5 +1,7 @@
 {
-  "name": "JR Workout Generator ",
-  "description": "A web application that generates personalized jump rope workouts based on user preferences and tracks performance over time. Users can start a live workout session and analyze their statistics on a personal dashboard.",
-  "requestFramePermissions": []
+  "name": "Jump",
+  "description": "Jump is a web application that generates personalized jump rope workouts based on user preferences and tracks performance over time. Users can start a live workout session and analyze their statistics on a personal dashboard.",
+  "requestFramePermissions": [
+    "camera"
+  ]
 }

@@ -13,7 +13,7 @@ const WorkoutGenerator: React.FC = () => {
   const [preferences, setPreferences] = useState<Omit<WorkoutPreferences, 'mode' | 'includeJumpRopeIntervals' | 'rounds' | 'availableEquipment' | 'includeWarmUp' | 'warmUpDuration' | 'includeCoolDown' | 'coolDownDuration'>>({
     duration: 15,
     skillLevel: SkillLevel.Beginner,
-    goal: WorkoutGoal.FatBurn,
+    goal: WorkoutGoal.FullBody,
     equipment: [Equipment.Regular],
   });
   const [mode, setMode] = useState<WorkoutMode>('jump-rope');
@@ -44,7 +44,7 @@ const WorkoutGenerator: React.FC = () => {
       setPreferences({
           duration: parsedPrefs.duration || 15,
           skillLevel: parsedPrefs.skillLevel || SkillLevel.Beginner,
-          goal: parsedPrefs.goal || WorkoutGoal.FatBurn,
+          goal: parsedPrefs.goal || WorkoutGoal.FullBody,
           equipment: parsedPrefs.equipment || [Equipment.Regular],
       });
       setMode(parsedPrefs.mode || 'jump-rope');
@@ -302,11 +302,11 @@ const WorkoutGenerator: React.FC = () => {
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
                     {(Object.values(WorkoutGoal)).map(goal => {
                         const icons: {[key in WorkoutGoal]: React.ReactNode} = {
-                            [WorkoutGoal.FatBurn]: <FlameIcon className="w-5 h-5"/>,
-                            [WorkoutGoal.Stamina]: <RunIcon className="w-5 h-5"/>,
-                            [WorkoutGoal.Footwork]: <StarIcon className="w-5 h-5"/>,
-                            [WorkoutGoal.Strength]: <DumbbellIcon className="w-5 h-5"/>,
-                            [WorkoutGoal.Freestyle]: <ZapIcon className="w-5 h-5"/>,
+                            [WorkoutGoal.FullBody]: <RunIcon className="w-5 h-5"/>,
+                            [WorkoutGoal.CardioEndurance]: <FlameIcon className="w-5 h-5"/>,
+                            [WorkoutGoal.Power]: <ZapIcon className="w-5 h-5"/>,
+                            [WorkoutGoal.CoreStrength]: <TargetIcon className="w-5 h-5"/>,
+                            [WorkoutGoal.Freestyle]: <StarIcon className="w-5 h-5"/>,
                         }
                         return (
                             <button

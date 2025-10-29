@@ -15,7 +15,7 @@ const LiveSession: React.FC = () => {
   const location = useLocation();
 
   const [isSoundOn, setIsSoundOn] = useState(true);
-  const [isReplaceModalOpen, setReplaceModalOpen] = useState(false);
+  const [isReplaceModalOpen, setIsReplaceModalOpen] = useState(false);
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
   const [unlockedAchievements, setUnlockedAchievements] = useState<UnlockedAchievementInfo[]>([]);
 
@@ -56,6 +56,23 @@ const LiveSession: React.FC = () => {
     }
   }, [stage, summary]);
 
+  useEffect(() => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      // If the workout is running and not finished, show the prompt.
+      if (isRunning && stage !== 'Finished') {
+        event.preventDefault();
+        // Standard way to show the browser's native confirmation dialog.
+        event.returnValue = 'Are you sure you want to leave? Your workout progress will be lost.';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [isRunning, stage]); // Dependencies ensure we have the latest state
+
   if (!workout) {
     return <div className="flex items-center justify-center min-h-screen">Loading Session...</div>;
   }
@@ -76,12 +93,14 @@ const LiveSession: React.FC = () => {
     if (isRunning) {
       togglePause();
     }
-    setReplaceModalOpen(true);
+    // FIX: Corrected state setter typo
+    setIsReplaceModalOpen(true);
   };
 
   const handleExerciseReplaced = (exerciseData: Omit<Exercise, 'id' | 'status'>) => {
     replaceCurrentExercise(exerciseData);
-    setReplaceModalOpen(false);
+    // FIX: Corrected state setter typo
+    setIsReplaceModalOpen(false);
   };
 
   const handleSaveRoutine = async (workoutName: string) => {
@@ -172,7 +191,8 @@ const LiveSession: React.FC = () => {
     <div className={`fixed inset-0 flex flex-col items-center justify-center transition-all duration-500 bg-gradient-to-br ${stageColors[stage] || 'from-gray-800 to-gray-900'}`}>
         {isReplaceModalOpen && <ExerciseModal
             isOpen={isReplaceModalOpen}
-            onClose={() => setReplaceModalOpen(false)}
+            // FIX: Corrected state setter typo
+            onClose={() => setIsReplaceModalOpen(false)}
             onSelectExercise={handleExerciseReplaced}
             mode='replace'
             exerciseToEdit={currentExercise}
