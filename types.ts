@@ -55,10 +55,10 @@ export interface WorkoutPlan {
   id: string;
   name?: string;
   mode: WorkoutMode;
-  warmUp: string[];
+  warmUp: Exercise[];
   warmUpDuration: number;
   rounds: Exercise[];
-  coolDown: string[];
+  coolDown: Exercise[];
   coolDownDuration: number;
   estimatedCalories: number;
   difficultyScore: number;

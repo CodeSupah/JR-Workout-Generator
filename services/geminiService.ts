@@ -8,33 +8,35 @@ if (!API_KEY) {
 
 const ai = new GoogleGenAI({ apiKey: API_KEY });
 
+const exerciseSchema = {
+    type: Type.OBJECT,
+    properties: {
+      exercise: { type: Type.STRING, description: 'Name of the exercise.' },
+      duration: { type: Type.INTEGER, description: 'Duration of the exercise in seconds.' },
+      rest: { type: Type.INTEGER, description: 'Duration of the rest period in seconds. For warm-up and cool-down exercises, this MUST be 0.' },
+      difficulty: { type: Type.STRING, description: "Difficulty of this specific exercise: 'Easy', 'Medium', or 'Hard'."},
+      equipment: { type: Type.STRING, description: "Equipment needed for the exercise, must be one of: 'bodyweight', 'rope', 'weighted-rope', 'dumbbell', 'resistance-band', 'kettlebell', 'barbell', 'cable-machine', 'leg-press-machine'. For warm-ups and cool-downs, this is typically 'bodyweight'."}
+    },
+    required: ['exercise', 'duration', 'rest', 'difficulty', 'equipment'],
+};
+
 const workoutSchema = {
   type: Type.OBJECT,
   properties: {
     warmUp: {
       type: Type.ARRAY,
-      items: { type: Type.STRING },
-      description: 'A list of 2-3 warm-up exercises. This array MUST be empty if the user preference "includeWarmUp" is false.',
+      items: exerciseSchema,
+      description: 'A list of warm-up exercises. The total duration of all exercises in this array MUST equal the warmUpDuration in minutes * 60. This array MUST be empty if the user preference "includeWarmUp" is false.',
     },
     rounds: {
       type: Type.ARRAY,
-      items: {
-        type: Type.OBJECT,
-        properties: {
-          exercise: { type: Type.STRING, description: 'Name of the exercise.' },
-          duration: { type: Type.INTEGER, description: 'Duration of the exercise in seconds.' },
-          rest: { type: Type.INTEGER, description: 'Duration of the rest period in seconds.' },
-          difficulty: { type: Type.STRING, description: "Difficulty of this specific exercise: 'Easy', 'Medium', or 'Hard'."},
-          equipment: { type: Type.STRING, description: "Equipment needed for the exercise, must be one of: 'bodyweight', 'rope', 'weighted-rope', 'dumbbell', 'resistance-band', 'kettlebell', 'barbell', 'cable-machine', 'leg-press-machine'."}
-        },
-        required: ['exercise', 'duration', 'rest', 'difficulty', 'equipment'],
-      },
+      items: exerciseSchema,
       description: 'An array of workout rounds representing a single circuit.',
     },
     coolDown: {
       type: Type.ARRAY,
-      items: { type: Type.STRING },
-      description: 'A list of 2-3 cool-down exercises. This array MUST be empty if the user preference "includeCoolDown" is false.',
+      items: exerciseSchema,
+      description: 'A list of cool-down exercises. The total duration of all exercises in this array MUST equal the coolDownDuration in minutes * 60. This array MUST be empty if the user preference "includeCoolDown" is false.',
     },
     estimatedCalories: {
       type: Type.INTEGER,
@@ -113,8 +115,8 @@ export const generateWorkoutPlan = async (prefs: WorkoutPreferences): Promise<Wo
     ---
 
     **RULE 2: WARM-UP & COOL-DOWN**
-    - If 'Include Warm-up' is 'true', provide 3-5 dynamic stretches for the 'warmUp' array, suitable for a ${warmUpMinutes}-minute warm-up. The 'warmUp' array MUST be empty if 'false'.
-    - If 'Include Cool-down' is 'true', provide 2-3 static stretches for the 'coolDown' array, suitable for a ${coolDownMinutes}-minute cool-down. The 'coolDown' array MUST be empty if 'false'.
+    - If 'Include Warm-up' is 'true', provide a list of dynamic stretch exercises for the 'warmUp' array. The sum of the 'duration' property for all exercises in this array MUST EXACTLY equal ${warmUpMinutes * 60} seconds. The 'rest' property for all warm-up exercises MUST be 0. The 'warmUp' array MUST be empty if 'false'.
+    - If 'Include Cool-down' is 'true', provide a list of static stretch exercises for the 'coolDown' array. The sum of the 'duration' property for all exercises in this array MUST EXACTLY equal ${coolDownMinutes * 60} seconds. The 'rest' property for all cool-down exercises MUST be 0. The 'coolDown' array MUST be empty if 'false'.
 
     **RULE 3: EXERCISE SELECTION & STRUCTURE**
     - **Mode Logic:** ${getModeInstructions(prefs)}
@@ -145,7 +147,10 @@ export const generateWorkoutPlan = async (prefs: WorkoutPreferences): Promise<Wo
     });
     
     const jsonText = response.text.trim();
-    const parsedPlan = JSON.parse(jsonText) as Omit<WorkoutPlan, 'id' | 'mode' | 'warmUpDuration' | 'exercisesPerRound' | 'numberOfRounds'>;
+    const parsedPlan = JSON.parse(jsonText) as Omit<WorkoutPlan, 'id' | 'mode' | 'warmUpDuration' | 'coolDownDuration' | 'exercisesPerRound' | 'numberOfRounds'>;
+    
+    parsedPlan.warmUp = parsedPlan.warmUp.map(ex => ({ ...ex, id: crypto.randomUUID() }));
+    parsedPlan.coolDown = parsedPlan.coolDown.map(ex => ({ ...ex, id: crypto.randomUUID() }));
     
     const exercisesPerRound = parsedPlan.rounds.length;
 

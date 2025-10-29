@@ -16,11 +16,13 @@ type EditableWorkoutPlanProps = {
   editor: ReturnType<typeof useWorkoutEditor>;
 };
 
+type WorkoutSection = 'warmUp' | 'rounds' | 'coolDown';
+
 const EditableWorkoutPlan: React.FC<EditableWorkoutPlanProps> = ({ editor }) => {
   const navigate = useNavigate();
-  const { plan, reorderExercises, undo, redo, canUndo, canRedo, updateExercise } = editor;
+  const { plan, reorderExercises, undo, redo, canUndo, canRedo, updateExercise, removeExercise } = editor;
 
-  const [modalState, setModalState] = useState<{ mode: 'add' | 'replace'; exerciseToEdit?: Exercise, index?: number } | null>(null);
+  const [modalState, setModalState] = useState<{ mode: 'add' | 'replace'; section: WorkoutSection, exerciseToEdit?: Exercise, index?: number } | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<Exercise | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -33,9 +35,9 @@ const EditableWorkoutPlan: React.FC<EditableWorkoutPlanProps> = ({ editor }) => 
   
   const totalTime = useMemo(() => {
     if (!plan) return 0;
-    const warmUpTime = plan.warmUpDuration * 60;
+    const warmUpTime = plan.warmUp.reduce((acc, ex) => acc + ex.duration + ex.rest, 0);
     const roundsTime = plan.rounds.reduce((acc, round) => acc + round.duration + round.rest, 0);
-    const coolDownTime = plan.coolDownDuration * 60;
+    const coolDownTime = plan.coolDown.reduce((acc, ex) => acc + ex.duration + ex.rest, 0);
     return Math.floor((warmUpTime + roundsTime + coolDownTime) / 60);
   }, [plan]);
 
@@ -67,23 +69,6 @@ const EditableWorkoutPlan: React.FC<EditableWorkoutPlanProps> = ({ editor }) => 
 
   if (!plan) return null;
 
-  const handleDragStart = (e: React.DragEvent<HTMLDivElement>, index: number) => {
-    dragItem.current = index;
-    e.dataTransfer.effectAllowed = 'move';
-  };
-
-  const handleDragEnter = (index: number) => {
-    dragOverItem.current = index;
-  };
-  
-  const handleDragEnd = () => {
-    if (dragItem.current !== null && dragOverItem.current !== null && dragItem.current !== dragOverItem.current) {
-      reorderExercises(dragItem.current, dragOverItem.current);
-    }
-    dragItem.current = null;
-    dragOverItem.current = null;
-  };
-
   const handleSelection = (id: string) => {
     setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
   }
@@ -109,7 +94,7 @@ const EditableWorkoutPlan: React.FC<EditableWorkoutPlanProps> = ({ editor }) => 
   const handleExerciseSelect = (exerciseData: Omit<Exercise, 'id' | 'status'>) => {
     if (!modalState) return;
     if (modalState.mode === 'add') {
-      editor.addExercise(exerciseData, modalState.index);
+      editor.addExercise(exerciseData, modalState.section, modalState.index);
     } else if (modalState.mode === 'replace' && modalState.exerciseToEdit) {
       editor.updateExercise(modalState.exerciseToEdit.id, { ...modalState.exerciseToEdit, ...exerciseData });
     }
@@ -124,6 +109,90 @@ const EditableWorkoutPlan: React.FC<EditableWorkoutPlanProps> = ({ editor }) => 
     Medium: 'bg-yellow-500',
     Hard: 'bg-red-500',
   };
+
+  const renderExerciseList = (exercises: Exercise[], section: WorkoutSection, title: string, duration: number, color: string) => {
+    const handleDragStart = (e: React.DragEvent<HTMLDivElement>, index: number) => {
+        dragItem.current = index;
+        e.dataTransfer.effectAllowed = 'move';
+    };
+    const handleDragEnter = (index: number) => dragOverItem.current = index;
+    const handleDragEnd = () => {
+        if (dragItem.current !== null && dragOverItem.current !== null && dragItem.current !== dragOverItem.current) {
+            reorderExercises(dragItem.current, dragOverItem.current, section);
+        }
+        dragItem.current = null;
+        dragOverItem.current = null;
+    };
+
+    return (
+        <div className={`bg-gray-700/50 p-4 rounded-lg my-4`}>
+            <h3 className={`font-bold text-lg ${color} mb-2`}>{title} ({duration} min)</h3>
+            <div className="space-y-2">
+                {exercises.map((exercise, index) => {
+                    const isRoundBased = section === 'rounds' && (plan.numberOfRounds || 1) > 1 && (plan.exercisesPerRound || 0) > 0;
+                    const roundNumber = isRoundBased ? Math.floor(index / plan.exercisesPerRound) + 1 : 1;
+                    const isFirstOfRound = isRoundBased ? index % plan.exercisesPerRound === 0 : false;
+                    
+                    return (
+                        <React.Fragment key={exercise.id}>
+                            {isFirstOfRound && (
+                                <div className="text-center font-bold text-orange-400 py-2 my-2 border-t border-b border-gray-700/80 bg-gray-900/30">
+                                    Round {roundNumber} / {plan.numberOfRounds}
+                                </div>
+                            )}
+                            <div
+                                className={`p-2 rounded-lg flex items-center gap-2 shadow-sm transition-all duration-200 ${selectedIds.includes(exercise.id) ? 'bg-orange-500/20 ring-2 ring-orange-400' : 'bg-gray-700/80'}`}
+                                draggable
+                                onDragStart={(e) => handleDragStart(e, index)}
+                                onDragEnter={() => handleDragEnter(index)}
+                                onDragEnd={handleDragEnd}
+                                onDragOver={(e) => e.preventDefault()}
+                            >
+                                <div className="cursor-move text-gray-400 p-2"><DragHandleIcon className="w-5 h-5" /></div>
+                                {section === 'rounds' && (
+                                    <input type="checkbox" checked={selectedIds.includes(exercise.id)} onChange={() => handleSelection(exercise.id)} className="w-5 h-5 rounded bg-gray-600 border-gray-500 text-orange-500 focus:ring-orange-500/50" />
+                                )}
+                                
+                                <div className={`flex-1 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 ${section === 'rounds' ? 'ml-2': 'ml-8'}`}>
+                                <div className="flex items-center gap-3">
+                                    <span className={`w-3 h-3 rounded-full ${difficultyColors[exercise.difficulty]}`}></span>
+                                    <span className="font-semibold text-white text-sm sm:text-base">{exercise.exercise}</span>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                    <div>
+                                    <label htmlFor={`duration-${exercise.id}`} className="text-xs text-gray-400">Duration</label>
+                                    <div className="flex items-center gap-1">
+                                        <input id={`duration-${exercise.id}`} type="number" min="0" value={exercise.duration} onChange={e => updateExercise(exercise.id, {duration: Math.max(0, parseInt(e.target.value) || 0)})} className="w-16 bg-gray-900/50 text-center rounded-md p-1" aria-label="Work duration"/>
+                                        <span className="text-xs text-gray-400">s</span>
+                                    </div>
+                                    </div>
+                                    <div>
+                                    <label htmlFor={`rest-${exercise.id}`} className="text-xs text-gray-400">Rest</label>
+                                    <div className="flex items-center gap-1">
+                                        <input id={`rest-${exercise.id}`} type="number" min="0" value={exercise.rest} onChange={e => updateExercise(exercise.id, {rest: Math.max(0, parseInt(e.target.value) || 0)})} className="w-16 bg-gray-900/50 text-center rounded-md p-1" aria-label="Rest duration"/>
+                                        <span className="text-xs text-gray-400">s</span>
+                                    </div>
+                                    </div>
+                                </div>
+                                </div>
+                                <div className="flex gap-1">
+                                    <button onClick={() => setModalState({mode: 'replace', section, exerciseToEdit: exercise})} className="p-2 hover:bg-gray-600 rounded-md" title="Replace Exercise"><ArrowPathIcon className="w-5 h-5"/></button>
+                                    <button onClick={() => setConfirmDelete(exercise)} className="p-2 hover:bg-gray-600 rounded-md text-red-400" title="Delete Exercise"><TrashIcon className="w-5 h-5"/></button>
+                                </div>
+                            </div>
+                        </React.Fragment>
+                    )
+                })}
+            </div>
+            <button 
+                onClick={() => setModalState({mode: 'add', section, index: exercises.length})}
+                className="w-full mt-3 flex items-center justify-center gap-2 border-2 border-dashed border-gray-600 hover:border-orange-400 hover:bg-gray-700/50 text-gray-300 font-bold py-2 px-4 rounded-lg transition-colors text-sm">
+                <PlusIcon className="w-4 h-4" />
+                Add Exercise
+            </button>
+        </div>
+    );
+  }
 
   return (
     <div className="bg-gray-800/50 p-6 rounded-2xl shadow-lg animate-fade-in space-y-4 pb-28">
@@ -143,89 +212,11 @@ const EditableWorkoutPlan: React.FC<EditableWorkoutPlanProps> = ({ editor }) => 
       
       {selectedIds.length > 0 && <BulkActionToolbar editor={editor} selectedIds={selectedIds} clearSelection={() => setSelectedIds([])}/>}
 
-      {/* Warm-up Section */}
-      {plan.warmUp && plan.warmUp.length > 0 && (
-        <div className="bg-gray-700/50 p-4 rounded-lg my-4">
-            <h3 className="font-bold text-lg text-orange-300 mb-2">Warm-up ({plan.warmUpDuration} min)</h3>
-            <ul className="list-disc list-inside text-gray-300 space-y-1">
-                {plan.warmUp.map((ex, i) => <li key={`warmup-${i}`}>{ex}</li>)}
-            </ul>
-        </div>
-      )}
+      {plan.warmUp && plan.warmUp.length > 0 && renderExerciseList(plan.warmUp, 'warmUp', 'Warm-up', plan.warmUpDuration, 'text-orange-300')}
 
-      {/* Exercise List */}
-      <div className="space-y-2">
-        {plan.rounds.map((round, index) => {
-            const isRoundBased = (plan.numberOfRounds || 1) > 1 && (plan.exercisesPerRound || 0) > 0;
-            const roundNumber = isRoundBased ? Math.floor(index / plan.exercisesPerRound) + 1 : 1;
-            const isFirstOfRound = isRoundBased ? index % plan.exercisesPerRound === 0 : false;
-            
-            return (
-                <React.Fragment key={round.id}>
-                    {isFirstOfRound && (
-                         <div className="text-center font-bold text-orange-400 py-2 my-2 border-t border-b border-gray-700/80 bg-gray-900/30">
-                            Round {roundNumber} / {plan.numberOfRounds}
-                        </div>
-                    )}
-                     <div
-                        className={`p-2 rounded-lg flex items-center gap-2 shadow-sm transition-all duration-200 ${selectedIds.includes(round.id) ? 'bg-orange-500/20 ring-2 ring-orange-400' : 'bg-gray-700/80'}`}
-                        draggable
-                        onDragStart={(e) => handleDragStart(e, index)}
-                        onDragEnter={() => handleDragEnter(index)}
-                        onDragEnd={handleDragEnd}
-                        onDragOver={(e) => e.preventDefault()}
-                    >
-                        <div className="cursor-move text-gray-400 p-2"><DragHandleIcon className="w-5 h-5" /></div>
-                        <input type="checkbox" checked={selectedIds.includes(round.id)} onChange={() => handleSelection(round.id)} className="w-5 h-5 rounded bg-gray-600 border-gray-500 text-orange-500 focus:ring-orange-500/50" />
-                        
-                        <div className="flex-1 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 ml-2">
-                        <div className="flex items-center gap-3">
-                            <span className={`w-3 h-3 rounded-full ${difficultyColors[round.difficulty]}`}></span>
-                            <span className="font-semibold text-white text-sm sm:text-base">{round.exercise}</span>
-                        </div>
-                        <div className="flex items-center gap-4">
-                            <div>
-                            <label htmlFor={`duration-${round.id}`} className="text-xs text-gray-400">Duration</label>
-                            <div className="flex items-center gap-1">
-                                <input id={`duration-${round.id}`} type="number" min="0" value={round.duration} onChange={e => updateExercise(round.id, {duration: Math.max(0, parseInt(e.target.value) || 0)})} className="w-16 bg-gray-900/50 text-center rounded-md p-1" aria-label="Work duration"/>
-                                <span className="text-xs text-gray-400">s</span>
-                            </div>
-                            </div>
-                            <div>
-                            <label htmlFor={`rest-${round.id}`} className="text-xs text-gray-400">Rest</label>
-                            <div className="flex items-center gap-1">
-                                <input id={`rest-${round.id}`} type="number" min="0" value={round.rest} onChange={e => updateExercise(round.id, {rest: Math.max(0, parseInt(e.target.value) || 0)})} className="w-16 bg-gray-900/50 text-center rounded-md p-1" aria-label="Rest duration"/>
-                                <span className="text-xs text-gray-400">s</span>
-                            </div>
-                            </div>
-                        </div>
-                        </div>
-                        <div className="flex gap-1">
-                            <button onClick={() => setModalState({mode: 'replace', exerciseToEdit: round})} className="p-2 hover:bg-gray-600 rounded-md" title="Replace Exercise"><ArrowPathIcon className="w-5 h-5"/></button>
-                            <button onClick={() => setConfirmDelete(round)} className="p-2 hover:bg-gray-600 rounded-md text-red-400" title="Delete Exercise"><TrashIcon className="w-5 h-5"/></button>
-                        </div>
-                    </div>
-                </React.Fragment>
-            )
-        })}
-      </div>
-      
-      <button 
-        onClick={() => setModalState({mode: 'add', index: plan.rounds.length})}
-        className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-gray-600 hover:border-orange-400 hover:bg-gray-700/50 text-gray-300 font-bold py-3 px-6 rounded-lg transition-colors">
-            <PlusIcon className="w-5 h-5" />
-            Add Exercise
-      </button>
+      {renderExerciseList(plan.rounds, 'rounds', 'Main Workout', 0, 'text-white')}
 
-        {/* Cool-down Section */}
-        {plan.coolDown && plan.coolDown.length > 0 && (
-            <div className="bg-gray-700/50 p-4 rounded-lg my-4">
-                <h3 className="font-bold text-lg text-indigo-400 mb-2">Cool-down ({plan.coolDownDuration} min)</h3>
-                <ul className="list-disc list-inside text-gray-300 space-y-1">
-                    {plan.coolDown.map((ex, i) => <li key={`cooldown-${i}`}>{ex}</li>)}
-                </ul>
-            </div>
-        )}
+      {plan.coolDown && plan.coolDown.length > 0 && renderExerciseList(plan.coolDown, 'coolDown', 'Cool-down', plan.coolDownDuration, 'text-indigo-400')}
       
       {/* Modals and Panels */}
       {modalState && <ExerciseModal 
@@ -235,7 +226,7 @@ const EditableWorkoutPlan: React.FC<EditableWorkoutPlanProps> = ({ editor }) => 
           mode={modalState.mode}
           exerciseToEdit={modalState.exerciseToEdit}
       />}
-      {confirmDelete && <ConfirmModal isOpen={!!confirmDelete} onClose={() => setConfirmDelete(null)} onConfirm={() => { editor.removeExercise(confirmDelete.id); setConfirmDelete(null);}} title="Delete Exercise?" message={`Are you sure you want to remove "${confirmDelete.exercise}"?`} />}
+      {confirmDelete && <ConfirmModal isOpen={!!confirmDelete} onClose={() => setConfirmDelete(null)} onConfirm={() => { removeExercise(confirmDelete.id); setConfirmDelete(null);}} title="Delete Exercise?" message={`Are you sure you want to remove "${confirmDelete.exercise}"?`} />}
       {showRestSettings && <RestSettingsPanel isOpen={showRestSettings} onClose={() => setShowRestSettings(false)} editor={editor} />}
       {showLoadTemplate && <LoadTemplateModal isOpen={showLoadTemplate} onClose={() => setShowLoadTemplate(false)} editor={editor} />}
       <SaveRoutineModal 

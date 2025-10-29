@@ -2,13 +2,15 @@ import { useState, useCallback } from 'react';
 import { WorkoutPlan, Exercise } from '../types';
 import { toastStore } from '../store/toastStore';
 
+type WorkoutSection = 'warmUp' | 'rounds' | 'coolDown';
+
 type WorkoutEditor = {
   plan: WorkoutPlan | null;
   setExercises: (plan: WorkoutPlan) => void;
-  addExercise: (exercise: Omit<Exercise, 'id'>, index?: number) => void;
+  addExercise: (exercise: Omit<Exercise, 'id'>, section: WorkoutSection, index?: number) => void;
   removeExercise: (id: string) => void;
   updateExercise: (id: string, updatedExercise: Partial<Exercise>) => void;
-  reorderExercises: (startIndex: number, endIndex: number) => void;
+  reorderExercises: (startIndex: number, endIndex: number, section: WorkoutSection) => void;
   deleteExercises: (ids: string[]) => void;
   duplicateExercises: (ids: string[]) => void;
   updateExercises: (ids: string[], updates: Partial<Pick<Exercise, 'duration' | 'rest'>>) => void;
@@ -53,23 +55,28 @@ export const useWorkoutEditor = (): WorkoutEditor => {
     updateStateAndHistory(null);
   }, [updateStateAndHistory]);
 
-  const addExercise = useCallback((exercise: Omit<Exercise, 'id'>, index?: number) => {
+  const addExercise = useCallback((exercise: Omit<Exercise, 'id'>, section: WorkoutSection, index?: number) => {
     if (!plan) return;
     const newExercise: Exercise = { ...exercise, id: crypto.randomUUID(), equipment: exercise.equipment || 'bodyweight' };
-    const newRounds = [...plan.rounds];
+    const newSection = [...plan[section]];
     if(index !== undefined){
-        newRounds.splice(index, 0, newExercise);
+        newSection.splice(index, 0, newExercise);
     } else {
-        newRounds.push(newExercise);
+        newSection.push(newExercise);
     }
-    const newPlan = { ...plan, rounds: newRounds };
+    const newPlan = { ...plan, [section]: newSection };
     updateStateAndHistory(newPlan);
     toastStore.addToast('Exercise added');
   }, [plan, updateStateAndHistory]);
 
   const removeExercise = useCallback((id: string) => {
     if (!plan) return;
-    const newPlan = { ...plan, rounds: plan.rounds.filter(ex => ex.id !== id) };
+    const newPlan = { 
+        ...plan, 
+        warmUp: plan.warmUp.filter(ex => ex.id !== id),
+        rounds: plan.rounds.filter(ex => ex.id !== id),
+        coolDown: plan.coolDown.filter(ex => ex.id !== id),
+    };
     updateStateAndHistory(newPlan);
     toastStore.addToast('Exercise removed', 'error');
   }, [plan, updateStateAndHistory]);
@@ -98,7 +105,12 @@ export const useWorkoutEditor = (): WorkoutEditor => {
 
   const updateExercise = useCallback((id: string, updatedExercise: Partial<Exercise>) => {
     if (!plan) return;
-    const newPlan = { ...plan, rounds: plan.rounds.map(ex => (ex.id === id ? { ...ex, ...updatedExercise } : ex)) };
+    const newPlan = { 
+        ...plan, 
+        warmUp: plan.warmUp.map(ex => (ex.id === id ? { ...ex, ...updatedExercise } : ex)),
+        rounds: plan.rounds.map(ex => (ex.id === id ? { ...ex, ...updatedExercise } : ex)),
+        coolDown: plan.coolDown.map(ex => (ex.id === id ? { ...ex, ...updatedExercise } : ex)),
+    };
     updateStateAndHistory(newPlan);
   }, [plan, updateStateAndHistory]);
 
@@ -116,19 +128,21 @@ export const useWorkoutEditor = (): WorkoutEditor => {
     if (!plan) return;
     const newPlan = {
         ...plan,
-        rounds: plan.rounds.map(ex => ({...ex, rest}))
+        warmUp: plan.warmUp.map(ex => ({...ex, rest})),
+        rounds: plan.rounds.map(ex => ({...ex, rest})),
+        coolDown: plan.coolDown.map(ex => ({...ex, rest})),
     };
     updateStateAndHistory(newPlan);
     toastStore.addToast(`All rest periods set to ${rest}s`);
   }, [plan, updateStateAndHistory]);
 
 
-  const reorderExercises = useCallback((startIndex: number, endIndex: number) => {
+  const reorderExercises = useCallback((startIndex: number, endIndex: number, section: WorkoutSection) => {
     if (!plan) return;
-    const newRounds = Array.from(plan.rounds);
-    const [removed] = newRounds.splice(startIndex, 1);
-    newRounds.splice(endIndex, 0, removed);
-    const newPlan = { ...plan, rounds: newRounds };
+    const newSection = Array.from(plan[section]);
+    const [removed] = newSection.splice(startIndex, 1);
+    newSection.splice(endIndex, 0, removed);
+    const newPlan = { ...plan, [section]: newSection };
     updateStateAndHistory(newPlan);
     toastStore.addToast('Workout reordered');
   }, [plan, updateStateAndHistory]);
