@@ -195,60 +195,62 @@ const EditableWorkoutPlan: React.FC<EditableWorkoutPlanProps> = ({ editor }) => 
   }
 
   return (
-    <div className="bg-gray-800/50 p-6 rounded-2xl shadow-lg animate-fade-in space-y-4 pb-28">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-center gap-4 border-b border-gray-700 pb-4">
-        <div>
-            <h2 className="text-2xl font-bold text-orange-400">Customize Your Workout</h2>
-            <p className="text-sm text-gray-400">Total time: ~{totalTime} minutes</p>
+    <>
+      <div className="bg-gray-800/50 p-6 rounded-2xl shadow-lg animate-fade-in space-y-4">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 border-b border-gray-700 pb-4">
+          <div>
+              <h2 className="text-2xl font-bold text-orange-400">Customize Your Workout</h2>
+              <p className="text-sm text-gray-400">Total time: ~{totalTime} minutes</p>
+          </div>
+          <div className="flex items-center gap-2">
+              <button onClick={undo} disabled={!canUndo} className="p-2 bg-gray-700 hover:bg-gray-600 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"><UndoIcon className="w-5 h-5"/></button>
+              <button onClick={redo} disabled={!canRedo} className="p-2 bg-gray-700 hover:bg-gray-600 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"><RedoIcon className="w-5 h-5"/></button>
+              <button onClick={() => setShowLoadTemplate(true)} className="p-2 bg-gray-700 hover:bg-gray-600 rounded-md"><FolderOpenIcon className="w-5 h-5"/></button>
+              <button onClick={() => setShowRestSettings(true)} className="p-2 bg-gray-700 hover:bg-gray-600 rounded-md"><CogIcon className="w-5 h-5"/></button>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-            <button onClick={undo} disabled={!canUndo} className="p-2 bg-gray-700 hover:bg-gray-600 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"><UndoIcon className="w-5 h-5"/></button>
-            <button onClick={redo} disabled={!canRedo} className="p-2 bg-gray-700 hover:bg-gray-600 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"><RedoIcon className="w-5 h-5"/></button>
-            <button onClick={() => setShowLoadTemplate(true)} className="p-2 bg-gray-700 hover:bg-gray-600 rounded-md"><FolderOpenIcon className="w-5 h-5"/></button>
-            <button onClick={() => setShowRestSettings(true)} className="p-2 bg-gray-700 hover:bg-gray-600 rounded-md"><CogIcon className="w-5 h-5"/></button>
-        </div>
+        
+        {selectedIds.length > 0 && <BulkActionToolbar editor={editor} selectedIds={selectedIds} clearSelection={() => setSelectedIds([])}/>}
+
+        {plan.warmUp && plan.warmUp.length > 0 && renderExerciseList(plan.warmUp, 'warmUp', 'Warm-up', plan.warmUpDuration, 'text-orange-300')}
+
+        {renderExerciseList(plan.rounds, 'rounds', 'Main Workout', 0, 'text-white')}
+
+        {plan.coolDown && plan.coolDown.length > 0 && renderExerciseList(plan.coolDown, 'coolDown', 'Cool-down', plan.coolDownDuration, 'text-indigo-400')}
+        
+        {/* Modals and Panels */}
+        {modalState && <ExerciseModal 
+            isOpen={!!modalState} 
+            onClose={() => setModalState(null)} 
+            onSelectExercise={handleExerciseSelect}
+            mode={modalState.mode}
+            exerciseToEdit={modalState.exerciseToEdit}
+        />}
+        {confirmDelete && <ConfirmModal isOpen={!!confirmDelete} onClose={() => setConfirmDelete(null)} onConfirm={() => { removeExercise(confirmDelete.id); setConfirmDelete(null);}} title="Delete Exercise?" message={`Are you sure you want to remove "${confirmDelete.exercise}"?`} />}
+        {showRestSettings && <RestSettingsPanel isOpen={showRestSettings} onClose={() => setShowRestSettings(false)} editor={editor} />}
+        {showLoadTemplate && <LoadTemplateModal isOpen={showLoadTemplate} onClose={() => setShowLoadTemplate(false)} editor={editor} />}
+        <SaveRoutineModal 
+          isOpen={isSaveModalOpen}
+          onClose={() => setIsSaveModalOpen(false)}
+          onSave={handleSave}
+          defaultName={plan.name || `Custom Workout - ${new Date().toLocaleDateString()}`}
+        />
       </div>
-      
-      {selectedIds.length > 0 && <BulkActionToolbar editor={editor} selectedIds={selectedIds} clearSelection={() => setSelectedIds([])}/>}
 
-      {plan.warmUp && plan.warmUp.length > 0 && renderExerciseList(plan.warmUp, 'warmUp', 'Warm-up', plan.warmUpDuration, 'text-orange-300')}
-
-      {renderExerciseList(plan.rounds, 'rounds', 'Main Workout', 0, 'text-white')}
-
-      {plan.coolDown && plan.coolDown.length > 0 && renderExerciseList(plan.coolDown, 'coolDown', 'Cool-down', plan.coolDownDuration, 'text-indigo-400')}
-      
-      {/* Modals and Panels */}
-      {modalState && <ExerciseModal 
-          isOpen={!!modalState} 
-          onClose={() => setModalState(null)} 
-          onSelectExercise={handleExerciseSelect}
-          mode={modalState.mode}
-          exerciseToEdit={modalState.exerciseToEdit}
-      />}
-      {confirmDelete && <ConfirmModal isOpen={!!confirmDelete} onClose={() => setConfirmDelete(null)} onConfirm={() => { removeExercise(confirmDelete.id); setConfirmDelete(null);}} title="Delete Exercise?" message={`Are you sure you want to remove "${confirmDelete.exercise}"?`} />}
-      {showRestSettings && <RestSettingsPanel isOpen={showRestSettings} onClose={() => setShowRestSettings(false)} editor={editor} />}
-      {showLoadTemplate && <LoadTemplateModal isOpen={showLoadTemplate} onClose={() => setShowLoadTemplate(false)} editor={editor} />}
-      <SaveRoutineModal 
-        isOpen={isSaveModalOpen}
-        onClose={() => setIsSaveModalOpen(false)}
-        onSave={handleSave}
-        defaultName={plan.name || `Custom Workout - ${new Date().toLocaleDateString()}`}
-      />
-
-    {/* Floating Action Bar */}
-    <div className="fixed bottom-0 left-0 right-0 p-4 bg-gray-900/80 backdrop-blur-md border-t border-gray-700">
-        <div className="container mx-auto flex gap-4">
-             <button onClick={() => setIsSaveModalOpen(true)} disabled={isSaving} className="w-full flex items-center justify-center gap-2 bg-gray-600 hover:bg-gray-500 text-white font-bold py-3 px-6 rounded-lg transition-transform transform hover:scale-105">
-                {isSaving ? 'Saving...' : <><SaveIcon className="w-5 h-5"/> Save as Routine</>}
-            </button>
-            <button onClick={startWorkout} className="w-full flex items-center justify-center gap-2 bg-green-500 hover:bg-green-400 text-white font-bold py-3 px-6 rounded-lg transition-transform transform hover:scale-105 shadow-lg shadow-green-500/20">
-                <ZapIcon className="w-5 h-5"/>
-                Start Live Session
-            </button>
-        </div>
-    </div>
-    </div>
+      {/* Floating Action Bar */}
+      <div className="fixed bottom-[60px] left-0 right-0 p-4 bg-gray-900/80 backdrop-blur-md border-t border-gray-700 z-30">
+          <div className="container mx-auto flex gap-4">
+              <button onClick={() => setIsSaveModalOpen(true)} disabled={isSaving} className="w-full flex items-center justify-center gap-2 bg-gray-600 hover:bg-gray-500 text-white font-bold py-3 px-6 rounded-lg transition-transform transform hover:scale-105">
+                  {isSaving ? 'Saving...' : <><SaveIcon className="w-5 h-5"/> Save as Routine</>}
+              </button>
+              <button onClick={startWorkout} className="w-full flex items-center justify-center gap-2 bg-green-500 hover:bg-green-400 text-white font-bold py-3 px-6 rounded-lg transition-transform transform hover:scale-105 shadow-lg shadow-green-500/20">
+                  <ZapIcon className="w-5 h-5"/>
+                  Start Live Session
+              </button>
+          </div>
+      </div>
+    </>
   );
 };
 

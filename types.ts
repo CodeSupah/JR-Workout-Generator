@@ -1,3 +1,5 @@
+import type { FC } from 'react';
+
 export enum SkillLevel {
   Beginner = 'Beginner',
   Intermediate = 'Intermediate',
@@ -109,7 +111,8 @@ export interface Achievement {
   id: string;
   category: 'Volume' | 'Duration' | 'Streak' | 'Customization';
   title: string;
-  icon: React.FC<{className?: string}>;
+  // FIX: Replaced `React.FC` with `FC` and added a type-only import for `FC` from `react` at the top of the file to resolve the "Cannot find namespace 'React'" error.
+  icon: FC<{className?: string}>;
   tiers: AchievementTier[];
 }
 
@@ -129,7 +132,8 @@ export interface UserAchievementProgress {
 
 // Used for notifications when a new achievement is unlocked
 export type UnlockedAchievementInfo = AchievementTier & {
-    icon: React.FC<{className?: string}>;
+    // FIX: Replaced `React.FC` with `FC` to resolve the "Cannot find namespace 'React'" error.
+    icon: FC<{className?: string}>;
 };
 
 // --- User Profile Types ---

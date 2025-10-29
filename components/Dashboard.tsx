@@ -72,7 +72,7 @@ const Dashboard: React.FC = () => {
   }
 
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className="space-y-8 animate-fade-in pb-24">
       {stats ? (
         <>
           <div>

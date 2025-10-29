@@ -102,7 +102,7 @@ const Home: React.FC = () => {
     }
 
     return (
-        <div className="space-y-8 animate-fade-in">
+        <div className="space-y-8 animate-fade-in pb-24">
             {/* Header */}
             <header className="flex justify-between items-center">
                 <JumpLogoIcon className="h-10 w-auto" />

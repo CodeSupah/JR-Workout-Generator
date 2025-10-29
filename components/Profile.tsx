@@ -103,7 +103,7 @@ const Profile: React.FC = () => {
     }
 
     return (
-        <div className="max-w-3xl mx-auto space-y-8 animate-fade-in pb-24">
+        <div className="max-w-3xl mx-auto space-y-8 animate-fade-in pb-40">
             <h1 className="text-3xl font-bold text-white">Profile & Preferences</h1>
             
             {/* My Profile Section */}
@@ -202,7 +202,7 @@ const Profile: React.FC = () => {
             
             {/* Save/Reset Bar */}
             {hasChanges && (
-                 <div className="fixed bottom-16 left-0 right-0 p-4 bg-gray-900/80 backdrop-blur-md border-t border-gray-700 animate-fade-in-up">
+                 <div className="fixed bottom-[68px] left-0 right-0 p-4 bg-gray-900/80 backdrop-blur-md border-t border-gray-700 animate-fade-in-up z-30">
                     <div className="container mx-auto flex gap-4">
                         <button onClick={handleReset} className="w-full bg-gray-600 hover:bg-gray-500 text-white font-bold py-3 px-6 rounded-lg">Reset</button>
                         <button onClick={handleSave} className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-6 rounded-lg">Save Changes</button>
