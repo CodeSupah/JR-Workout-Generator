@@ -19,7 +19,9 @@ const ExerciseModal: React.FC<ExerciseModalProps> = ({ isOpen, onClose, onSelect
     const categories = EXERCISE_SUGGESTIONS.reduce((acc, ex) => {
         let categoryName: string;
 
-        if (ex.equipment === 'rope' || ex.equipment === 'weighted-rope') {
+        if (ex.purpose === 'warmup' || ex.purpose === 'cooldown') {
+            categoryName = 'Warm Up / Cooldown';
+        } else if (ex.equipment === 'rope' || ex.equipment === 'weighted-rope') {
             categoryName = 'Jump Rope';
         } else if (ex.equipment === 'bodyweight') {
             categoryName = 'Bodyweight';
@@ -38,9 +40,17 @@ const ExerciseModal: React.FC<ExerciseModalProps> = ({ isOpen, onClose, onSelect
         }
         acc[categoryName].push(ex);
         return acc;
-    }, {} as { [key: string]: typeof EXERCISE_SUGGESTIONS });
+    }, {} as { [key: string]: (typeof EXERCISE_SUGGESTIONS) });
 
-    return Object.entries(categories).sort((a,b) => a[0].localeCompare(b[0]));
+    const categoryOrder = ['Warm Up / Cooldown', 'Bodyweight', 'Jump Rope', 'Dumbbell', 'Resistance Band', 'Gym Equipment', 'Other'];
+
+    return Object.entries(categories).sort(([categoryA], [categoryB]) => {
+        const indexA = categoryOrder.indexOf(categoryA);
+        const indexB = categoryOrder.indexOf(categoryB);
+        if (indexA === -1) return 1; // Put unknown categories at the end
+        if (indexB === -1) return -1;
+        return indexA - indexB;
+    });
   }, []);
 
   if (!isOpen) return null;

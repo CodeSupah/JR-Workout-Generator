@@ -5,52 +5,66 @@ interface ExerciseSuggestion {
   difficulty: ExerciseDifficulty;
   goals: WorkoutGoal[];
   equipment: ExerciseEquipment;
+  purpose: 'warmup' | 'cooldown' | 'main';
 }
 
 export const EXERCISE_SUGGESTIONS: ExerciseSuggestion[] = [
   // JUMP ROPE
-  { name: 'Basic Bounce', difficulty: 'Easy', goals: [WorkoutGoal.FatBurn, WorkoutGoal.Stamina], equipment: 'rope' },
-  { name: 'Boxer Step', difficulty: 'Easy', goals: [WorkoutGoal.Stamina, WorkoutGoal.Footwork], equipment: 'rope' },
-  { name: 'Alternate Foot Step', difficulty: 'Easy', goals: [WorkoutGoal.Stamina, WorkoutGoal.Footwork], equipment: 'rope' },
-  { name: 'High Knees', difficulty: 'Medium', goals: [WorkoutGoal.FatBurn, WorkoutGoal.Stamina], equipment: 'rope' },
-  { name: 'Criss-Cross', difficulty: 'Medium', goals: [WorkoutGoal.Footwork, WorkoutGoal.Freestyle], equipment: 'rope' },
-  { name: 'Side Swing', difficulty: 'Medium', goals: [WorkoutGoal.Freestyle, WorkoutGoal.Footwork], equipment: 'rope' },
-  { name: 'Double Under', difficulty: 'Hard', goals: [WorkoutGoal.FatBurn, WorkoutGoal.Stamina, WorkoutGoal.Freestyle], equipment: 'rope' },
-  { name: 'Weighted Rope Basic Bounce', difficulty: 'Medium', goals: [WorkoutGoal.Strength, WorkoutGoal.FatBurn], equipment: 'weighted-rope'},
+  { name: 'Basic Bounce', difficulty: 'Easy', goals: [WorkoutGoal.FatBurn, WorkoutGoal.Stamina], equipment: 'rope', purpose: 'main' },
+  { name: 'Boxer Step', difficulty: 'Easy', goals: [WorkoutGoal.Stamina, WorkoutGoal.Footwork], equipment: 'rope', purpose: 'main' },
+  { name: 'Alternate Foot Step', difficulty: 'Easy', goals: [WorkoutGoal.Stamina, WorkoutGoal.Footwork], equipment: 'rope', purpose: 'main' },
+  { name: 'High Knees', difficulty: 'Medium', goals: [WorkoutGoal.FatBurn, WorkoutGoal.Stamina], equipment: 'rope', purpose: 'main' },
+  { name: 'Criss-Cross', difficulty: 'Medium', goals: [WorkoutGoal.Footwork, WorkoutGoal.Freestyle], equipment: 'rope', purpose: 'main' },
+  { name: 'Side Swing', difficulty: 'Medium', goals: [WorkoutGoal.Freestyle, WorkoutGoal.Footwork], equipment: 'rope', purpose: 'main' },
+  { name: 'Double Under', difficulty: 'Hard', goals: [WorkoutGoal.FatBurn, WorkoutGoal.Stamina, WorkoutGoal.Freestyle], equipment: 'rope', purpose: 'main' },
+  { name: 'Weighted Rope Basic Bounce', difficulty: 'Medium', goals: [WorkoutGoal.Strength, WorkoutGoal.FatBurn], equipment: 'weighted-rope', purpose: 'main'},
 
   // NO-EQUIPMENT (BODYWEIGHT)
-  { name: 'Jumping Jacks', difficulty: 'Easy', goals: [WorkoutGoal.FatBurn, WorkoutGoal.Stamina], equipment: 'bodyweight' },
-  { name: 'Bodyweight Squats', difficulty: 'Easy', goals: [WorkoutGoal.Strength], equipment: 'bodyweight' },
-  { name: 'Lunges', difficulty: 'Medium', goals: [WorkoutGoal.Strength], equipment: 'bodyweight' },
-  { name: 'Push-ups', difficulty: 'Medium', goals: [WorkoutGoal.Strength], equipment: 'bodyweight' },
-  { name: 'Plank', difficulty: 'Easy', goals: [WorkoutGoal.Strength], equipment: 'bodyweight' },
-  { name: 'Burpees', difficulty: 'Hard', goals: [WorkoutGoal.FatBurn, WorkoutGoal.Strength], equipment: 'bodyweight' },
+  { name: 'Jumping Jacks', difficulty: 'Easy', goals: [WorkoutGoal.FatBurn, WorkoutGoal.Stamina], equipment: 'bodyweight', purpose: 'main' },
+  { name: 'Bodyweight Squats', difficulty: 'Easy', goals: [WorkoutGoal.Strength], equipment: 'bodyweight', purpose: 'main' },
+  { name: 'Lunges', difficulty: 'Medium', goals: [WorkoutGoal.Strength], equipment: 'bodyweight', purpose: 'main' },
+  { name: 'Push-ups', difficulty: 'Medium', goals: [WorkoutGoal.Strength], equipment: 'bodyweight', purpose: 'main' },
+  { name: 'Plank', difficulty: 'Easy', goals: [WorkoutGoal.Strength], equipment: 'bodyweight', purpose: 'main' },
+  { name: 'Burpees', difficulty: 'Hard', goals: [WorkoutGoal.FatBurn, WorkoutGoal.Strength], equipment: 'bodyweight', purpose: 'main' },
   
   // DUMBBELL
-  { name: 'Dumbbell Rows', difficulty: 'Medium', goals: [WorkoutGoal.Strength], equipment: 'dumbbell' },
-  { name: 'Goblet Squats', difficulty: 'Medium', goals: [WorkoutGoal.Strength], equipment: 'dumbbell' },
-  { name: 'Bicep Curls', difficulty: 'Easy', goals: [WorkoutGoal.Strength], equipment: 'dumbbell' },
-  { name: 'Shoulder Press', difficulty: 'Medium', goals: [WorkoutGoal.Strength], equipment: 'dumbbell' },
+  { name: 'Dumbbell Rows', difficulty: 'Medium', goals: [WorkoutGoal.Strength], equipment: 'dumbbell', purpose: 'main' },
+  { name: 'Goblet Squats', difficulty: 'Medium', goals: [WorkoutGoal.Strength], equipment: 'dumbbell', purpose: 'main' },
+  { name: 'Bicep Curls', difficulty: 'Easy', goals: [WorkoutGoal.Strength], equipment: 'dumbbell', purpose: 'main' },
+  { name: 'Shoulder Press', difficulty: 'Medium', goals: [WorkoutGoal.Strength], equipment: 'dumbbell', purpose: 'main' },
 
   // RESISTANCE BAND
-  { name: 'Resistance Band Rows', difficulty: 'Easy', goals: [WorkoutGoal.Strength], equipment: 'resistance-band' },
-  { name: 'Resistance Band Squats', difficulty: 'Medium', goals: [WorkoutGoal.Strength], equipment: 'resistance-band' },
-  { name: 'Band Pull-Aparts', difficulty: 'Easy', goals: [WorkoutGoal.Strength], equipment: 'resistance-band' },
+  { name: 'Resistance Band Rows', difficulty: 'Easy', goals: [WorkoutGoal.Strength], equipment: 'resistance-band', purpose: 'main' },
+  { name: 'Resistance Band Squats', difficulty: 'Medium', goals: [WorkoutGoal.Strength], equipment: 'resistance-band', purpose: 'main' },
+  { name: 'Band Pull-Aparts', difficulty: 'Easy', goals: [WorkoutGoal.Strength], equipment: 'resistance-band', purpose: 'main' },
 
   // KETTLEBELL
-  { name: 'Kettlebell Swings', difficulty: 'Hard', goals: [WorkoutGoal.Strength, WorkoutGoal.FatBurn], equipment: 'kettlebell' },
-  { name: 'Kettlebell Goblet Squat', difficulty: 'Medium', goals: [WorkoutGoal.Strength], equipment: 'kettlebell' },
+  { name: 'Kettlebell Swings', difficulty: 'Hard', goals: [WorkoutGoal.Strength, WorkoutGoal.FatBurn], equipment: 'kettlebell', purpose: 'main' },
+  { name: 'Kettlebell Goblet Squat', difficulty: 'Medium', goals: [WorkoutGoal.Strength], equipment: 'kettlebell', purpose: 'main' },
   
   // BARBELL (GYM)
-  { name: 'Barbell Squats', difficulty: 'Hard', goals: [WorkoutGoal.Strength], equipment: 'barbell' },
-  { name: 'Barbell Deadlifts', difficulty: 'Hard', goals: [WorkoutGoal.Strength], equipment: 'barbell' },
-  { name: 'Barbell Bench Press', difficulty: 'Medium', goals: [WorkoutGoal.Strength], equipment: 'barbell' },
+  { name: 'Barbell Squats', difficulty: 'Hard', goals: [WorkoutGoal.Strength], equipment: 'barbell', purpose: 'main' },
+  { name: 'Barbell Deadlifts', difficulty: 'Hard', goals: [WorkoutGoal.Strength], equipment: 'barbell', purpose: 'main' },
+  { name: 'Barbell Bench Press', difficulty: 'Medium', goals: [WorkoutGoal.Strength], equipment: 'barbell', purpose: 'main' },
 
   // CABLE MACHINE (GYM)
-  { name: 'Cable Rows', difficulty: 'Medium', goals: [WorkoutGoal.Strength], equipment: 'cable-machine' },
-  { name: 'Tricep Pushdowns', difficulty: 'Easy', goals: [WorkoutGoal.Strength], equipment: 'cable-machine' },
+  { name: 'Cable Rows', difficulty: 'Medium', goals: [WorkoutGoal.Strength], equipment: 'cable-machine', purpose: 'main' },
+  { name: 'Tricep Pushdowns', difficulty: 'Easy', goals: [WorkoutGoal.Strength], equipment: 'cable-machine', purpose: 'main' },
   
   // OTHER MACHINES (GYM)
-  { name: 'Leg Press', difficulty: 'Medium', goals: [WorkoutGoal.Strength], equipment: 'leg-press-machine' },
+  { name: 'Leg Press', difficulty: 'Medium', goals: [WorkoutGoal.Strength], equipment: 'leg-press-machine', purpose: 'main' },
 
+  // WARM-UP
+  { name: 'Arm Circles (Forward & Backward)', difficulty: 'Easy', goals: [], equipment: 'bodyweight', purpose: 'warmup' },
+  { name: 'Torso Twists', difficulty: 'Easy', goals: [], equipment: 'bodyweight', purpose: 'warmup' },
+  { name: 'Leg Swings (Forward & Side)', difficulty: 'Easy', goals: [], equipment: 'bodyweight', purpose: 'warmup' },
+  { name: 'Butt Kicks', difficulty: 'Easy', goals: [], equipment: 'bodyweight', purpose: 'warmup' },
+  { name: 'Light Jog in Place', difficulty: 'Easy', goals: [], equipment: 'bodyweight', purpose: 'warmup' },
+  
+  // COOL-DOWN
+  { name: 'Quad Stretch', difficulty: 'Easy', goals: [], equipment: 'bodyweight', purpose: 'cooldown' },
+  { name: 'Hamstring Stretch', difficulty: 'Easy', goals: [], equipment: 'bodyweight', purpose: 'cooldown' },
+  { name: 'Calf Stretch', difficulty: 'Easy', goals: [], equipment: 'bodyweight', purpose: 'cooldown' },
+  { name: 'Chest Stretch', difficulty: 'Easy', goals: [], equipment: 'bodyweight', purpose: 'cooldown' },
+  { name: 'Triceps Stretch', difficulty: 'Easy', goals: [], equipment: 'bodyweight', purpose: 'cooldown' },
 ];
