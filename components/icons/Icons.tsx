@@ -210,3 +210,9 @@ export const ChevronDoubleRightIcon: React.FC<IconProps> = ({ className }) => (
         <path strokeLinecap="round" strokeLinejoin="round" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
     </svg>
 );
+
+export const MedalIcon: React.FC<IconProps> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 3.465l4.5 2.093m0 0l4.5-2.093m-4.5 2.093v15.082a1.5 1.5 0 01-2.093 1.342L9 19.542m7.5-16.077L12 5.558m4.5-2.093l-4.5 2.093m0 0l-4.5-2.093m9 4.186a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+);

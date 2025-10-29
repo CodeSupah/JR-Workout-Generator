@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { WorkoutPlan, Exercise } from '../types';
+import { WorkoutPlan, Exercise, UnlockedAchievementInfo } from '../types';
 import { useWorkoutTimer } from '../hooks/useWorkoutTimer';
 import { PlayIcon, PauseIcon, StopIcon, VolumeUpIcon, VolumeOffIcon, SkipNextIcon, SkipPreviousIcon, TrophyIcon, TrashIcon, ChevronDoubleRightIcon, SaveIcon, ArrowPathIcon } from './icons/Icons';
 import { saveCustomWorkout } from '../services/workoutService';
+import { checkAndUnlockAchievements } from '../services/achievementService';
 import { toastStore } from '../store/toastStore';
 import ExerciseModal from './ExerciseModal';
 import SaveRoutineModal from './SaveRoutineModal';
+import AchievementUnlockedToast from './AchievementUnlockedToast';
 
 const LiveSession: React.FC = () => {
   const navigate = useNavigate();
@@ -15,6 +17,7 @@ const LiveSession: React.FC = () => {
   const [isSoundOn, setIsSoundOn] = useState(true);
   const [isReplaceModalOpen, setReplaceModalOpen] = useState(false);
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+  const [unlockedAchievements, setUnlockedAchievements] = useState<UnlockedAchievementInfo[]>([]);
 
   const timer = useWorkoutTimer(location.state?.workout as WorkoutPlan | undefined, isSoundOn);
   const { workoutPlan: workout } = timer;
@@ -25,10 +28,6 @@ const LiveSession: React.FC = () => {
       navigate('/');
     }
   }, [workout, navigate]);
-
-  if (!workout) {
-    return <div className="flex items-center justify-center min-h-screen">Loading Session...</div>;
-  }
 
   const {
     stage,
@@ -45,6 +44,21 @@ const LiveSession: React.FC = () => {
     skipStage,
     replaceCurrentExercise,
   } = timer;
+
+  useEffect(() => {
+    if (stage === 'Finished' && summary) {
+        // Run achievement check only once when summary is available
+        const checkAchievements = async () => {
+            const newlyUnlocked = await checkAndUnlockAchievements();
+            setUnlockedAchievements(newlyUnlocked);
+        };
+        checkAchievements();
+    }
+  }, [stage, summary]);
+
+  if (!workout) {
+    return <div className="flex items-center justify-center min-h-screen">Loading Session...</div>;
+  }
 
   const { currentStageDisplay, currentExerciseName, nextExerciseName, totalRounds, currentRoundNum } = displayInfo;
 
@@ -109,6 +123,17 @@ const LiveSession: React.FC = () => {
   if (stage === 'Finished' && summary) {
     return (
       <div className="fixed inset-0 bg-gray-900 flex flex-col items-center justify-center p-4 animate-fade-in">
+        {/* Achievement Toasts Container */}
+        <div className="fixed top-5 right-5 z-[100] space-y-3">
+            {unlockedAchievements.map((achievement, index) => (
+                <AchievementUnlockedToast
+                    key={`${achievement.tier}-${index}`}
+                    tier={achievement}
+                    onDismiss={() => setUnlockedAchievements(prev => prev.filter(a => a.name !== achievement.name))}
+                />
+            ))}
+        </div>
+
         <div className="bg-gray-800/50 p-8 rounded-2xl shadow-2xl text-center max-w-md w-full">
           <TrophyIcon className="w-16 h-16 text-yellow-400 mx-auto mb-4" />
           <h2 className="text-4xl font-bold text-orange-400 mb-4">Workout Complete!</h2>

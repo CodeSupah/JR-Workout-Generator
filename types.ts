@@ -94,3 +94,40 @@ export interface WorkoutStats {
     minutes: number;
   }[];
 }
+
+
+// --- Achievement System Types ---
+
+export interface AchievementTier {
+  tier: number;
+  name: string;
+  description: string;
+  goal: number; // The value to reach (e.g., 10 workouts, 60 minutes)
+}
+
+export interface Achievement {
+  id: string;
+  category: 'Volume' | 'Duration' | 'Streak' | 'Customization';
+  title: string;
+  icon: React.FC<{className?: string}>;
+  tiers: AchievementTier[];
+}
+
+// Represents a user's progress towards a specific achievement
+export interface UserAchievement {
+  currentProgress: number;
+  unlockedTiers: {
+    tier: number;
+    unlockedAt: string; // ISO date string
+  }[];
+}
+
+// Represents the entire achievement progress object for a user, stored in localStorage
+export interface UserAchievementProgress {
+  [achievementId: string]: UserAchievement;
+}
+
+// Used for notifications when a new achievement is unlocked
+export type UnlockedAchievementInfo = AchievementTier & {
+    icon: React.FC<{className?: string}>;
+};

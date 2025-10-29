@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { WorkoutStats, WorkoutPlan } from '../types';
+import { WorkoutStats, WorkoutPlan, Achievement, UserAchievementProgress } from '../types';
 import { getWorkoutStats, loadCustomWorkouts, deleteCustomWorkout } from '../services/workoutService';
+import { getAchievements, getUserAchievementProgress } from '../services/achievementService';
 import StatsChart from './StatsChart';
 import SavedRoutineCard from './SavedRoutineCard';
-import { FlameIcon, ChartBarIcon, ClockIcon, TrophyIcon, SparklesIcon } from './icons/Icons';
+import AchievementBadge from './AchievementBadge';
+import { FlameIcon, ChartBarIcon, ClockIcon, TrophyIcon, SparklesIcon, MedalIcon } from './icons/Icons';
 
 const StatCard: React.FC<{ icon: React.ReactNode, title: string, value: string | number, color: string }> = ({ icon, title, value, color }) => (
   <div className="bg-gray-800 p-6 rounded-xl shadow-lg flex items-center gap-4">
@@ -21,6 +23,8 @@ const StatCard: React.FC<{ icon: React.ReactNode, title: string, value: string |
 const Dashboard: React.FC = () => {
   const [stats, setStats] = useState<WorkoutStats | null>(null);
   const [routines, setRoutines] = useState<WorkoutPlan[]>([]);
+  const [achievements, setAchievements] = useState<Achievement[]>([]);
+  const [achievementProgress, setAchievementProgress] = useState<UserAchievementProgress>({});
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -33,8 +37,14 @@ const Dashboard: React.FC = () => {
     const fetchAllData = async () => {
       try {
         setLoading(true);
-        const statsData = await getWorkoutStats();
+        const [statsData, achievementsData, progressData] = await Promise.all([
+            getWorkoutStats(),
+            getAchievements(),
+            getUserAchievementProgress()
+        ]);
         setStats(statsData);
+        setAchievements(achievementsData);
+        setAchievementProgress(progressData);
         await fetchRoutines();
       } catch (error) {
         console.error("Failed to fetch dashboard data", error);
@@ -116,6 +126,31 @@ const Dashboard: React.FC = () => {
           <p>Complete a workout session to see your stats here.</p>
         </div>
       )}
+
+       {/* Achievements Section */}
+        <div>
+            <h2 className="text-3xl font-bold mb-4">Your Achievements</h2>
+            <div className="bg-gray-800/50 p-6 rounded-2xl shadow-lg">
+                {achievements.map(achievement => (
+                    <div key={achievement.id} className="mb-6 last:mb-0">
+                        <h3 className="flex items-center gap-2 text-xl font-bold mb-3">
+                            <achievement.icon className="w-6 h-6 text-orange-400" />
+                            {achievement.title}
+                        </h3>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                            {achievement.tiers.map(tier => (
+                                <AchievementBadge 
+                                    key={tier.tier}
+                                    achievement={achievement}
+                                    tier={tier}
+                                    userProgress={achievementProgress[achievement.id]}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
 
       {/* Saved Routines Section */}
       <div>
