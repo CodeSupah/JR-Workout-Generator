@@ -339,8 +339,7 @@ const ManualBuilder: React.FC = () => {
         toastStore.addToast('Add some exercises to start a session!', 'error');
         return;
     }
-    const planForSession = flattenWorkoutForSession({ ...editor.plan, name: workoutName });
-    navigate('/session', { state: { workout: planForSession } });
+    navigate('/session', { state: { workout: { ...editor.plan, name: workoutName } } });
   };
   
   const handleSave = async () => {
@@ -468,7 +467,7 @@ const ManualBuilder: React.FC = () => {
                     <button 
                         onClick={onAddSuggested} 
                         className="w-full mt-2 text-sm text-center py-2 px-4 bg-gray-700 hover:bg-gray-600 rounded-lg">
-                        Add Suggested {title === 'Main Workout' ? '' : title + ' '}Exercise
+                        Add Suggested {title === 'Main Workout' ? 'Exercise' : title + ' Exercise'}
                     </button>
                 )}
             </div>

@@ -116,7 +116,7 @@ const LiveSession: React.FC = () => {
     return <div className="flex items-center justify-center min-h-screen">Loading Session...</div>;
   }
 
-  const { currentStageDisplay, currentExerciseName, nextExerciseName, totalRounds, currentRoundNum } = displayInfo;
+  const { currentStageDisplay, currentExerciseName, nextExerciseName, totalRounds, currentRoundNum, totalUniqueExercises, currentUniqueExerciseIndex } = displayInfo;
 
   const renderTimerDisplay = () => {
     const minutes = Math.floor(timeRemaining / 60).toString().padStart(2, '0');
@@ -277,26 +277,21 @@ const LiveSession: React.FC = () => {
                 {stage !== 'Finished' && <button onClick={skipStage} title="Skip to Next Stage" className="p-1 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-colors"><ChevronDoubleRightIcon className="w-5 h-5"/></button>}
             </div>
             {isRepBasedWork ? (
-                <>
-                  <p className="text-7xl font-bold tabular-nums text-white my-2">{currentExercise.reps} <span className="text-5xl">Reps</span></p>
-                  {setInfo.show ? (
-                    <p className="text-lg text-white/80">Set {setInfo.currentSetNum} / {setInfo.totalSets}</p>
-                  ) : (
-                    <p className="text-lg text-white/80">Exercise {currentRoundNum} / {totalRounds}</p>
-                  )}
-                </>
+                 <p className="text-7xl font-bold tabular-nums text-white my-2">{currentExercise.reps} <span className="text-5xl">Reps</span></p>
             ) : (
-                <>
-                  <p className="text-7xl font-bold tabular-nums text-white my-2">{renderTimerDisplay()}</p>
-                  {stage === 'Work' || stage === 'Rest' ? (
-                     setInfo.show ? (
-                        <p className="text-lg text-white/80">Set {setInfo.currentSetNum} / {setInfo.totalSets}</p>
-                     ) : (
-                        <p className="text-lg text-white/80">Exercise {currentRoundNum} / {totalRounds}</p>
-                     )
-                  ) : <p className="text-lg text-white/80">&nbsp;</p>}
-                </>
+                <p className="text-7xl font-bold tabular-nums text-white my-2">{renderTimerDisplay()}</p>
             )}
+
+            <div className="h-12">
+                {stage !== 'Finished' && (
+                    <>
+                        <p className="text-xl text-white/80 font-semibold">Exercise {currentUniqueExerciseIndex} / {totalUniqueExercises}</p>
+                        {setInfo.show && (
+                            <p className="text-lg text-white/80">Set {setInfo.currentSetNum} / {setInfo.totalSets}</p>
+                        )}
+                    </>
+                )}
+            </div>
           </div>
         </div>
         
@@ -315,7 +310,7 @@ const LiveSession: React.FC = () => {
             <button
                 onClick={previousExercise}
                 className="p-3 text-white transition-transform transform hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={(stage === 'Work' || stage === 'Rest') && currentRoundNum <= 1}
+                disabled={currentUniqueExerciseIndex <= 1}
                 title="Previous Exercise"
             >
                 <SkipPreviousIcon className="w-6 h-6" />

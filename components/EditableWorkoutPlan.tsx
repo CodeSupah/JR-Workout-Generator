@@ -143,8 +143,7 @@ const EditableWorkoutPlan: React.FC<EditableWorkoutPlanProps> = ({ editor, origi
 
   const startWorkout = () => {
     sessionStorage.removeItem('suggestedWorkoutPlan');
-    const planForSession = flattenWorkoutForSession(plan);
-    navigate('/session', { state: { workout: planForSession, preferences: originalPreferences } });
+    navigate('/session', { state: { workout: plan, preferences: originalPreferences } });
   };
   
    const handleDuplicateExercise = (exercise: Exercise, section: WorkoutSection, index: number) => {

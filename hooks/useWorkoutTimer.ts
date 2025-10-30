@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { WorkoutPlan, Exercise, SessionSummary } from '../types';
 import { saveWorkoutSummary } from '../services/workoutService';
+import { flattenWorkoutForSession } from '../utils/workoutUtils';
 
 type WorkoutStage = 'Warm-up' | 'Work' | 'Rest' | 'Cool-down' | 'Finished';
 
@@ -56,51 +57,56 @@ const speak = (text: string, isSoundOn: boolean) => {
 };
 
 interface SessionState {
-    workoutPlan: WorkoutPlan | undefined;
+    workoutPlan: WorkoutPlan | undefined; // The original, un-flattened plan
     stage: WorkoutStage;
-    exerciseIndex: number; // for main rounds
-    subIndex: number; // for warm-up/cool-down
+    exerciseIndex: number; // index in `exercises` (flattened main rounds)
+    subIndex: number; // index in `warmUp` or `coolDown` (flattened)
     timeRemaining: number;
     initialStageDuration: number;
-    exercises: Exercise[];
+    warmUp: (Exercise & { originalIndex?: number })[]; // flattened warmUp
+    exercises: (Exercise & { originalIndex?: number })[]; // flattened rounds
+    coolDown: (Exercise & { originalIndex?: number })[]; // flattened coolDown
     summary: SessionSummary | null;
 }
 
 const getInitialState = (initialPlan: WorkoutPlan | undefined): { sessionState: SessionState; isRunning: boolean } => {
-    // A workout can only be started if a plan is passed from navigation.
     if (initialPlan) {
-        const hasWarmUp = initialPlan.warmUp && initialPlan.warmUp.length > 0;
+        const flattenedPlan = flattenWorkoutForSession(initialPlan);
+        const hasWarmUp = flattenedPlan.warmUp && flattenedPlan.warmUp.length > 0;
         
+        const baseInitialState = {
+            workoutPlan: initialPlan,
+            // FIX: Explicitly cast 'pending' to a literal type to match Exercise['status'].
+            warmUp: flattenedPlan.warmUp.map(ex => ({ ...ex, status: 'pending' as const })),
+            exercises: flattenedPlan.rounds.map(ex => ({ ...ex, status: 'pending' as const })),
+            coolDown: flattenedPlan.coolDown.map(ex => ({ ...ex, status: 'pending' as const })),
+            summary: null,
+        };
+
         const initialState: SessionState = hasWarmUp
             ? {
-                workoutPlan: initialPlan,
+                ...baseInitialState,
                 stage: 'Warm-up',
                 exerciseIndex: -1,
                 subIndex: 0,
-                timeRemaining: initialPlan.warmUp[0]?.duration || 0,
-                initialStageDuration: initialPlan.warmUp[0]?.duration || 0,
-                exercises: initialPlan.rounds.map(ex => ({ ...ex, status: 'pending' })),
-                summary: null,
+                timeRemaining: flattenedPlan.warmUp[0]?.duration || 0,
+                initialStageDuration: flattenedPlan.warmUp[0]?.duration || 0,
             }
             : {
-                workoutPlan: initialPlan,
+                ...baseInitialState,
                 stage: 'Work',
                 exerciseIndex: 0,
                 subIndex: -1,
-                timeRemaining: initialPlan.rounds[0]?.duration || 0,
-                initialStageDuration: initialPlan.rounds[0]?.duration || 0,
-                exercises: initialPlan.rounds.map(ex => ({ ...ex, status: 'pending' })),
-                summary: null,
+                timeRemaining: flattenedPlan.rounds[0]?.duration || 0,
+                initialStageDuration: flattenedPlan.rounds[0]?.duration || 0,
             };
-        // The user must now press play to start, which ensures the audio context is initialized by a user gesture.
         return { sessionState: initialState, isRunning: false };
     }
 
-    // No workout plan, return a default empty state.
     const defaultState: SessionState = {
         workoutPlan: undefined,
         stage: 'Warm-up', exerciseIndex: -1, subIndex: -1, timeRemaining: 0,
-        initialStageDuration: 0, exercises: [], summary: null,
+        initialStageDuration: 0, exercises: [], warmUp: [], coolDown: [], summary: null,
     };
     return { sessionState: defaultState, isRunning: false };
 };
@@ -114,75 +120,63 @@ export const useWorkoutTimer = (initialWorkoutPlan: WorkoutPlan | undefined, isS
   const intervalRef = useRef<number | null>(null);
   const announcedRef = useRef(false);
   
-  const { workoutPlan, stage, exerciseIndex, subIndex, timeRemaining, initialStageDuration, exercises, summary } = sessionState;
+  const { workoutPlan, stage, exerciseIndex, subIndex, timeRemaining, initialStageDuration, exercises, warmUp, coolDown, summary } = sessionState;
   
   const currentExercise: Exercise | undefined = useMemo(() => {
-      if (!workoutPlan) return undefined;
-      if (stage === 'Warm-up') return workoutPlan.warmUp?.[subIndex];
+      if (stage === 'Warm-up') return warmUp?.[subIndex];
       if (stage === 'Work' || stage === 'Rest') return exercises?.[exerciseIndex];
-      if (stage === 'Cool-down') return workoutPlan.coolDown?.[subIndex];
+      if (stage === 'Cool-down') return coolDown?.[subIndex];
       return undefined;
-  }, [stage, workoutPlan, subIndex, exerciseIndex, exercises]);
+  }, [stage, warmUp, coolDown, subIndex, exerciseIndex, exercises]);
   
   const finalizeWorkout = useCallback((currentState: SessionState): SessionState => {
-    // If there's no plan or we've already generated a summary, do nothing.
     if (!currentState.workoutPlan || currentState.summary) {
         return currentState;
     }
 
-    const { workoutPlan, exercises, stage, subIndex, exerciseIndex, timeRemaining, initialStageDuration } = currentState;
+    const { workoutPlan, exercises, warmUp, coolDown, stage, subIndex, exerciseIndex, timeRemaining, initialStageDuration } = currentState;
 
-    // 1. Calculate Warm-up Time
     let elapsedWarmUpTime = 0;
-    if (workoutPlan.warmUp && workoutPlan.warmUp.length > 0) {
+    if (warmUp.length > 0) {
         if (stage !== 'Warm-up') {
-            elapsedWarmUpTime = workoutPlan.warmUp.reduce((sum, ex) => sum + ex.duration + ex.rest, 0);
+            elapsedWarmUpTime = warmUp.reduce((sum, ex) => sum + ex.duration + ex.rest, 0);
         } else {
-            const completedTime = workoutPlan.warmUp.slice(0, subIndex).reduce((sum, ex) => sum + ex.duration + ex.rest, 0);
+            const completedTime = warmUp.slice(0, subIndex).reduce((sum, ex) => sum + ex.duration + ex.rest, 0);
             const currentTime = initialStageDuration - timeRemaining;
             elapsedWarmUpTime = completedTime + currentTime;
         }
     }
 
-    // 2. Calculate Main Workout Time (Work + Rest periods)
     let elapsedWorkAndRestTime = 0;
-    // Add time for all fully completed exercises
     const completedExercises = exercises.filter(e => e.status === 'completed');
     elapsedWorkAndRestTime = completedExercises.reduce((sum, e) => sum + e.duration + e.rest, 0);
 
-    // Now, adjust based on the stage where the user stopped.
     if (stage === 'Work') {
         const currentExercise = exercises[exerciseIndex];
         if (currentExercise) {
-            // For time-based, add elapsed time. For rep-based, assume full duration for calorie calc.
             const elapsedTime = currentExercise.unit === 'reps' ? currentExercise.duration : currentExercise.duration - timeRemaining;
             elapsedWorkAndRestTime += elapsedTime;
         }
     } else if (stage === 'Rest') {
-        // We add the full duration of the preceding work + rest, then subtract remaining rest time.
         const precedingWork = exercises[exerciseIndex];
         if (precedingWork) {
            elapsedWorkAndRestTime += (precedingWork.duration + precedingWork.rest) - timeRemaining;
         }
     }
 
-    // 3. Calculate Cool-down Time
     let elapsedCoolDownTime = 0;
-    if (workoutPlan.coolDown && workoutPlan.coolDown.length > 0) {
+    if (coolDown.length > 0) {
         if (stage === 'Cool-down') {
-            const completedTime = workoutPlan.coolDown.slice(0, subIndex).reduce((sum, ex) => sum + ex.duration + ex.rest, 0);
+            const completedTime = coolDown.slice(0, subIndex).reduce((sum, ex) => sum + ex.duration + ex.rest, 0);
             const currentTime = initialStageDuration - timeRemaining;
             elapsedCoolDownTime = completedTime + currentTime;
-        } else if (stage === 'Finished') { // If we finished cool-down, add full duration
-            elapsedCoolDownTime = workoutPlan.coolDown.reduce((sum, ex) => sum + ex.duration + ex.rest, 0);
+        } else if (stage === 'Finished') { 
+            elapsedCoolDownTime = coolDown.reduce((sum, ex) => sum + ex.duration + ex.rest, 0);
         }
     }
 
-
-    // 4. Calculate Total Time
     const totalTime = elapsedWarmUpTime + elapsedWorkAndRestTime + elapsedCoolDownTime;
 
-    // 5. Calculate Calories Burned (based on *work* seconds only)
     const planTotalWorkSeconds = workoutPlan.rounds.reduce((sum, r) => sum + r.duration, 0);
     const caloriesPerSecond = planTotalWorkSeconds > 0 ? (workoutPlan.estimatedCalories || 0) / planTotalWorkSeconds : 0;
     
@@ -192,12 +186,10 @@ export const useWorkoutTimer = (initialWorkoutPlan: WorkoutPlan | undefined, isS
 
     if (stage === 'Work' && exercises[exerciseIndex]) {
         const currentEx = exercises[exerciseIndex];
-        // For time-based, add time elapsed. For reps, add the full estimated duration.
         actualWorkSeconds += currentEx.unit === 'reps' ? currentEx.duration : (currentEx.duration - timeRemaining);
     }
     const totalCalories = Math.round(actualWorkSeconds * caloriesPerSecond);
 
-    // 6. Construct Final Summary
     const finalSummary: SessionSummary = {
         id: crypto.randomUUID(),
         date: new Date().toISOString(),
@@ -207,17 +199,14 @@ export const useWorkoutTimer = (initialWorkoutPlan: WorkoutPlan | undefined, isS
         skippedRounds: exercises.filter(e => e.status === 'skipped').length,
         totalCalories,
         planId: workoutPlan.id || '',
-        // Store the final state of the exercises (completed, skipped, pending)
-        workoutPlan: { ...workoutPlan, rounds: exercises },
-        // Simulate jump tracking metrics for demonstration purposes
+        workoutPlan: { ...workoutPlan, rounds: exercises, warmUp, coolDown },
         jumpMetrics: {
-            peakJumpsPerMinute: Math.floor(Math.random() * 50) + 140, // Random value between 140-190
-            longestCombo: `Double Under x ${Math.floor(Math.random() * 20) + 10}`, // Random DU combo
-            longestContinuousJump: Math.floor(Math.random() * 60) + 30, // Random 30-90 seconds
+            peakJumpsPerMinute: Math.floor(Math.random() * 50) + 140,
+            longestCombo: `Double Under x ${Math.floor(Math.random() * 20) + 10}`,
+            longestContinuousJump: Math.floor(Math.random() * 60) + 30,
         },
     };
     
-    // 7. Persist summary and set final state
     saveWorkoutSummary(finalSummary);
     speak('Workout ended.', isSoundOn);
     setIsRunning(false);
@@ -244,14 +233,12 @@ export const useWorkoutTimer = (initialWorkoutPlan: WorkoutPlan | undefined, isS
 
   const nextStage = useCallback(() => {
     setSessionState(prev => {
-        const { workoutPlan } = prev;
+        const { stage, exerciseIndex, subIndex, exercises, warmUp, coolDown, workoutPlan } = prev;
         if (!workoutPlan) return prev;
 
-        const { stage, exerciseIndex, subIndex, exercises } = prev;
-        const { warmUp, coolDown } = workoutPlan;
         const hasCoolDown = coolDown && coolDown.length > 0;
 
-        if (stage === 'Warm-up' && warmUp && warmUp.length > 0) {
+        if (stage === 'Warm-up') {
             const nextSubIndex = subIndex + 1;
             if (nextSubIndex < warmUp.length) {
                 const nextWarmUp = warmUp[nextSubIndex];
@@ -275,7 +262,7 @@ export const useWorkoutTimer = (initialWorkoutPlan: WorkoutPlan | undefined, isS
             
             const currentEx = exercises[exerciseIndex];
             if (currentEx?.rest > 0) {
-                setIsRunning(true); // Always run the rest timer
+                setIsRunning(true);
                 return { ...prev, stage: 'Rest', exercises: updatedExercises, timeRemaining: currentEx.rest, initialStageDuration: currentEx.rest };
             }
             
@@ -296,7 +283,7 @@ export const useWorkoutTimer = (initialWorkoutPlan: WorkoutPlan | undefined, isS
             }
         }
         
-        if (stage === 'Cool-down' && hasCoolDown) {
+        if (stage === 'Cool-down') {
             const nextSubIndex = subIndex + 1;
             if (nextSubIndex < coolDown.length) {
                 const nextCoolDown = coolDown[nextSubIndex];
@@ -308,10 +295,8 @@ export const useWorkoutTimer = (initialWorkoutPlan: WorkoutPlan | undefined, isS
             }
         }
         
-        // Transition to Cool-down or Finish
         if (hasCoolDown) {
             const updatedExercises = [...prev.exercises];
-            // Mark final exercise as complete if it wasn't already (e.g., from a skip)
             if (prev.exerciseIndex >= 0 && updatedExercises[prev.exerciseIndex] && updatedExercises[prev.exerciseIndex].status === 'pending') {
                 updatedExercises[prev.exerciseIndex].status = 'completed';
             }
@@ -326,66 +311,78 @@ export const useWorkoutTimer = (initialWorkoutPlan: WorkoutPlan | undefined, isS
     });
   }, [isSoundOn, finalizeWorkout]);
 
-  // Effect for initial announcement on new workouts
   useEffect(() => {
     if (initialState.isRunning && workoutPlan && !announcedRef.current) {
         announcedRef.current = true;
-        if (sessionState.stage === 'Warm-up' && workoutPlan.warmUp?.[0]) {
-            speak(`Starting warm up: ${workoutPlan.warmUp[0].exercise}`, isSoundOn);
-        } else if (sessionState.stage === 'Work' && workoutPlan.rounds?.[0]) {
-            speak(`Starting Exercise 1: ${workoutPlan.rounds[0].exercise}`, isSoundOn);
+        if (sessionState.stage === 'Warm-up' && warmUp?.[0]) {
+            speak(`Starting warm up: ${warmUp[0].exercise}`, isSoundOn);
+        } else if (sessionState.stage === 'Work' && exercises?.[0]) {
+            speak(`Starting Exercise 1: ${exercises[0].exercise}`, isSoundOn);
         }
     }
-  }, [workoutPlan, isSoundOn, initialState.isRunning, sessionState.stage]);
+  }, [workoutPlan, isSoundOn, initialState.isRunning, sessionState.stage, warmUp, exercises]);
 
 
   const getDisplayInfo = useCallback((state: SessionState = sessionState) => {
-    const { workoutPlan } = state;
-    if (!workoutPlan) return { currentStageDisplay: '', currentExerciseName: '', nextExerciseName: '', totalRounds: 0, currentRoundNum: 0 };
-
-    const { stage, exerciseIndex, subIndex, exercises } = state;
-    const { warmUp, coolDown, exercisesPerRound } = workoutPlan;
+    const { workoutPlan, stage, exerciseIndex, subIndex, exercises, warmUp, coolDown } = state;
+    if (!workoutPlan) return { currentStageDisplay: '', currentExerciseName: '', nextExerciseName: '', totalRounds: 0, currentRoundNum: 0, totalUniqueExercises: 0, currentUniqueExerciseIndex: 0 };
     
     let currentStageDisplay = '';
     let currentExerciseName = '';
     let nextExerciseName = '';
+    
     const totalRounds = exercises.length;
     const currentRoundNum = exerciseIndex + 1;
 
-    if (stage === 'Warm-up') {
-        currentStageDisplay = 'Warm-up';
-        currentExerciseName = warmUp[subIndex]?.exercise || '';
-        const nextSubIdx = subIndex + 1;
-        if (nextSubIdx < warmUp.length) {
-            nextExerciseName = warmUp[nextSubIdx].exercise;
-        } else {
-            nextExerciseName = exercises[0]?.exercise || 'First Exercise';
-        }
-    } else if (stage === 'Cool-down') {
-        currentStageDisplay = 'Cool-down';
-        currentExerciseName = coolDown[subIndex]?.exercise || '';
-        const nextSubIdx = subIndex + 1;
-        if (nextSubIdx < coolDown.length) {
-            nextExerciseName = coolDown[nextSubIdx].exercise;
-        } else {
-            nextExerciseName = 'Finished!';
-        }
-    } else if (stage === 'Work' || stage === 'Rest') {
-        const roundNumber = Math.floor(exerciseIndex / (exercisesPerRound || 1)) + 1;
-        currentStageDisplay = stage === 'Work' ? `Round ${roundNumber}`: 'Rest';
-        currentExerciseName = stage === 'Work' ? (exercises[exerciseIndex]?.exercise || '') : 'Rest';
+    const totalUniqueExercises = (workoutPlan.warmUp?.length || 0) + 
+                                 (workoutPlan.rounds?.length || 0) + 
+                                 (workoutPlan.coolDown?.length || 0);
 
-        const currentEx = exercises[exerciseIndex];
-        if (stage === 'Work' && currentEx?.rest > 0) {
-            nextExerciseName = 'Rest';
-        } else if (exerciseIndex < totalRounds - 1) {
-            nextExerciseName = exercises[exerciseIndex + 1]?.exercise || 'Cool-down';
-        } else {
-            nextExerciseName = (workoutPlan.coolDown && workoutPlan.coolDown.length > 0) ? 'Cool-down' : 'Finish';
+    let currentUniqueExerciseIndex = 0;
+    if (stage !== 'Finished') {
+        const warmUpCount = workoutPlan.warmUp?.length || 0;
+        const roundsCount = workoutPlan.rounds?.length || 0;
+
+        if (stage === 'Warm-up') {
+            currentUniqueExerciseIndex = subIndex + 1;
+            currentStageDisplay = 'Warm-up';
+            currentExerciseName = warmUp[subIndex]?.exercise || '';
+            const nextSubIdx = subIndex + 1;
+            if (nextSubIdx < warmUp.length) {
+                nextExerciseName = warmUp[nextSubIdx].exercise;
+            } else {
+                nextExerciseName = exercises[0]?.exercise || 'First Exercise';
+            }
+        } else if (stage === 'Cool-down') {
+            currentUniqueExerciseIndex = warmUpCount + roundsCount + subIndex + 1;
+            currentStageDisplay = 'Cool-down';
+            currentExerciseName = coolDown[subIndex]?.exercise || '';
+            const nextSubIdx = subIndex + 1;
+            if (nextSubIdx < coolDown.length) {
+                nextExerciseName = coolDown[nextSubIdx].exercise;
+            } else {
+                nextExerciseName = 'Finished!';
+            }
+        } else if (stage === 'Work' || stage === 'Rest') {
+            const originalRoundsIndex = exercises[exerciseIndex]?.originalIndex;
+            if (originalRoundsIndex !== undefined) {
+                currentUniqueExerciseIndex = warmUpCount + originalRoundsIndex + 1;
+            }
+            const roundNumber = Math.floor(exerciseIndex / (workoutPlan.exercisesPerRound || 1)) + 1;
+            currentStageDisplay = stage === 'Work' ? `Round ${roundNumber}` : 'Rest';
+            currentExerciseName = stage === 'Work' ? (exercises[exerciseIndex]?.exercise || '') : 'Rest';
+            const currentEx = exercises[exerciseIndex];
+            if (stage === 'Work' && currentEx?.rest > 0) {
+                nextExerciseName = 'Rest';
+            } else if (exerciseIndex < totalRounds - 1) {
+                nextExerciseName = exercises[exerciseIndex + 1]?.exercise || 'Cool-down';
+            } else {
+                nextExerciseName = (coolDown && coolDown.length > 0) ? 'Cool-down' : 'Finish';
+            }
+        } else if (stage === 'Finished') {
+            currentStageDisplay = 'Finished';
+            currentExerciseName = 'Workout Complete!';
         }
-    } else if (stage === 'Finished') {
-        currentStageDisplay = 'Finished';
-        currentExerciseName = 'Workout Complete!';
     }
 
     return {
@@ -393,7 +390,9 @@ export const useWorkoutTimer = (initialWorkoutPlan: WorkoutPlan | undefined, isS
         currentExerciseName,
         nextExerciseName,
         totalRounds,
-        currentRoundNum
+        currentRoundNum,
+        totalUniqueExercises,
+        currentUniqueExerciseIndex
     };
   }, [sessionState]);
 
@@ -410,10 +409,10 @@ export const useWorkoutTimer = (initialWorkoutPlan: WorkoutPlan | undefined, isS
 
         if (prev.timeRemaining <= 1) {
           nextStage();
-          return prev; // Return prev here because nextStage will trigger a new state update
+          return prev;
         }
 
-        if (prev.timeRemaining === 6) { // Announce next exercise at 5 seconds left
+        if (prev.timeRemaining === 6) {
             const { nextExerciseName } = getDisplayInfo(prev);
             if (nextExerciseName && nextExerciseName !== 'Finished!' && nextExerciseName !== 'Finish' && nextExerciseName !== 'Cool-down') {
                 speak(`Next up: ${nextExerciseName}`, isSoundOn);
@@ -421,7 +420,7 @@ export const useWorkoutTimer = (initialWorkoutPlan: WorkoutPlan | undefined, isS
         }
         
         if (isSoundOn && [4, 3, 2].includes(prev.timeRemaining)) {
-           beep(prev.timeRemaining === 2 ? 880 : 750, 100, 50); // High beep for '1'
+           beep(prev.timeRemaining === 2 ? 880 : 750, 100, 50);
         }
 
         const newTime = prev.timeRemaining - 1;
@@ -443,28 +442,27 @@ export const useWorkoutTimer = (initialWorkoutPlan: WorkoutPlan | undefined, isS
   const completeSet = useCallback(() => {
     initAudioContext();
     if (stage === 'Work' && currentExercise?.unit === 'reps') {
-        // nextStage marks exercise as complete and transitions to rest/next.
         nextStage();
     }
   }, [stage, currentExercise, nextStage]);
 
   const skipExercise = () => {
       initAudioContext();
-      if (stage === 'Warm-up' && workoutPlan?.warmUp) {
-          if (subIndex < workoutPlan.warmUp.length - 1) {
+      if (stage === 'Warm-up') {
+          if (subIndex < warmUp.length - 1) {
             setSessionState(prev => {
                 const nextSubIndex = prev.subIndex + 1;
-                const duration = workoutPlan.warmUp[nextSubIndex].duration;
+                const duration = warmUp[nextSubIndex].duration;
                 return { ...prev, subIndex: nextSubIndex, timeRemaining: duration, initialStageDuration: duration };
             });
           } else {
-            skipStage(); // Skip to work
+            skipStage();
           }
-      } else if (stage === 'Cool-down' && workoutPlan?.coolDown) {
-          if (subIndex < workoutPlan.coolDown.length - 1) {
+      } else if (stage === 'Cool-down') {
+          if (subIndex < coolDown.length - 1) {
             setSessionState(prev => {
                 const nextSubIndex = prev.subIndex + 1;
-                const duration = workoutPlan.coolDown[nextSubIndex].duration;
+                const duration = coolDown[nextSubIndex].duration;
                 return { ...prev, subIndex: nextSubIndex, timeRemaining: duration, initialStageDuration: duration };
             });
           } else {
@@ -472,7 +470,7 @@ export const useWorkoutTimer = (initialWorkoutPlan: WorkoutPlan | undefined, isS
           }
       } else if (stage === 'Work' || stage === 'Rest') {
           if (exerciseIndex >= exercises.length - 1) {
-              nextStage(); // Go to cooldown or finish
+              nextStage();
               return;
           }
           setSessionState(prev => {
@@ -490,16 +488,16 @@ export const useWorkoutTimer = (initialWorkoutPlan: WorkoutPlan | undefined, isS
 
   const previousExercise = () => {
       initAudioContext();
-      if (stage === 'Warm-up' && workoutPlan?.warmUp && subIndex > 0) {
+      if (stage === 'Warm-up' && subIndex > 0) {
         setSessionState(prev => {
             const prevSubIndex = prev.subIndex - 1;
-            const duration = workoutPlan.warmUp[prevSubIndex].duration;
+            const duration = warmUp[prevSubIndex].duration;
             return { ...prev, subIndex: prevSubIndex, timeRemaining: duration, initialStageDuration: duration };
         });
-      } else if (stage === 'Cool-down' && workoutPlan?.coolDown && subIndex > 0) {
+      } else if (stage === 'Cool-down' && subIndex > 0) {
           setSessionState(prev => {
             const prevSubIndex = prev.subIndex - 1;
-            const duration = workoutPlan.coolDown[prevSubIndex].duration;
+            const duration = coolDown[prevSubIndex].duration;
             return { ...prev, subIndex: prevSubIndex, timeRemaining: duration, initialStageDuration: duration };
         });
       } else if ((stage === 'Work' || stage === 'Rest') && exerciseIndex > 0) {
@@ -526,76 +524,42 @@ export const useWorkoutTimer = (initialWorkoutPlan: WorkoutPlan | undefined, isS
       }
   };
 
-  const removeCurrentExercise = useCallback(() => {
-    // This function now uses the functional update form of `setSessionState` to ensure it always has the latest state,
-    // which prevents bugs when the workout is paused.
-    let shouldTransition = false;
-    setSessionState(prev => {
-        if (prev.stage !== 'Work' || prev.exerciseIndex < 0) {
-            return prev;
-        }
-        
-        const updatedExercises = prev.exercises.filter((_, idx) => idx !== prev.exerciseIndex);
-
-        // If this was the last exercise, flag that we need to transition to the next stage.
-        if (prev.exerciseIndex >= updatedExercises.length) {
-            shouldTransition = true;
-            return { ...prev, exercises: updatedExercises };
-        }
-
-        // If it's not the last exercise, just remove it and continue with the next one at the same index.
-        const nextExercise = updatedExercises[prev.exerciseIndex]; 
-        setIsRunning(nextExercise.unit !== 'reps');
-        return {
-            ...prev,
-            exercises: updatedExercises,
-            stage: 'Work',
-            timeRemaining: nextExercise.duration,
-            initialStageDuration: nextExercise.duration,
-        };
-    });
-
-    // If we flagged that it was the last exercise, call `nextStage` outside the state updater.
-    // `nextStage` will correctly handle moving to cool-down or finishing the workout.
-    if (shouldTransition) {
-        nextStage();
-    }
-  }, [nextStage]);
-
   const replaceCurrentExercise = useCallback((newExerciseDetails: Omit<Exercise, 'id' | 'status'>) => {
     setSessionState(prev => {
-        const { stage, workoutPlan, exerciseIndex, subIndex } = prev;
-        if (!workoutPlan) return prev;
-    
-        const newPlan = JSON.parse(JSON.stringify(workoutPlan));
+        const { stage, exerciseIndex, subIndex } = prev;
+        
         const newDuration = newExerciseDetails.duration;
         let wasReplaced = false;
 
-        if (stage === 'Warm-up' && newPlan.warmUp?.[subIndex]) {
-            const current = newPlan.warmUp[subIndex];
-            newPlan.warmUp[subIndex] = { ...current, ...newExerciseDetails };
+        let newWarmUp = [...prev.warmUp];
+        let newExercises = [...prev.exercises];
+        let newCoolDown = [...prev.coolDown];
+
+        if (stage === 'Warm-up' && newWarmUp?.[subIndex]) {
+            const current = newWarmUp[subIndex];
+            newWarmUp[subIndex] = { ...current, ...newExerciseDetails };
             wasReplaced = true;
-        } else if ((stage === 'Work' || stage === 'Rest') && newPlan.rounds?.[exerciseIndex]) {
-            const current = newPlan.rounds[exerciseIndex];
-            newPlan.rounds[exerciseIndex] = { ...current, ...newExerciseDetails };
-            // For replaced exercises, we assume they are time-based as per modal flow
-            if(newPlan.rounds[exerciseIndex].unit === 'reps') {
+        } else if ((stage === 'Work' || stage === 'Rest') && newExercises?.[exerciseIndex]) {
+            const current = newExercises[exerciseIndex];
+            newExercises[exerciseIndex] = { ...current, ...newExerciseDetails };
+            if(newExercises[exerciseIndex].unit === 'reps') {
                 setIsRunning(false);
             } else {
                 setIsRunning(true);
             }
             wasReplaced = true;
-        } else if (stage === 'Cool-down' && newPlan.coolDown?.[subIndex]) {
-            const current = newPlan.coolDown[subIndex];
-            newPlan.coolDown[subIndex] = { ...current, ...newExerciseDetails };
+        } else if (stage === 'Cool-down' && newCoolDown?.[subIndex]) {
+            const current = newCoolDown[subIndex];
+            newCoolDown[subIndex] = { ...current, ...newExerciseDetails };
             wasReplaced = true;
         }
 
         if (wasReplaced) {
             return {
                 ...prev,
-                workoutPlan: newPlan,
-                exercises: [...newPlan.rounds], // Resync exercises from the updated plan
+                warmUp: newWarmUp,
+                exercises: newExercises,
+                coolDown: newCoolDown,
                 timeRemaining: newDuration,
                 initialStageDuration: newDuration,
             };
@@ -628,7 +592,6 @@ export const useWorkoutTimer = (initialWorkoutPlan: WorkoutPlan | undefined, isS
     skipExercise,
     previousExercise,
     skipStage,
-    removeCurrentExercise,
     replaceCurrentExercise,
     completeSet,
   };
