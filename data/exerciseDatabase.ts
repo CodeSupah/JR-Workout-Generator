@@ -83,6 +83,107 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     videoUrl: 'https://www.youtube.com/embed/82j00w4kv5Y',
     keywords: ['dubs']
   },
+  {
+    id: 'side-swing',
+    name: 'Side Swing',
+    category: 'Jump Rope',
+    difficulty: 'Intermediate',
+    equipment: 'rope',
+    description: 'A freestyle move where the rope is swung to the side of the body instead of overhead, great for transitions and rhythm.',
+    instructions: [
+      'Start with a basic bounce.',
+      'Bring both hands together on one side of your body (e.g., your right hip).',
+      'Swing the rope in a loop on that side, tapping it on the ground.',
+      'You can perform a small "ghost" jump without the rope passing under you.',
+      'Swing the rope back overhead to return to basic jumps or swing to the other side.'
+    ],
+    muscleGroups: ['Coordination', 'Wrists', 'Core'],
+    videoUrl: 'https://www.youtube.com/embed/fW098G2b_ps',
+    keywords: ['side-whip']
+  },
+  {
+    id: 'butt-kicks',
+    name: 'Butt Kicks',
+    category: 'Jump Rope',
+    difficulty: 'Intermediate',
+    equipment: 'rope',
+    description: 'A dynamic jump rope variation that increases intensity and targets the hamstrings.',
+    instructions: [
+      'While jumping, alternate kicking your heels back towards your glutes.',
+      'Keep your knees pointed towards the ground.',
+      'Maintain a quick and consistent rhythm with the rope.'
+    ],
+    muscleGroups: ['Hamstrings', 'Quads', 'Glutes', 'Calves'],
+    videoUrl: 'https://www.youtube.com/embed/dGIOv_mS-A8'
+  },
+  {
+    id: 'side-straddle',
+    name: 'Side Straddle (Jumping Jacks)',
+    category: 'Jump Rope',
+    difficulty: 'Intermediate',
+    equipment: 'rope',
+    description: 'Combines the classic jumping jack motion with jumping rope, enhancing coordination and working different leg muscles.',
+    instructions: [
+      'Start with a basic bounce with feet together.',
+      'On the next jump, land with your feet wide apart (straddle position).',
+      'On the following jump, bring your feet back together.',
+      'Continue alternating between feet together and feet apart with each rope turn.'
+    ],
+    muscleGroups: ['Adductors', 'Abductors', 'Calves', 'Quads'],
+    videoUrl: 'https://www.youtube.com/embed/5Y_15oHiGxc',
+    keywords: ['jumping jack jump']
+  },
+  {
+    id: 'forward-straddle',
+    name: 'Forward Straddle (Scissors)',
+    category: 'Jump Rope',
+    difficulty: 'Intermediate',
+    equipment: 'rope',
+    description: 'A jump rope variation that involves alternating your feet forward and backward, similar to a scissor motion.',
+    instructions: [
+      'Begin with a basic bounce.',
+      'On the next jump, land with one foot forward and one foot back.',
+      'On the following jump, switch the position of your feet.',
+      'Keep your upper body stable and core engaged.'
+    ],
+    muscleGroups: ['Quads', 'Hamstrings', 'Hip Flexors', 'Calves'],
+    videoUrl: 'https://www.youtube.com/embed/p3uS33tqNoc',
+    keywords: ['scissors', 'scissor jumps']
+  },
+  {
+    id: 'twist-jumps',
+    name: 'Twist Jumps (Skiers)',
+    category: 'Jump Rope',
+    difficulty: 'Intermediate',
+    equipment: 'rope',
+    description: 'This move involves twisting the lower body from side to side, engaging the obliques and improving core stability.',
+    instructions: [
+      'Start with a basic bounce, keeping your feet together.',
+      'On each jump, twist your hips to one side, landing with your feet pointing slightly left or right.',
+      'On the next jump, twist to the opposite side.',
+      'Keep your shoulders and upper body facing forward as much as possible.'
+    ],
+    muscleGroups: ['Core', 'Obliques', 'Calves', 'Quads'],
+    videoUrl: 'https://www.youtube.com/embed/p17k7sW8s8k',
+    keywords: ['ski jumps', 'slalom jumps']
+  },
+  {
+    id: 'weighted-rope-basic-bounce',
+    name: 'Weighted Rope Basic Bounce',
+    category: 'Jump Rope',
+    difficulty: 'Intermediate',
+    equipment: 'weighted-rope',
+    description: 'Performing the basic bounce with a weighted rope significantly increases the resistance, building upper body strength and power.',
+    instructions: [
+      'Use a weighted rope (0.5 lb or heavier).',
+      'Focus on using your wrists to turn the heavier rope.',
+      'Maintain the same form as a regular basic bounce: small jumps, relaxed shoulders.',
+      'Expect a slower pace and higher intensity than with a speed rope.'
+    ],
+    muscleGroups: ['Shoulders', 'Forearms', 'Core', 'Calves', 'Back'],
+    videoUrl: 'https://www.youtube.com/embed/CXm_eC42lVg',
+    keywords: ['heavy rope']
+  },
 
   // CARDIO
   {
@@ -220,6 +321,106 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     muscleGroups: ['Chest', 'Shoulders', 'Triceps', 'Core'],
     videoUrl: 'https://www.youtube.com/embed/6FB3Bv_iiG0'
   },
+  {
+    id: 'banded-bicep-curl',
+    name: 'Banded Bicep Curl',
+    category: 'Upper Body',
+    difficulty: 'Beginner',
+    equipment: 'resistance-band',
+    description: 'A simple and effective exercise to isolate and build the bicep muscles using a resistance band.',
+    instructions: [
+      'Stand on the middle of the band with one or both feet.',
+      'Hold the ends of the band with an underhand grip, arms extended.',
+      'Curl your hands up towards your shoulders, squeezing your biceps.',
+      'Slowly lower your hands back to the starting position.'
+    ],
+    muscleGroups: ['Biceps', 'Forearms'],
+    videoUrl: 'https://www.youtube.com/embed/kxXvDEd21ho',
+    keywords: ['arm curl']
+  },
+  {
+    id: 'banded-tricep-extension',
+    name: 'Banded Tricep Extension',
+    category: 'Upper Body',
+    difficulty: 'Beginner',
+    equipment: 'resistance-band',
+    description: 'An excellent exercise for targeting the triceps muscles, performed overhead with a resistance band.',
+    instructions: [
+      'Stand on one end of the band or anchor it securely under your foot.',
+      'Hold the other end with both hands and extend your arms straight overhead.',
+      'Keeping your elbows close to your head, lower the band behind your head by bending your elbows.',
+      'Extend your arms to return to the starting position.'
+    ],
+    muscleGroups: ['Triceps', 'Shoulders'],
+    videoUrl: 'https://www.youtube.com/embed/QAk634A5S8Y',
+    keywords: ['overhead tricep extension']
+  },
+  {
+    id: 'banded-chest-press',
+    name: 'Banded Chest Press',
+    category: 'Upper Body',
+    difficulty: 'Intermediate',
+    equipment: 'resistance-band',
+    description: 'A versatile exercise that mimics a bench press using a resistance band to strengthen the chest, shoulders, and triceps.',
+    instructions: [
+      'Wrap the band around your upper back, holding an end in each hand.',
+      'Lie on your back or stand in a staggered stance.',
+      'Press your hands forward and together, extending your arms and squeezing your chest.',
+      'Slowly return to the starting position.'
+    ],
+    muscleGroups: ['Chest', 'Shoulders', 'Triceps'],
+    videoUrl: 'https://www.youtube.com/embed/s3gn_16yD-s'
+  },
+  {
+    id: 'banded-row',
+    name: 'Banded Row',
+    category: 'Upper Body',
+    difficulty: 'Beginner',
+    equipment: 'resistance-band',
+    description: 'A fundamental back exercise that strengthens the lats, rhomboids, and biceps, improving posture.',
+    instructions: [
+      'Sit on the floor with your legs extended, and loop the band around your feet.',
+      'Hold the ends of the band with a neutral grip.',
+      'Keeping your back straight, pull the band towards your torso, squeezing your shoulder blades together.',
+      'Slowly extend your arms to return to the start.'
+    ],
+    muscleGroups: ['Back', 'Lats', 'Biceps'],
+    videoUrl: 'https://www.youtube.com/embed/UmDMofb_MMI',
+    keywords: ['seated row']
+  },
+  {
+    id: 'band-pull-apart',
+    name: 'Band Pull-Apart',
+    category: 'Upper Body',
+    difficulty: 'Beginner',
+    equipment: 'resistance-band',
+    description: 'A fantastic exercise for shoulder health, posture, and strengthening the upper back muscles.',
+    instructions: [
+      'Hold a light resistance band with both hands, palms facing down, hands shoulder-width apart.',
+      'Extend your arms straight out in front of you at shoulder height.',
+      'Keeping your arms straight, pull the band apart by squeezing your shoulder blades together.',
+      'Slowly return to the starting position.'
+    ],
+    muscleGroups: ['Shoulders', 'Upper Back', 'Rhomboids'],
+    videoUrl: 'https://www.youtube.com/embed/okR_2_4w5yI'
+  },
+  {
+    id: 'banded-overhead-press',
+    name: 'Banded Overhead Press',
+    category: 'Upper Body',
+    difficulty: 'Intermediate',
+    equipment: 'resistance-band',
+    description: 'A shoulder-strengthening exercise that uses a resistance band to build deltoid and tricep strength.',
+    instructions: [
+      'Stand on the middle of the band with feet shoulder-width apart.',
+      'Hold the ends of the band at shoulder height, palms facing forward.',
+      'Press the band straight overhead until your arms are fully extended.',
+      'Slowly lower the band back to your shoulders.'
+    ],
+    muscleGroups: ['Shoulders', 'Triceps', 'Core'],
+    videoUrl: 'https://www.youtube.com/embed/s_u1pBKN-k4',
+    keywords: ['shoulder press']
+  },
 
   // LOWER BODY
   {
@@ -322,6 +523,55 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     videoUrl: 'https://www.youtube.com/embed/1_4z61g1-kQ',
     keywords: ['single leg squat']
   },
+  {
+    id: 'banded-squat',
+    name: 'Banded Squat',
+    category: 'Lower Body',
+    difficulty: 'Intermediate',
+    equipment: 'resistance-band',
+    description: 'Adds resistance to the standard bodyweight squat, increasing the challenge for the glutes, quads, and hamstrings.',
+    instructions: [
+      'Stand on the band with your feet shoulder-width apart.',
+      'Loop the other end of the band over your shoulders or hold it at shoulder height (goblet style).',
+      'Perform a squat, keeping your chest up and back straight.',
+      'Drive through your heels to return to the standing position.'
+    ],
+    muscleGroups: ['Quads', 'Glutes', 'Hamstrings'],
+    videoUrl: 'https://www.youtube.com/embed/922kNIi022Q'
+  },
+  {
+    id: 'banded-glute-bridge',
+    name: 'Banded Glute Bridge',
+    category: 'Lower Body',
+    difficulty: 'Beginner',
+    equipment: 'resistance-band',
+    description: 'Targets the glutes and hamstrings, with a mini-band adding resistance to engage the hip abductors.',
+    instructions: [
+      'Place a mini-band around your legs, just above your knees.',
+      'Lie on your back with your knees bent and feet flat on the floor.',
+      'Drive your hips up towards the ceiling, squeezing your glutes.',
+      'Keep your knees pressed outwards against the band. Hold for a moment, then lower your hips.'
+    ],
+    muscleGroups: ['Glutes', 'Hamstrings', 'Abductors'],
+    videoUrl: 'https://www.youtube.com/embed/5VSy_7dC5uA'
+  },
+  {
+    id: 'banded-lateral-walk',
+    name: 'Banded Lateral Walk',
+    category: 'Lower Body',
+    difficulty: 'Intermediate',
+    equipment: 'resistance-band',
+    description: 'An excellent warm-up or accessory exercise for glute activation and hip stability.',
+    instructions: [
+      'Place a mini-band around your ankles or just above your knees.',
+      'Assume an athletic stance with knees slightly bent.',
+      'Take a step to one side, keeping tension on the band.',
+      'Follow with the other foot, maintaining the stance. Repeat for desired reps, then switch directions.'
+    ],
+    muscleGroups: ['Glutes', 'Abductors', 'Hips'],
+    videoUrl: 'https://www.youtube.com/embed/a79_hVe-7G8',
+    keywords: ['monster walk', 'band walk']
+  },
 
   // CORE
   {
@@ -372,6 +622,22 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     muscleGroups: ['Core', 'Abs', 'Hip Flexors'],
     videoUrl: 'https://www.youtube.com/embed/B43v_j_2S24',
     keywords: ['hollow hold', 'hollow rock']
+  },
+  {
+    id: 'pallof-press',
+    name: 'Pallof Press',
+    category: 'Core',
+    difficulty: 'Intermediate',
+    equipment: 'resistance-band',
+    description: 'An anti-rotation core exercise that builds stability by resisting a rotational force.',
+    instructions: [
+      'Anchor a band at chest height.',
+      'Stand sideways to the anchor and hold the band with both hands at your chest.',
+      'Step away from the anchor to create tension.',
+      'Press the band straight out in front of you, resisting the urge to twist. Hold, then return to your chest.'
+    ],
+    muscleGroups: ['Core', 'Obliques', 'Abs'],
+    videoUrl: 'https://www.youtube.com/embed/6u_0kY-kYJU'
   },
 
   // FULL BODY
