@@ -166,14 +166,8 @@ const Preferences: React.FC = () => {
                         <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
                     </div>
                     <div className="flex-1 w-full text-center sm:text-left">
-                        <input type="text" value={profile.name} onChange={e => handleInputChange('name', e.target.value)} className="text-2xl font-bold bg-transparent border-b-2 border-gray-700 focus:border-orange-500 outline-none w-full" />
-                        <input
-                            type="email"
-                            value={profile.email}
-                            onChange={e => handleInputChange('email', e.target.value)}
-                            className="text-gray-400 bg-transparent border-b-2 border-gray-700 focus:border-orange-500 outline-none w-full mt-1"
-                            aria-label="User email"
-                        />
+                        <h2 className="text-2xl font-bold text-white">{profile.name}</h2>
+                        <p className="text-gray-400">{profile.email}</p>
                         <p className="text-xs text-gray-500 mt-1">Joined: {new Date(profile.joinDate).toLocaleDateString()}</p>
                     </div>
                 </div>
@@ -183,6 +177,14 @@ const Preferences: React.FC = () => {
             <div className="bg-gray-800/50 p-6 rounded-2xl space-y-4">
                  <h2 className="text-xl font-bold">Personal Details</h2>
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="form-group md:col-span-2">
+                        <label>Name</label>
+                        <input type="text" value={profile.name} onChange={e => handleInputChange('name', e.target.value)} />
+                    </div>
+                    <div className="form-group md:col-span-2">
+                        <label>Email Address</label>
+                        <input type="email" value={profile.email} onChange={e => handleInputChange('email', e.target.value)} />
+                    </div>
                     <div className="form-group">
                         <label>Date of Birth</label>
                         <input type="date" value={profile.dob || ''} onChange={e => handleInputChange('dob', e.target.value)} />

@@ -226,8 +226,8 @@ const ExerciseModal: React.FC<ExerciseModalProps> = ({ isOpen, onClose, onSelect
 
     const fullExerciseData: Omit<Exercise, 'id' | 'status'> = {
         exercise: selectedExercise.name,
-        duration: exerciseToEdit?.duration || 45,
-        rest: exerciseToEdit?.rest || 15,
+        duration: 45, // Default for new exercises
+        rest: 15, // Default for new exercises
         equipment: selectedExercise.equipment,
         difficulty: difficultyMap[selectedExercise.difficulty],
     };

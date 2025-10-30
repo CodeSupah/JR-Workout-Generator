@@ -8,9 +8,10 @@ import EditableWorkoutPlan from './EditableWorkoutPlan';
 import WorkoutModeToggle from './WorkoutModeToggle';
 import EquipmentSelector from './EquipmentSelector';
 import { toastStore } from '../store/toastStore';
+import StepperInput from './StepperInput';
 
 const WorkoutGenerator: React.FC = () => {
-  const [preferences, setPreferences] = useState<Omit<WorkoutPreferences, 'mode' | 'includeJumpRopeIntervals' | 'rounds' | 'availableEquipment' | 'includeWarmUp' | 'warmUpDuration' | 'includeCoolDown' | 'coolDownDuration'>>({
+  const [preferences, setPreferences] = useState<Omit<WorkoutPreferences, 'mode' | 'includeJumpRopeIntervals' | 'rounds' | 'availableEquipment' | 'includeWarmUp' | 'warmUpDuration' | 'includeCoolDown' | 'coolDownDuration' | 'defaultRestDuration' | 'restBetweenRounds'>>({
     duration: 15,
     skillLevel: SkillLevel.Beginner,
     goal: WorkoutGoal.FullBody,
@@ -24,6 +25,8 @@ const WorkoutGenerator: React.FC = () => {
   const [warmUpDuration, setWarmUpDuration] = useState(3);
   const [includeCoolDown, setIncludeCoolDown] = useState(true);
   const [coolDownDuration, setCoolDownDuration] = useState(2);
+  const [defaultRestDuration, setDefaultRestDuration] = useState(60);
+  const [restBetweenRounds, setRestBetweenRounds] = useState(120);
   
   const [originalPreferences, setOriginalPreferences] = useState<WorkoutPreferences | null>(null);
 
@@ -55,6 +58,8 @@ const WorkoutGenerator: React.FC = () => {
       setWarmUpDuration(parsedPrefs.warmUpDuration || 3);
       setIncludeCoolDown(parsedPrefs.includeCoolDown !== undefined ? parsedPrefs.includeCoolDown : true);
       setCoolDownDuration(parsedPrefs.coolDownDuration || 2);
+      setDefaultRestDuration(parsedPrefs.defaultRestDuration || 60);
+      setRestBetweenRounds(parsedPrefs.restBetweenRounds || 120);
     }
   }, []);
 
@@ -85,6 +90,8 @@ const WorkoutGenerator: React.FC = () => {
             setWarmUpDuration(savedPrefs.warmUpDuration);
             setIncludeCoolDown(savedPrefs.includeCoolDown);
             setCoolDownDuration(savedPrefs.coolDownDuration);
+            setDefaultRestDuration(savedPrefs.defaultRestDuration);
+            setRestBetweenRounds(savedPrefs.restBetweenRounds);
 
             // Set original preferences to prevent "Update Workout" button from being active immediately
             setOriginalPreferences(savedPrefs as WorkoutPreferences);
@@ -113,17 +120,19 @@ const WorkoutGenerator: React.FC = () => {
       warmUpDuration,
       includeCoolDown,
       coolDownDuration,
+      defaultRestDuration,
+      restBetweenRounds,
   });
   
   const hasChanges = useMemo(() => {
     if (!originalPreferences) return false;
     return JSON.stringify(getFullPreferences()) !== JSON.stringify(originalPreferences);
-  }, [preferences, mode, includeIntervals, rounds, availableEquipment, includeWarmUp, warmUpDuration, includeCoolDown, coolDownDuration, originalPreferences]);
+  }, [preferences, mode, includeIntervals, rounds, availableEquipment, includeWarmUp, warmUpDuration, includeCoolDown, coolDownDuration, defaultRestDuration, restBetweenRounds, originalPreferences]);
 
 
-  const handlePreferenceChange = <K extends keyof Omit<WorkoutPreferences, 'mode' | 'includeJumpRopeIntervals' | 'rounds' | 'availableEquipment' | 'includeWarmUp' | 'warmUpDuration' | 'includeCoolDown' | 'coolDownDuration'>>(
+  const handlePreferenceChange = <K extends keyof Omit<WorkoutPreferences, 'mode' | 'includeJumpRopeIntervals' | 'rounds' | 'availableEquipment' | 'includeWarmUp' | 'warmUpDuration' | 'includeCoolDown' | 'coolDownDuration' | 'defaultRestDuration' | 'restBetweenRounds'>>(
     key: K,
-    value: Omit<WorkoutPreferences, 'mode' | 'includeJumpRopeIntervals' | 'rounds' | 'availableEquipment' | 'includeWarmUp' | 'warmUpDuration' | 'includeCoolDown' | 'coolDownDuration'>[K]
+    value: Omit<WorkoutPreferences, 'mode' | 'includeJumpRopeIntervals' | 'rounds' | 'availableEquipment' | 'includeWarmUp' | 'warmUpDuration' | 'includeCoolDown' | 'coolDownDuration' | 'defaultRestDuration' | 'restBetweenRounds'>[K]
   ) => {
     setPreferences(prev => {
         const newPreferences = { ...prev, [key]: value };
@@ -295,6 +304,33 @@ const WorkoutGenerator: React.FC = () => {
                         )}
                     </div>
                 </div>
+
+                {/* Rest Settings */}
+                <div className="bg-gray-900/50 p-4 rounded-lg animate-fade-in space-y-3">
+                    <h3 className="font-semibold text-white">Rest Settings</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">Rest Between Exercises (Default): <span className="text-orange-400">{defaultRestDuration}s</span></label>
+                             <StepperInput
+                                value={defaultRestDuration}
+                                onChange={(v) => handleStateChange(setDefaultRestDuration, v)}
+                                step={5}
+                                min={0}
+                                aria-label="Default rest between exercises in seconds"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                             <label className="text-sm font-medium">Rest Between Rounds: <span className="text-orange-400">{restBetweenRounds}s</span></label>
+                            <StepperInput
+                                value={restBetweenRounds}
+                                onChange={(v) => handleStateChange(setRestBetweenRounds, v)}
+                                step={15}
+                                min={0}
+                                aria-label="Rest between rounds in seconds"
+                            />
+                        </div>
+                    </div>
+                </div>
                
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {/* Duration Slider */}
@@ -385,7 +421,7 @@ const WorkoutGenerator: React.FC = () => {
                 >
                     {isLoading ? (
                         <>
-                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>

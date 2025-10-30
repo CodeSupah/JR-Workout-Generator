@@ -1,5 +1,5 @@
 import { EXERCISE_DATABASE } from '../data/exerciseDatabase';
-import { ExerciseDetails } from '../types';
+import { Exercise, ExerciseDetails, ExerciseDifficulty } from '../types';
 
 export const getAllExercises = (): Promise<ExerciseDetails[]> => {
   return new Promise(resolve => {
@@ -17,4 +17,63 @@ export const getAllExercises = (): Promise<ExerciseDetails[]> => {
 
 export const getExerciseById = (id: string): Promise<ExerciseDetails | undefined> => {
   return new Promise(resolve => resolve(EXERCISE_DATABASE.find(ex => ex.id === id)));
+};
+
+export const getSuggestedMainExercise = (currentExercises: Exercise[]): Omit<Exercise, 'id' | 'status'> | null => {
+    const mainExercisesFromDB = EXERCISE_DATABASE.filter(ex => ex.purpose === 'main');
+    const currentExerciseNames = new Set(currentExercises.map(ex => ex.exercise));
+
+    // 1. Tally muscle groups from the current workout
+    const muscleGroupCounts = new Map<string, number>();
+    currentExercises.forEach(ex => {
+        const dbEntry = EXERCISE_DATABASE.find(dbEx => dbEx.name === ex.exercise);
+        if (dbEntry) {
+            dbEntry.muscleGroups.forEach(group => {
+                muscleGroupCounts.set(group, (muscleGroupCounts.get(group) || 0) + 1);
+            });
+        }
+    });
+
+    // 2. Find the least worked muscle groups
+    let minCount = Infinity;
+    const allMuscleGroups = new Set<string>();
+    mainExercisesFromDB.forEach(ex => ex.muscleGroups.forEach(g => allMuscleGroups.add(g)));
+
+    allMuscleGroups.forEach(group => {
+        const count = muscleGroupCounts.get(group) || 0;
+        if (count < minCount) {
+            minCount = count;
+        }
+    });
+
+    const leastWorkedGroups = Array.from(allMuscleGroups).filter(group => (muscleGroupCounts.get(group) || 0) === minCount);
+
+    // 3. Find candidate exercises
+    let candidates = mainExercisesFromDB.filter(ex => 
+        !currentExerciseNames.has(ex.name) &&
+        ex.muscleGroups.some(group => leastWorkedGroups.includes(group))
+    );
+
+    // 4. Fallback if no candidates found
+    if (candidates.length === 0) {
+        candidates = mainExercisesFromDB.filter(ex => !currentExerciseNames.has(ex.name));
+    }
+
+    if (candidates.length === 0) return null; // No more unique exercises to suggest
+
+    // 5. Select a random exercise and format it
+    const selectedEx = candidates[Math.floor(Math.random() * candidates.length)];
+    
+    const newExercise: Omit<Exercise, 'id' | 'status'> = {
+        exercise: selectedEx.name,
+        unit: 'reps',
+        duration: 45, // Default for time-based view
+        reps: 10,
+        sets: 3,
+        rest: 60, // A sensible default, can be overridden by universal rest
+        difficulty: selectedEx.difficulty as ExerciseDifficulty,
+        equipment: selectedEx.equipment,
+    };
+
+    return newExercise;
 };

@@ -2,7 +2,7 @@ import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useWorkoutEditor } from '../hooks/useWorkoutEditor';
 import { Exercise, WorkoutPlan, WorkoutPreferences } from '../types';
-import { PlusIcon, ArrowPathIcon, TrashIcon, DragHandleIcon, UndoIcon, RedoIcon, SaveIcon, ZapIcon, FolderOpenIcon, CogIcon } from './icons/Icons';
+import { PlusIcon, ArrowPathIcon, TrashIcon, DragHandleIcon, UndoIcon, RedoIcon, SaveIcon, ZapIcon, FolderOpenIcon, CogIcon, ChevronDownIcon, FlameIcon, SparklesIcon } from './icons/Icons';
 import ExerciseModal from './ExerciseModal';
 import ConfirmModal from './ConfirmModal';
 import BulkActionToolbar from './BulkActionToolbar';
@@ -11,6 +11,9 @@ import LoadTemplateModal from './LoadTemplateModal';
 import SaveRoutineModal from './SaveRoutineModal';
 import { toastStore } from '../store/toastStore';
 import { saveCustomWorkout } from '../services/workoutService';
+import { getSuggestedMainExercise } from '../services/exerciseService';
+import { flattenWorkoutForSession } from '../utils/workoutUtils';
+import ExerciseCard from './ExerciseCard';
 
 type EditableWorkoutPlanProps = {
   editor: ReturnType<typeof useWorkoutEditor>;
@@ -21,7 +24,7 @@ type WorkoutSection = 'warmUp' | 'rounds' | 'coolDown';
 
 const EditableWorkoutPlan: React.FC<EditableWorkoutPlanProps> = ({ editor, originalPreferences }) => {
   const navigate = useNavigate();
-  const { plan, reorderExercises, undo, redo, canUndo, canRedo, updateExercise, removeExercise } = editor;
+  const { plan, undo, redo, canUndo, canRedo, updateExercise, removeExercise } = editor;
 
   const [modalState, setModalState] = useState<{ mode: 'add' | 'replace'; section: WorkoutSection, exerciseToEdit?: Exercise, index?: number } | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<Exercise | null>(null);
@@ -30,30 +33,30 @@ const EditableWorkoutPlan: React.FC<EditableWorkoutPlanProps> = ({ editor, origi
   const [showRestSettings, setShowRestSettings] = useState(false);
   const [showLoadTemplate, setShowLoadTemplate] = useState(false);
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+  const [universalRest, setUniversalRest] = useState(30);
   
-  const dragItem = useRef<number | null>(null);
-  const dragOverItem = useRef<number | null>(null);
+  const dragItem = useRef<{index: number, section: WorkoutSection} | null>(null);
+  const [dragOverInfo, setDragOverInfo] = useState<{index: number; section: WorkoutSection} | null>(null);
   
   const totalTime = useMemo(() => {
     if (!plan) return 0;
-    const warmUpTime = plan.warmUp.reduce((acc, ex) => acc + ex.duration + ex.rest, 0);
-    const roundsTime = plan.rounds.reduce((acc, round) => acc + round.duration + round.rest, 0);
-    const coolDownTime = plan.coolDown.reduce((acc, ex) => acc + ex.duration + ex.rest, 0);
-    return Math.floor((warmUpTime + roundsTime + coolDownTime) / 60);
-  }, [plan]);
-
-  const mainWorkoutTime = useMemo(() => {
-    if (!plan) return 0;
-    const roundsTimeInSeconds = plan.rounds.reduce((acc, round) => acc + round.duration + round.rest, 0);
-    return Math.round(roundsTimeInSeconds / 60);
+    const planForSession = flattenWorkoutForSession(plan);
+    const totalSeconds = (planForSession.warmUp?.reduce((acc, ex) => acc + ex.duration + ex.rest, 0) || 0) +
+        (planForSession.rounds?.reduce((acc, ex) => acc + ex.duration + ex.rest, 0) || 0) +
+        (planForSession.coolDown?.reduce((acc, ex) => acc + ex.duration + ex.rest, 0) || 0);
+    return Math.floor(totalSeconds / 60);
   }, [plan]);
 
   const purpose = useMemo(() => {
     if (!modalState) return 'main';
-    if (modalState.section === 'warmUp') return 'warmup';
-    if (modalState.section === 'coolDown') return 'cooldown';
-    return 'main';
+
+    if (modalState.section === 'warmUp' || modalState.section === 'coolDown') {
+      return modalState.section === 'warmUp' ? 'warmup' : 'cooldown';
+    }
+    // For swapping or adding to the main workout, allow any exercise type.
+    return undefined; 
   }, [modalState]);
+
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -110,104 +113,190 @@ const EditableWorkoutPlan: React.FC<EditableWorkoutPlanProps> = ({ editor, origi
     if (modalState.mode === 'add') {
       editor.addExercise(exerciseData, modalState.section, modalState.index);
     } else if (modalState.mode === 'replace' && modalState.exerciseToEdit) {
-      editor.updateExercise(modalState.exerciseToEdit.id, { ...modalState.exerciseToEdit, ...exerciseData });
+      // Preserve key settings from the original exercise during a swap
+      const updatedData = {
+          ...exerciseData,
+          sets: modalState.exerciseToEdit.sets,
+          reps: modalState.exerciseToEdit.reps,
+          duration: modalState.exerciseToEdit.duration,
+          rest: modalState.exerciseToEdit.rest,
+          unit: modalState.exerciseToEdit.unit,
+      };
+      editor.updateExercise(modalState.exerciseToEdit.id, updatedData);
+    }
+  };
+  
+  const findExerciseSection = (exerciseId: string): WorkoutSection | null => {
+    if (!plan) return null;
+    if (plan.warmUp.some(ex => ex.id === exerciseId)) return 'warmUp';
+    if (plan.rounds.some(ex => ex.id === exerciseId)) return 'rounds';
+    if (plan.coolDown.some(ex => ex.id === exerciseId)) return 'coolDown';
+    return null;
+  }
+  
+  const handleSwapRequest = (exerciseToSwap: Exercise) => {
+    const section = findExerciseSection(exerciseToSwap.id);
+    if (section) {
+        setModalState({ mode: 'replace', section, exerciseToEdit: exerciseToSwap });
     }
   };
 
   const startWorkout = () => {
     sessionStorage.removeItem('suggestedWorkoutPlan');
-    navigate('/session', { state: { workout: plan, preferences: originalPreferences } });
+    const planForSession = flattenWorkoutForSession(plan);
+    navigate('/session', { state: { workout: planForSession, preferences: originalPreferences } });
   };
   
-  const difficultyColors: Record<Exercise['difficulty'], string> = {
-    Easy: 'bg-green-500',
-    Medium: 'bg-yellow-500',
-    Hard: 'bg-red-500',
+   const handleDuplicateExercise = (exercise: Exercise, section: WorkoutSection, index: number) => {
+    const { id, status, ...exerciseData } = exercise;
+    const newExercise = { ...exerciseData, rest: universalRest };
+    editor.addExercise(newExercise, section, index + 1);
+  };
+  
+  const handleDragStart = (e: React.DragEvent, index: number, section: WorkoutSection) => {
+    dragItem.current = { index, section };
+    e.dataTransfer.effectAllowed = 'move';
+  };
+  
+  const handleDrop = (e: React.DragEvent, dropIndex: number, dropSection: WorkoutSection) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOverInfo(null);
+    if (!dragItem.current) return;
+    
+    if (dragItem.current.section === dropSection && dragItem.current.index === dropIndex) {
+        dragItem.current = null;
+        return;
+    }
+    
+    editor.moveExercise(dragItem.current, { index: dropIndex, section: dropSection });
+    dragItem.current = null;
   };
 
-  const renderExerciseList = (exercises: Exercise[], section: WorkoutSection, title: string, duration: number, color: string) => {
-    const handleDragStart = (e: React.DragEvent<HTMLDivElement>, index: number) => {
-        dragItem.current = index;
-        e.dataTransfer.effectAllowed = 'move';
-    };
-    const handleDragEnter = (index: number) => dragOverItem.current = index;
-    const handleDragEnd = () => {
-        if (dragItem.current !== null && dragOverItem.current !== null && dragItem.current !== dragOverItem.current) {
-            reorderExercises(dragItem.current, dragOverItem.current, section);
+  const handleAddSuggestedMainExercise = () => {
+    const suggested = getSuggestedMainExercise(editor.plan?.rounds || []);
+    if (suggested) {
+        const exerciseWithUniversalRest = { ...suggested, rest: universalRest };
+        editor.addExercise(exerciseWithUniversalRest, 'rounds');
+        toastStore.addToast(`Added "${suggested.exercise}" to your workout!`);
+    } else {
+        toastStore.addToast("Couldn't find a unique exercise to suggest!", 'error');
+    }
+  };
+
+  const renderGroupableSection = (title: string, icon: React.ReactNode, section: WorkoutSection, exercises: Exercise[]) => {
+    const itemsToRender: (Exercise | { type: 'group'; exercises: Exercise[] })[] = [];
+    let currentGroup: Exercise[] = [];
+
+    exercises.forEach(ex => {
+        currentGroup.push(ex);
+        if (!ex.linkedToNext) {
+            if (currentGroup.length > 1) {
+                itemsToRender.push({ type: 'group', exercises: currentGroup });
+            } else {
+                itemsToRender.push(currentGroup[0]);
+            }
+            currentGroup = [];
         }
-        dragItem.current = null;
-        dragOverItem.current = null;
-    };
+    });
+    if (currentGroup.length > 0) {
+        itemsToRender.push(currentGroup.length > 1 ? { type: 'group', exercises: currentGroup } : currentGroup[0]);
+    }
 
     return (
-        <div className={`bg-gray-700/50 p-4 rounded-lg my-4`}>
-            <h3 className={`font-bold text-lg ${color} mb-2`}>{title} ({duration} min)</h3>
-            <div className="space-y-2">
-                {exercises.map((exercise, index) => {
-                    const isRoundBased = section === 'rounds' && (plan.numberOfRounds || 1) > 1 && (plan.exercisesPerRound || 0) > 0;
-                    const roundNumber = isRoundBased ? Math.floor(index / plan.exercisesPerRound) + 1 : 1;
-                    const isFirstOfRound = isRoundBased ? index % plan.exercisesPerRound === 0 : false;
-                    
-                    return (
-                        <React.Fragment key={exercise.id}>
-                            {isFirstOfRound && (
-                                <div className="text-center font-bold text-orange-400 py-2 my-2 border-t border-b border-gray-700/80 bg-gray-900/30">
-                                    Round {roundNumber} / {plan.numberOfRounds}
-                                </div>
-                            )}
-                            <div
-                                className={`p-2 rounded-lg flex items-center gap-2 shadow-sm transition-all duration-200 ${selectedIds.includes(exercise.id) ? 'bg-orange-500/20 ring-2 ring-orange-400' : 'bg-gray-700/80'}`}
-                                draggable
-                                onDragStart={(e) => handleDragStart(e, index)}
-                                onDragEnter={() => handleDragEnter(index)}
-                                onDragEnd={handleDragEnd}
-                                onDragOver={(e) => e.preventDefault()}
-                            >
-                                <div className="cursor-move text-gray-400 p-2"><DragHandleIcon className="w-5 h-5" /></div>
-                                {section === 'rounds' && (
-                                    <input type="checkbox" checked={selectedIds.includes(exercise.id)} onChange={() => handleSelection(exercise.id)} className="w-5 h-5 rounded bg-gray-600 border-gray-500 text-orange-500 focus:ring-orange-500/50" />
-                                )}
-                                
-                                <div className={`flex-1 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 ${section === 'rounds' ? 'ml-2': 'ml-8'}`}>
-                                <div className="flex items-center gap-3">
-                                    <span className={`w-3 h-3 rounded-full ${difficultyColors[exercise.difficulty]}`}></span>
-                                    <span className="font-semibold text-white text-sm sm:text-base">{exercise.exercise}</span>
-                                </div>
-                                <div className="flex items-center gap-4">
-                                    <div>
-                                    <label htmlFor={`duration-${exercise.id}`} className="text-xs text-gray-400">Duration</label>
-                                    <div className="flex items-center gap-1">
-                                        <input id={`duration-${exercise.id}`} type="number" min="0" value={exercise.duration} onChange={e => updateExercise(exercise.id, {duration: Math.max(0, parseInt(e.target.value) || 0)})} className="w-16 bg-gray-900/50 text-center rounded-md p-1" aria-label="Work duration"/>
-                                        <span className="text-xs text-gray-400">s</span>
-                                    </div>
-                                    </div>
-                                    <div>
-                                    <label htmlFor={`rest-${exercise.id}`} className="text-xs text-gray-400">Rest</label>
-                                    <div className="flex items-center gap-1">
-                                        <input id={`rest-${exercise.id}`} type="number" min="0" value={exercise.rest} onChange={e => updateExercise(exercise.id, {rest: Math.max(0, parseInt(e.target.value) || 0)})} className="w-16 bg-gray-900/50 text-center rounded-md p-1" aria-label="Rest duration"/>
-                                        <span className="text-xs text-gray-400">s</span>
-                                    </div>
-                                    </div>
-                                </div>
-                                </div>
-                                <div className="flex gap-1">
-                                    <button onClick={() => setModalState({mode: 'replace', section, exerciseToEdit: exercise})} className="p-2 hover:bg-gray-600 rounded-md" title="Replace Exercise"><ArrowPathIcon className="w-5 h-5"/></button>
-                                    <button onClick={() => setConfirmDelete(exercise)} className="p-2 hover:bg-gray-600 rounded-md text-red-400" title="Delete Exercise"><TrashIcon className="w-5 h-5"/></button>
+        <details open className="bg-gray-800/30 rounded-xl overflow-hidden transition-colors"
+            onDragEnter={() => setDragOverInfo({ index: exercises.length, section })}
+            onDragLeave={() => setDragOverInfo(null)}
+            onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverInfo({ index: exercises.length, section }); }}
+            onDrop={(e) => handleDrop(e, exercises.length, section)}
+        >
+            <summary className="p-4 cursor-pointer flex justify-between items-center text-xl font-bold">
+                <div className="flex items-center gap-3">
+                    {icon} {title}
+                </div>
+                <ChevronDownIcon className="w-6 h-6 transform transition-transform details-arrow" />
+            </summary>
+            <div className="p-4 pt-0 space-y-3">
+                {itemsToRender.map((item, groupIndex) => {
+                    if ('type' in item && item.type === 'group') {
+                        const { exercises: groupExercises } = item;
+                        const lastInGroup = groupExercises[groupExercises.length - 1];
+                        const firstInGroup = groupExercises[0];
+                        const originalIndex = exercises.indexOf(firstInGroup);
+                        
+                        return (
+                            <div key={`group-${section}-${groupIndex}`}>
+                                {dragOverInfo?.section === section && dragOverInfo?.index === originalIndex && <div className="h-1.5 my-1 rounded-full bg-orange-500 animate-pulse" />}
+                                <div className="bg-gray-700/50 rounded-xl space-y-0 border-l-4 border-orange-500">
+                                    {groupExercises.map((ex, exerciseIndex) => (
+                                        <div key={ex.id} draggable onDragStart={(e) => handleDragStart(e, originalIndex + exerciseIndex, section)} onDrop={(e) => handleDrop(e, originalIndex + exerciseIndex, section)} onDragEnter={() => setDragOverInfo({index: originalIndex + exerciseIndex, section: section})} onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverInfo({ index: originalIndex + exerciseIndex, section: section });}}>
+                                            <ExerciseCard
+                                                exercise={ex}
+                                                onUpdate={updateExercise}
+                                                onDelete={removeExercise}
+                                                onDuplicate={() => handleDuplicateExercise(ex, section, originalIndex + exerciseIndex)}
+                                                onSwapRequest={handleSwapRequest}
+                                                isLast={exerciseIndex === groupExercises.length - 1}
+                                                universalRest={universalRest}
+                                                allowLinking={true}
+                                                isInGroup={true}
+                                                isFirstInGroup={exerciseIndex === 0}
+                                                isLastInGroup={exerciseIndex === groupExercises.length - 1}
+                                                groupRounds={lastInGroup.groupRounds}
+                                                onUpdateGroupRounds={(val) => updateExercise(lastInGroup.id, { groupRounds: val })}
+                                                groupRest={lastInGroup.restAfterGroup}
+                                                onUpdateGroupRest={(val) => updateExercise(lastInGroup.id, { restAfterGroup: val })}
+                                            />
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
-                        </React.Fragment>
-                    )
+                        );
+                    } else {
+                        const exercise = item as Exercise;
+                        const originalIndex = exercises.indexOf(exercise);
+                        return (
+                            <div key={exercise.id}>
+                                {dragOverInfo?.section === section && dragOverInfo?.index === originalIndex && <div className="h-1.5 my-1 rounded-full bg-orange-500 animate-pulse" />}
+                                <div draggable onDragStart={(e) => handleDragStart(e, originalIndex, section)} onDrop={(e) => handleDrop(e, originalIndex, section)} onDragEnter={() => setDragOverInfo({ index: originalIndex, section: section })} onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverInfo({ index: originalIndex, section: section });}}>
+                                    <ExerciseCard
+                                        exercise={exercise}
+                                        onUpdate={updateExercise}
+                                        onDelete={removeExercise}
+                                        onDuplicate={() => handleDuplicateExercise(exercise, section, originalIndex)}
+                                        onSwapRequest={handleSwapRequest}
+                                        isLast={originalIndex === exercises.length - 1}
+                                        universalRest={universalRest}
+                                        allowLinking={true}
+                                        isInGroup={false}
+                                    />
+                                </div>
+                            </div>
+                        );
+                    }
                 })}
+                 {dragOverInfo?.section === section && dragOverInfo?.index === exercises.length && exercises.length > 0 && <div className="h-1.5 my-1 rounded-full bg-orange-500 animate-pulse" />}
+                <div className={`w-full mt-3 grid grid-cols-1 ${section === 'rounds' ? 'sm:grid-cols-2' : ''} gap-3`}>
+                    <button 
+                        onClick={() => setModalState({mode: 'add', section, index: exercises.length})}
+                        className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-gray-600 hover:border-orange-400 hover:bg-gray-700/50 text-gray-300 font-bold py-2 px-4 rounded-lg transition-colors text-sm">
+                        <PlusIcon className="w-4 h-4" />
+                        {section === 'rounds' ? 'Add From Library' : 'Add Exercise'}
+                    </button>
+                     {section === 'rounds' && (
+                        <button 
+                            onClick={handleAddSuggestedMainExercise}
+                            className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-gray-600 hover:border-teal-400 hover:bg-gray-700/50 text-gray-300 font-bold py-2 px-4 rounded-lg transition-colors text-sm">
+                            <SparklesIcon className="w-4 h-4 text-teal-400" />
+                            Add Suggestion
+                        </button>
+                    )}
+                </div>
             </div>
-            <button 
-                onClick={() => setModalState({mode: 'add', section, index: exercises.length})}
-                className="w-full mt-3 flex items-center justify-center gap-2 border-2 border-dashed border-gray-600 hover:border-orange-400 hover:bg-gray-700/50 text-gray-300 font-bold py-2 px-4 rounded-lg transition-colors text-sm">
-                <PlusIcon className="w-4 h-4" />
-                Add Exercise
-            </button>
-        </div>
-    );
-  }
+        </details>
+      );
+  };
+
 
   return (
     <>
@@ -227,12 +316,12 @@ const EditableWorkoutPlan: React.FC<EditableWorkoutPlanProps> = ({ editor, origi
         </div>
         
         {selectedIds.length > 0 && <BulkActionToolbar editor={editor} selectedIds={selectedIds} clearSelection={() => setSelectedIds([])}/>}
+        
+        {plan.warmUp && plan.warmUp.length > 0 && renderGroupableSection('Warm-up', <FlameIcon className="w-6 h-6 text-orange-400"/>, 'warmUp', plan.warmUp)}
 
-        {plan.warmUp && plan.warmUp.length > 0 && renderExerciseList(plan.warmUp, 'warmUp', 'Warm-up', plan.warmUpDuration, 'text-orange-300')}
+        {renderGroupableSection('Main Workout', <ZapIcon className="w-6 h-6 text-yellow-400"/>, 'rounds', plan.rounds)}
 
-        {renderExerciseList(plan.rounds, 'rounds', 'Main Workout', mainWorkoutTime, 'text-white')}
-
-        {plan.coolDown && plan.coolDown.length > 0 && renderExerciseList(plan.coolDown, 'coolDown', 'Cool-down', plan.coolDownDuration, 'text-indigo-400')}
+        {plan.coolDown && plan.coolDown.length > 0 && renderGroupableSection('Cool-down', <SparklesIcon className="w-6 h-6 text-blue-400"/>, 'coolDown', plan.coolDown)}
         
         {/* Modals and Panels */}
         {modalState && <ExerciseModal 
@@ -245,7 +334,7 @@ const EditableWorkoutPlan: React.FC<EditableWorkoutPlanProps> = ({ editor, origi
             originalPreferences={originalPreferences}
         />}
         {confirmDelete && <ConfirmModal isOpen={!!confirmDelete} onClose={() => setConfirmDelete(null)} onConfirm={() => { removeExercise(confirmDelete.id); setConfirmDelete(null);}} title="Delete Exercise?" message={`Are you sure you want to remove "${confirmDelete.exercise}"?`} />}
-        {showRestSettings && <RestSettingsPanel isOpen={showRestSettings} onClose={() => setShowRestSettings(false)} editor={editor} />}
+        {showRestSettings && <RestSettingsPanel isOpen={showRestSettings} onClose={() => setShowRestSettings(false)} editor={editor} setUniversalRest={setUniversalRest} />}
         {showLoadTemplate && <LoadTemplateModal isOpen={showLoadTemplate} onClose={() => setShowLoadTemplate(false)} editor={editor} />}
         <SaveRoutineModal 
           isOpen={isSaveModalOpen}
@@ -253,6 +342,15 @@ const EditableWorkoutPlan: React.FC<EditableWorkoutPlanProps> = ({ editor, origi
           onSave={handleSave}
           defaultName={plan.name || `Custom Workout - ${new Date().toLocaleDateString()}`}
         />
+         <style>{`
+          details > summary::-webkit-details-marker { display: none; }
+          details[open] .details-arrow { transform: rotate(180deg); }
+          .form-group label { display: block; margin-bottom: 0.5rem; font-size: 0.75rem; font-weight: 500; color: #9CA3AF; }
+          .form-group input { width: 100%; background-color: #111827; color: white; border: 1px solid #4B5563; border-radius: 0.5rem; padding: 0.5rem; text-align: center; outline: none; }
+          .form-group input:focus { border-color: #F97316; box-shadow: 0 0 0 2px #F9731640; }
+          input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+          input[type=number] { -moz-appearance: textfield; }
+      `}</style>
       </div>
 
       {/* Floating Action Bar */}

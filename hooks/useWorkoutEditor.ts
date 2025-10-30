@@ -11,6 +11,7 @@ type WorkoutEditor = {
   removeExercise: (id: string) => void;
   updateExercise: (id: string, updatedExercise: Partial<Exercise>) => void;
   reorderExercises: (startIndex: number, endIndex: number, section: WorkoutSection) => void;
+  moveExercise: (source: { index: number; section: WorkoutSection }, destination: { index: number; section: WorkoutSection }) => void;
   deleteExercises: (ids: string[]) => void;
   duplicateExercises: (ids: string[]) => void;
   updateExercises: (ids: string[], updates: Partial<Pick<Exercise, 'duration' | 'rest'>>) => void;
@@ -144,7 +145,29 @@ export const useWorkoutEditor = (): WorkoutEditor => {
     newSection.splice(endIndex, 0, removed);
     const newPlan = { ...plan, [section]: newSection };
     updateStateAndHistory(newPlan);
-    toastStore.addToast('Workout reordered');
+  }, [plan, updateStateAndHistory]);
+
+  const moveExercise = useCallback((
+    source: { index: number, section: WorkoutSection },
+    destination: { index: number, section: WorkoutSection }
+  ) => {
+    if (!plan) return;
+    
+    // Deep copy to avoid mutation issues
+    const newPlan = JSON.parse(JSON.stringify(plan));
+    
+    const sourceSection = newPlan[source.section];
+    const [movedExercise] = sourceSection.splice(source.index, 1);
+
+    if (source.section === destination.section) {
+        sourceSection.splice(destination.index, 0, movedExercise);
+    } else {
+        const destinationSection = newPlan[destination.section];
+        destinationSection.splice(destination.index, 0, movedExercise);
+    }
+    
+    updateStateAndHistory(newPlan);
+    toastStore.addToast('Exercise moved');
   }, [plan, updateStateAndHistory]);
 
   const canUndo = historyIndex > 0;
@@ -175,6 +198,7 @@ export const useWorkoutEditor = (): WorkoutEditor => {
     removeExercise,
     updateExercise,
     reorderExercises,
+    moveExercise,
     deleteExercises,
     duplicateExercises,
     updateExercises,

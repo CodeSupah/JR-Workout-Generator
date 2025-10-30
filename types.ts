@@ -33,6 +33,8 @@ export interface WorkoutPreferences {
   warmUpDuration: number;
   includeCoolDown: boolean;
   coolDownDuration: number;
+  defaultRestDuration: number;
+  restBetweenRounds: number;
 }
 
 export type ExerciseDifficulty = 'Easy' | 'Medium' | 'Hard';
@@ -45,12 +47,19 @@ export type WorkoutMode = 'jump-rope' | 'equipment' | 'no-equipment';
 export interface Exercise {
   id: string;
   exercise: string;
-  duration: number; // in seconds
+  duration: number; // in seconds. For rep-based, this is a time guideline.
+  reps?: number;
+  unit?: 'seconds' | 'reps';
   rest: number; // in seconds
   difficulty: ExerciseDifficulty;
   equipment: ExerciseEquipment;
   notes?: string;
   status?: 'pending' | 'completed' | 'skipped';
+  // --- Fields for Manual Builder ---
+  sets?: number;
+  linkedToNext?: boolean;
+  groupRounds?: number;
+  restAfterGroup?: number;
 }
 
 export interface WorkoutPlan {
@@ -59,7 +68,7 @@ export interface WorkoutPlan {
   mode: WorkoutMode;
   warmUp: Exercise[];
   warmUpDuration: number;
-  rounds: Exercise[];
+  rounds: Exercise[]; // For AI generator and flattened manual plans
   coolDown: Exercise[];
   coolDownDuration: number;
   estimatedCalories: number;
@@ -67,6 +76,7 @@ export interface WorkoutPlan {
   motivationalQuote: string;
   exercisesPerRound: number;
   numberOfRounds: number;
+  mainWorkout?: Exercise[]; // For structured manual plans
 }
 
 export interface PersonalBestRecord<T> {
@@ -123,7 +133,6 @@ export interface Achievement {
   id: string;
   category: 'Volume' | 'Duration' | 'Streak' | 'Customization';
   title: string;
-  // FIX: Replaced `React.FC` with `FC` and added a type-only import for `FC` from `react` at the top of the file to resolve the "Cannot find namespace 'React'" error.
   icon: FC<{className?: string}>;
   tiers: AchievementTier[];
 }
@@ -144,7 +153,6 @@ export interface UserAchievementProgress {
 
 // Used for notifications when a new achievement is unlocked
 export type UnlockedAchievementInfo = AchievementTier & {
-    // FIX: Replaced `React.FC` with `FC` to resolve the "Cannot find namespace 'React'" error.
     icon: FC<{className?: string}>;
 };
 

@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { WorkoutPlan, Exercise, UnlockedAchievementInfo, WorkoutPreferences } from '../types';
 import { useWorkoutTimer } from '../hooks/useWorkoutTimer';
-import { PlayIcon, PauseIcon, StopIcon, VolumeUpIcon, VolumeOffIcon, SkipNextIcon, SkipPreviousIcon, TrophyIcon, TrashIcon, ChevronDoubleRightIcon, SaveIcon, ArrowPathIcon } from './icons/Icons';
+import { PlayIcon, PauseIcon, StopIcon, VolumeUpIcon, VolumeOffIcon, SkipNextIcon, SkipPreviousIcon, TrophyIcon, TrashIcon, ChevronDoubleRightIcon, SaveIcon, ArrowPathIcon, CheckCircleIcon } from './icons/Icons';
 import { saveCustomWorkout } from '../services/workoutService';
 import { checkAndUnlockAchievements } from '../services/achievementService';
 import { toastStore } from '../store/toastStore';
@@ -38,12 +38,15 @@ const LiveSession: React.FC = () => {
     summary,
     displayInfo,
     currentExercise,
+    exercises,
+    exerciseIndex,
     togglePause,
     stopWorkout,
     skipExercise,
     previousExercise,
     skipStage,
     replaceCurrentExercise,
+    completeSet,
   } = timer;
 
   useEffect(() => {
@@ -79,6 +82,35 @@ const LiveSession: React.FC = () => {
     if (stage === 'Cool-down') return 'cooldown';
     return 'main';
   }, [stage]);
+  
+  const isRepBasedWork = stage === 'Work' && currentExercise?.unit === 'reps';
+
+  const setInfo = useMemo(() => {
+    if (!currentExercise || !exercises || exerciseIndex < 0 || stage === 'Warm-up' || stage === 'Cool-down') {
+        return { currentSetNum: 0, totalSets: 0, show: false };
+    }
+    
+    // Find all occurrences of the current exercise by name
+    const allInstances = exercises.filter(ex => ex.exercise === currentExercise.exercise);
+    if (allInstances.length <= 1) {
+        // Not a multi-set exercise, don't show set info
+        return { currentSetNum: 0, totalSets: 0, show: false };
+    }
+
+    // Find the index of the current instance among all its occurrences
+    let count = 0;
+    for(let i = 0; i <= exerciseIndex; i++) {
+        if(exercises[i].exercise === currentExercise.exercise) {
+            count++;
+        }
+    }
+
+    return {
+        currentSetNum: count,
+        totalSets: allInstances.length,
+        show: true,
+    };
+  }, [currentExercise, exercises, exerciseIndex, stage]);
 
   if (!workout) {
     return <div className="flex items-center justify-center min-h-screen">Loading Session...</div>;
@@ -175,7 +207,7 @@ const LiveSession: React.FC = () => {
                 <SaveIcon className="w-5 h-5"/> Save as Routine
             </button>
             <button
-                onClick={() => navigate('/dashboard')}
+                onClick={() => navigate('/profile')}
                 className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-6 rounded-lg text-lg transition-transform transform hover:scale-105"
             >
                 Back to Dashboard
@@ -222,30 +254,49 @@ const LiveSession: React.FC = () => {
               cx="50"
               cy="50"
             />
-            {/* Progress circle */}
-            <circle
-              className="text-white"
-              strokeWidth="5"
-              strokeDasharray={2 * Math.PI * 45}
-              strokeDashoffset={(2 * Math.PI * 45) * (stageProgress)}
-              strokeLinecap="round"
-              stroke="currentColor"
-              fill="transparent"
-              r="45"
-              cx="50"
-              cy="50"
-              style={{ transform: 'rotate(-90deg)', transformOrigin: '50% 50%', transition: 'stroke-dashoffset 0.5s linear' }}
-            />
+            {/* Progress circle for time-based */}
+            {!isRepBasedWork && (
+              <circle
+                className="text-white"
+                strokeWidth="5"
+                strokeDasharray={2 * Math.PI * 45}
+                strokeDashoffset={(2 * Math.PI * 45) * (stageProgress)}
+                strokeLinecap="round"
+                stroke="currentColor"
+                fill="transparent"
+                r="45"
+                cx="50"
+                cy="50"
+                style={{ transform: 'rotate(-90deg)', transformOrigin: '50% 50%', transition: 'stroke-dashoffset 0.5s linear' }}
+              />
+            )}
           </svg>
           <div className="z-10">
             <div className="flex items-center justify-center gap-2">
                 <p className="text-xl font-semibold uppercase tracking-widest text-white/80">{currentStageDisplay}</p>
                 {stage !== 'Finished' && <button onClick={skipStage} title="Skip to Next Stage" className="p-1 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-colors"><ChevronDoubleRightIcon className="w-5 h-5"/></button>}
             </div>
-            <p className="text-7xl font-bold tabular-nums text-white my-2">{renderTimerDisplay()}</p>
-            {stage === 'Work' || stage === 'Rest' ? <p className="text-lg text-white/80">
-              Exercise {currentRoundNum} / {totalRounds}
-            </p> : <p className="text-lg text-white/80">&nbsp;</p>}
+            {isRepBasedWork ? (
+                <>
+                  <p className="text-7xl font-bold tabular-nums text-white my-2">{currentExercise.reps} <span className="text-5xl">Reps</span></p>
+                  {setInfo.show ? (
+                    <p className="text-lg text-white/80">Set {setInfo.currentSetNum} / {setInfo.totalSets}</p>
+                  ) : (
+                    <p className="text-lg text-white/80">Exercise {currentRoundNum} / {totalRounds}</p>
+                  )}
+                </>
+            ) : (
+                <>
+                  <p className="text-7xl font-bold tabular-nums text-white my-2">{renderTimerDisplay()}</p>
+                  {stage === 'Work' || stage === 'Rest' ? (
+                     setInfo.show ? (
+                        <p className="text-lg text-white/80">Set {setInfo.currentSetNum} / {setInfo.totalSets}</p>
+                     ) : (
+                        <p className="text-lg text-white/80">Exercise {currentRoundNum} / {totalRounds}</p>
+                     )
+                  ) : <p className="text-lg text-white/80">&nbsp;</p>}
+                </>
+            )}
           </div>
         </div>
         
@@ -269,13 +320,23 @@ const LiveSession: React.FC = () => {
             >
                 <SkipPreviousIcon className="w-6 h-6" />
             </button>
-            <button
-                onClick={togglePause}
-                className="p-5 bg-white text-gray-900 rounded-full shadow-2xl transition-transform transform hover:scale-110"
-                title={isRunning ? 'Pause' : 'Play'}
-            >
-                {isRunning ? <PauseIcon className="w-8 h-8" /> : <PlayIcon className="w-8 h-8" />}
-            </button>
+            {isRepBasedWork ? (
+              <button
+                onClick={completeSet}
+                className="p-5 bg-green-500 text-white rounded-full shadow-2xl transition-transform transform hover:scale-110"
+                title="Set Complete"
+              >
+                <CheckCircleIcon className="w-8 h-8" />
+              </button>
+            ) : (
+              <button
+                  onClick={togglePause}
+                  className="p-5 bg-white text-gray-900 rounded-full shadow-2xl transition-transform transform hover:scale-110"
+                  title={isRunning ? 'Pause' : 'Play'}
+              >
+                  {isRunning ? <PauseIcon className="w-8 h-8" /> : <PlayIcon className="w-8 h-8" />}
+              </button>
+            )}
             <button
                 onClick={skipExercise}
                 className="p-3 text-white transition-transform transform hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"

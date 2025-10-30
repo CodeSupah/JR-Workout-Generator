@@ -152,10 +152,10 @@ export const generateWorkoutPlan = async (prefs: WorkoutPreferences): Promise<Wo
     - This leaves **${targetExerciseMinutes} minutes** for the main workout (all rounds combined).
     - The user will perform **${prefs.rounds} rounds** of the circuit you create.
     - Therefore, the SINGLE circuit of exercises you generate in the 'rounds' array **MUST** have a total duration (sum of all exercise \`duration\` + \`rest\` fields) of **EXACTLY ${targetSecondsPerCircuit} seconds**.
-    - **THIS IS NOT A GUIDELINE, IT IS A STRICT REQUIREMENT.** All other preferences (skill, goal) must be met *within* this exact time constraint. If you cannot create a plan that fits this time, the response is invalid. Adjust exercise durations, rest periods, and the number of exercises in the circuit to hit the target.
+    - **THIS IS NOT A GUIDELINE, IT IS A STRICT REQUIREMENT.** You MUST use **${prefs.defaultRestDuration} seconds** as the 'rest' value for every exercise in the 'rounds' array. You must adjust exercise 'duration' values and the number of exercises in the circuit to hit the target time. **DO NOT change the 'rest' value.** All other preferences (skill, goal) must be met *within* this exact time constraint.
 
     **SECONDARY GOAL: USER PREFERENCES**
-    *Now, considering the strict time constraint above, apply these user preferences:*
+    *Now, considering the strict time and rest constraints above, apply these user preferences:*
     - Skill Level: ${prefs.skillLevel}
     - Goal: ${prefs.goal}
     - Workout Mode: ${prefs.mode}
@@ -164,6 +164,8 @@ export const generateWorkoutPlan = async (prefs: WorkoutPreferences): Promise<Wo
     - Include Jump Rope Intervals: ${prefs.includeJumpRopeIntervals}
     - Include Warm-up: ${prefs.includeWarmUp}
     - Include Cool-down: ${prefs.includeCoolDown}
+    - Default Rest Between Exercises: ${prefs.defaultRestDuration} seconds
+    - Rest Between Rounds: ${prefs.restBetweenRounds} seconds (This is for user info; you do not need to include it in your calculation for the single circuit's duration)
 
     ---
 
@@ -175,14 +177,14 @@ export const generateWorkoutPlan = async (prefs: WorkoutPreferences): Promise<Wo
     - **Mode Logic:** ${getModeInstructions(prefs)}
     - **Goal-Specific Exercises:**
         - **Full Body:** Create a balanced, varied workout targeting all major muscle groups. This is the default, well-rounded option.
-        - **Cardio Endurance:** Prioritize High-Intensity Interval Training (HIIT). Emphasize longer work periods (e.g., 45-60 seconds) with shorter rest to build cardiovascular endurance and maximize calorie burn.
+        - **Cardio Endurance:** Prioritize High-Intensity Interval Training (HIIT). Emphasize longer work periods with shorter rest to build cardiovascular endurance and maximize calorie burn.
         - **Power:** Focus on explosive movements. For jump rope, this means Double Unders or high-intensity bursts. For equipment/bodyweight, include exercises like Kettlebell Swings or Burpees.
         - **Core Strength:** Integrate jump rope variations that engage the core (e.g., high knees, twists) and add core-focused bodyweight exercises like planks or leg raises.
         - **Freestyle (for Jump Rope mode):** Provide a creative mix of skills, including Criss-Cross, Side Swings, and other tricks to encourage creativity and rhythm.
     - **Skill Level Adherence:**
-        - **Beginner:** All exercises must be 'Easy'. Work durations should be around 30s. Use simple movements.
-        - **Intermediate:** Exercises can be 'Easy' or 'Medium'. Work durations around 40s.
-        - **Advanced:** Exercises can be 'Easy', 'Medium', or 'Hard'. Work durations 45-60s. Can include complex movements like Double Unders.
+        - **Beginner:** All exercises must be 'Easy'.
+        - **Intermediate:** Exercises can be 'Easy' or 'Medium'.
+        - **Advanced:** Exercises can be 'Easy', 'Medium', or 'Hard'. Can include complex movements like Double Unders.
     - **Prevent Repetition:** Do not use the exact same exercise back-to-back within the generated circuit.
 
     **RULE 4: AVAILABLE EXERCISES (MANDATORY)**
@@ -192,7 +194,7 @@ export const generateWorkoutPlan = async (prefs: WorkoutPreferences): Promise<Wo
     - Available Cool-down Exercises for the 'coolDown' array: ${flexibilityExercises}
 
 
-    **FINAL CHECK:** Before outputting the JSON, double-check that the sum of 'duration' and 'rest' for all exercises in the generated 'rounds' circuit array equals exactly ${targetSecondsPerCircuit} seconds.
+    **FINAL CHECK:** Before outputting the JSON, double-check that the sum of 'duration' and 'rest' for all exercises in the generated 'rounds' circuit array equals exactly ${targetSecondsPerCircuit} seconds, and that each 'rest' value is exactly ${prefs.defaultRestDuration}.
   `;
 
   try {
@@ -209,29 +211,44 @@ export const generateWorkoutPlan = async (prefs: WorkoutPreferences): Promise<Wo
     const jsonText = response.text.trim();
     const parsedPlan = JSON.parse(jsonText) as Omit<WorkoutPlan, 'id' | 'mode' | 'warmUpDuration' | 'coolDownDuration' | 'exercisesPerRound' | 'numberOfRounds'>;
     
-    parsedPlan.warmUp = parsedPlan.warmUp.map(ex => ({ ...ex, id: crypto.randomUUID() }));
-    parsedPlan.coolDown = parsedPlan.coolDown.map(ex => ({ ...ex, id: crypto.randomUUID() }));
+    parsedPlan.warmUp = parsedPlan.warmUp.map(ex => ({ ...ex, id: crypto.randomUUID(), unit: 'seconds' as const }));
+    parsedPlan.coolDown = parsedPlan.coolDown.map(ex => ({ ...ex, id: crypto.randomUUID(), unit: 'seconds' as const }));
     
     const exercisesPerRound = parsedPlan.rounds.length;
 
-    // The AI generates one circuit. We duplicate it here to build the full workout list
-    // for the live session based on the user's requested number of rounds.
-    let finalRounds: Exercise[] = [];
-    if (prefs.rounds > 1 && parsedPlan.rounds.length > 0) {
-        for (let i = 0; i < prefs.rounds; i++) {
-            finalRounds.push(...parsedPlan.rounds.map(r => ({...r, id: crypto.randomUUID()})));
+    // Convert the AI-generated circuit into a structure compatible with the manual builder's editor
+    // This allows for advanced editing like sets, reps, and supersets.
+    let structuredRounds: Exercise[] = parsedPlan.rounds.map((ex, index) => {
+        const isLastInCircuit = index === parsedPlan.rounds.length - 1;
+        const newEx: Exercise = {
+            ...ex,
+            id: crypto.randomUUID(),
+            unit: 'seconds',
+            sets: 1, // Default sets for individual editing
+            reps: 10, // Default reps for editing
+            linkedToNext: false,
+        };
+
+        if (parsedPlan.rounds.length > 1) { // It's a circuit/superset
+            newEx.linkedToNext = !isLastInCircuit;
+            if (isLastInCircuit) {
+                newEx.groupRounds = prefs.rounds;
+                newEx.restAfterGroup = prefs.restBetweenRounds;
+            }
+        } else if (parsedPlan.rounds.length === 1) { // Single exercise repeated
+            newEx.sets = prefs.rounds;
         }
-    } else {
-        finalRounds = parsedPlan.rounds.map(r => ({...r, id: crypto.randomUUID()}));
-    }
+
+        return newEx;
+    });
     
     const workoutPlan: WorkoutPlan = {
       ...parsedPlan,
       id: crypto.randomUUID(),
       mode: prefs.mode,
       warmUpDuration: prefs.includeWarmUp ? prefs.warmUpDuration : 0,
-      coolDownDuration: prefs.includeCoolDown ? prefs.coolDownDuration : 0, // Add cool down duration to plan
-      rounds: finalRounds,
+      coolDownDuration: prefs.includeCoolDown ? prefs.coolDownDuration : 0,
+      rounds: structuredRounds,
       exercisesPerRound: exercisesPerRound,
       numberOfRounds: prefs.rounds,
     };

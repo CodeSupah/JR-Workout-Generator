@@ -5,20 +5,23 @@ type RestSettingsPanelProps = {
   isOpen: boolean;
   onClose: () => void;
   editor: ReturnType<typeof useWorkoutEditor>;
+  setUniversalRest: (rest: number) => void;
 };
 
-const RestSettingsPanel: React.FC<RestSettingsPanelProps> = ({ isOpen, onClose, editor }) => {
+const RestSettingsPanel: React.FC<RestSettingsPanelProps> = ({ isOpen, onClose, editor, setUniversalRest }) => {
   const [globalRest, setGlobalRest] = useState(20);
   
   if (!isOpen) return null;
 
   const handleApply = () => {
     editor.setGlobalRest(globalRest);
+    setUniversalRest(globalRest);
     onClose();
   };
 
   const handleNoRest = () => {
     editor.setGlobalRest(0);
+    setUniversalRest(0);
     onClose();
   };
   
