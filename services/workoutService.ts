@@ -2,6 +2,10 @@ import { WorkoutStats, WorkoutPlan, SessionSummary } from '../types';
 
 const CUSTOM_WORKOUTS_KEY = 'jump-custom-workouts';
 const WORKOUT_HISTORY_KEY = 'jump-workout-history';
+const PERSONAL_BESTS_KEY = 'jump-personal-bests';
+
+type PersonalBests = WorkoutStats['personalBests'];
+
 
 // --- Custom Workout Management ---
 
@@ -44,9 +48,86 @@ export const deleteCustomWorkout = (id: string): Promise<boolean> => {
   });
 }
 
+// --- Personal Bests Management ---
+
+const getDefaultPersonalBests = (): PersonalBests => ({
+    quickest1MinCount: { value: 0, date: null, workoutName: null },
+    longestCombo: { value: 'N/A', date: null, workoutName: null },
+    longestContinuousJump: { value: 0, date: null, workoutName: null },
+});
+
+const getPersonalBests = (): PersonalBests => {
+    try {
+        const stored = localStorage.getItem(PERSONAL_BESTS_KEY);
+        if (stored) {
+            // Merge with defaults to ensure all keys are present if the type changes later
+            return { ...getDefaultPersonalBests(), ...JSON.parse(stored) };
+        }
+        return getDefaultPersonalBests();
+    } catch (e) {
+        console.error("Failed to parse personal bests, returning default.", e);
+        return getDefaultPersonalBests();
+    }
+};
+
+const updatePersonalBests = (summary: SessionSummary) => {
+    if (!summary.jumpMetrics) return;
+
+    const currentBests = getPersonalBests();
+    let hasChanged = false;
+
+    // 1. Check Quickest 1-min Count
+    if (summary.jumpMetrics.peakJumpsPerMinute > currentBests.quickest1MinCount.value) {
+        currentBests.quickest1MinCount = {
+            value: summary.jumpMetrics.peakJumpsPerMinute,
+            date: summary.date,
+            workoutName: summary.workoutName,
+        };
+        hasChanged = true;
+    }
+
+    // 2. Check Longest Continuous Jump
+    if (summary.jumpMetrics.longestContinuousJump > currentBests.longestContinuousJump.value) {
+        currentBests.longestContinuousJump = {
+            value: summary.jumpMetrics.longestContinuousJump,
+            date: summary.date,
+            workoutName: summary.workoutName,
+        };
+        hasChanged = true;
+    }
+    
+    // 3. Check Longest Combo
+    const parseComboValue = (combo: string): number => {
+        const match = combo.match(/x\s*(\d+)/i); // Look for "x" followed by a number
+        return match ? parseInt(match[1], 10) : 0;
+    }
+
+    if (parseComboValue(summary.jumpMetrics.longestCombo) > parseComboValue(currentBests.longestCombo.value)) {
+        currentBests.longestCombo = {
+            value: summary.jumpMetrics.longestCombo,
+            date: summary.date,
+            workoutName: summary.workoutName,
+        };
+        hasChanged = true;
+    }
+
+    if (hasChanged) {
+        localStorage.setItem(PERSONAL_BESTS_KEY, JSON.stringify(currentBests));
+    }
+};
+
+export const resetPersonalBests = (): Promise<void> => {
+    return new Promise((resolve) => {
+        localStorage.removeItem(PERSONAL_BESTS_KEY);
+        resolve();
+    });
+};
+
+
 // --- Workout History & Stats ---
 
-const getWorkoutHistory = (): SessionSummary[] => {
+// FIX: Exported getWorkoutHistory to make it accessible to other modules.
+export const getWorkoutHistory = (): SessionSummary[] => {
   try {
     const stored = localStorage.getItem(WORKOUT_HISTORY_KEY);
     return stored ? JSON.parse(stored) : [];
@@ -61,6 +142,10 @@ export const saveWorkoutSummary = (summary: SessionSummary): Promise<SessionSumm
     const history = getWorkoutHistory();
     history.push(summary);
     localStorage.setItem(WORKOUT_HISTORY_KEY, JSON.stringify(history));
+    
+    // Update personal bests with the new summary
+    updatePersonalBests(summary);
+    
     resolve(summary);
   });
 };
@@ -134,10 +219,7 @@ export const getWorkoutStats = (): Promise<WorkoutStats> => {
       totalCalories,
       currentStreak,
       customWorkouts: customWorkouts.length,
-      personalBests: { // This would need more detailed tracking, placeholder for now
-        quickest1MinCount: 165,
-        longestCombo: 'Double Under x 50',
-      },
+      personalBests: getPersonalBests(),
       weeklySummary,
     };
 

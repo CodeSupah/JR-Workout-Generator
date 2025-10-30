@@ -8,6 +8,8 @@ import FooterNav from './components/FooterNav';
 import Profile from './components/Profile';
 import { toastStore, Toast } from './store/toastStore';
 import { CheckCircleIcon, XCircleIcon } from './components/icons/Icons';
+import ExerciseList from './components/ExerciseList';
+import ExerciseDetail from './components/ExerciseDetail';
 
 const ToastMessage: React.FC<{ toast: Toast, onRemove: (id: number) => void }> = ({ toast, onRemove }) => {
   useEffect(() => {
@@ -53,6 +55,8 @@ const App: React.FC = () => {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/session" element={<LiveSession />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/exercises" element={<ExerciseList />} />
+          <Route path="/exercises/:exerciseId" element={<ExerciseDetail />} />
         </Routes>
       </main>
        {/* Toast Container */}

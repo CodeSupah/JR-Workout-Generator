@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { WorkoutStats, WorkoutPlan, Achievement, UserAchievementProgress } from '../types';
-import { getWorkoutStats, loadCustomWorkouts, deleteCustomWorkout } from '../services/workoutService';
+import { getWorkoutStats, loadCustomWorkouts, deleteCustomWorkout, resetPersonalBests } from '../services/workoutService';
 import { getAchievements, getUserAchievementProgress } from '../services/achievementService';
 import StatsChart from './StatsChart';
 import SavedRoutineCard from './SavedRoutineCard';
 import AchievementBadge from './AchievementBadge';
-import { FlameIcon, ChartBarIcon, ClockIcon, TrophyIcon, SparklesIcon, MedalIcon } from './icons/Icons';
+import { FlameIcon, ChartBarIcon, ClockIcon, TrophyIcon, SparklesIcon, MedalIcon, ArrowPathIcon, BookOpenIcon } from './icons/Icons';
 
 const StatCard: React.FC<{ icon: React.ReactNode, title: string, value: string | number, color: string }> = ({ icon, title, value, color }) => (
   <div className="bg-gray-800 p-6 rounded-xl shadow-lg flex items-center gap-4">
@@ -28,32 +28,33 @@ const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  const fetchRoutines = async () => {
+  const fetchRoutines = useCallback(async () => {
     const data = await loadCustomWorkouts();
     setRoutines(data);
-  }
+  }, []);
+
+  const fetchAllData = useCallback(async () => {
+    try {
+      setLoading(true);
+      const [statsData, achievementsData, progressData] = await Promise.all([
+          getWorkoutStats(),
+          getAchievements(),
+          getUserAchievementProgress()
+      ]);
+      setStats(statsData);
+      setAchievements(achievementsData);
+      setAchievementProgress(progressData);
+      await fetchRoutines();
+    } catch (error) {
+      console.error("Failed to fetch dashboard data", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [fetchRoutines]);
 
   useEffect(() => {
-    const fetchAllData = async () => {
-      try {
-        setLoading(true);
-        const [statsData, achievementsData, progressData] = await Promise.all([
-            getWorkoutStats(),
-            getAchievements(),
-            getUserAchievementProgress()
-        ]);
-        setStats(statsData);
-        setAchievements(achievementsData);
-        setAchievementProgress(progressData);
-        await fetchRoutines();
-      } catch (error) {
-        console.error("Failed to fetch dashboard data", error);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchAllData();
-  }, []);
+  }, [fetchAllData]);
 
   const handleStartRoutine = (routine: WorkoutPlan) => {
     navigate('/session', { state: { workout: routine } });
@@ -63,6 +64,13 @@ const Dashboard: React.FC = () => {
     if (window.confirm("Are you sure you want to delete this routine? This cannot be undone.")) {
       await deleteCustomWorkout(id);
       fetchRoutines(); // Refresh the list
+    }
+  };
+
+  const handleResetBests = async () => {
+    if (window.confirm("Are you sure you want to reset all your personal bests? This action cannot be undone.")) {
+        await resetPersonalBests();
+        fetchAllData(); // Refetch stats to update the UI
     }
   };
 
@@ -96,24 +104,79 @@ const Dashboard: React.FC = () => {
             </div>
             
             <div className="bg-gray-800/50 p-6 rounded-2xl shadow-lg">
-              <h3 className="text-xl font-bold mb-4 text-white">Personal Bests</h3>
-              <div className="space-y-6">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-purple-500 rounded-full">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-bold text-white">Personal Bests</h3>
+                <button
+                    onClick={handleResetBests}
+                    className="flex items-center gap-1 text-sm text-gray-400 hover:text-white bg-gray-700 hover:bg-gray-600 px-2 py-1 rounded-md transition-colors"
+                    title="Reset Personal Bests"
+                >
+                    <ArrowPathIcon className="w-4 h-4" />
+                    Reset
+                </button>
+              </div>
+              <div className="space-y-4">
+                 {/* Quickest 1-min Count */}
+                <div className="flex items-start gap-4">
+                  <div className="p-3 bg-purple-500 rounded-full flex-shrink-0">
                     <TrophyIcon className="w-6 h-6 text-white"/>
                   </div>
                   <div>
                     <p className="font-semibold text-white">Quickest 1-min Count</p>
-                    <p className="text-gray-400">{stats.personalBests.quickest1MinCount} jumps</p>
+                    {stats.personalBests.quickest1MinCount.value > 0 ? (
+                        <div className="text-gray-400 text-sm">
+                            <span className="font-bold text-lg text-purple-300">{stats.personalBests.quickest1MinCount.value}</span> jumps
+                            {stats.personalBests.quickest1MinCount.date && (
+                                <p className="text-xs">
+                                    on {new Date(stats.personalBests.quickest1MinCount.date).toLocaleDateString()} in "{stats.personalBests.quickest1MinCount.workoutName}"
+                                </p>
+                            )}
+                        </div>
+                    ) : (
+                        <p className="text-gray-500 text-sm">No record yet.</p>
+                    )}
                   </div>
                 </div>
-                <div className="flex items-center gap-4">
-                   <div className="p-3 bg-indigo-500 rounded-full">
+                {/* Longest Combo */}
+                <div className="flex items-start gap-4">
+                   <div className="p-3 bg-indigo-500 rounded-full flex-shrink-0">
                     <TrophyIcon className="w-6 h-6 text-white"/>
                   </div>
                   <div>
                     <p className="font-semibold text-white">Longest Combo</p>
-                    <p className="text-gray-400">{stats.personalBests.longestCombo}</p>
+                     {stats.personalBests.longestCombo.value !== 'N/A' ? (
+                        <div className="text-gray-400 text-sm">
+                            <span className="font-bold text-lg text-indigo-300">{stats.personalBests.longestCombo.value}</span>
+                            {stats.personalBests.longestCombo.date && (
+                                <p className="text-xs">
+                                    on {new Date(stats.personalBests.longestCombo.date).toLocaleDateString()} in "{stats.personalBests.longestCombo.workoutName}"
+                                </p>
+                            )}
+                        </div>
+                    ) : (
+                         <p className="text-gray-500 text-sm">No record yet.</p>
+                    )}
+                  </div>
+                </div>
+                 {/* Longest Continuous Jump */}
+                <div className="flex items-start gap-4">
+                   <div className="p-3 bg-teal-500 rounded-full flex-shrink-0">
+                    <TrophyIcon className="w-6 h-6 text-white"/>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-white">Longest Continuous Jump</p>
+                    {stats.personalBests.longestContinuousJump.value > 0 ? (
+                         <div className="text-gray-400 text-sm">
+                            <span className="font-bold text-lg text-teal-300">{stats.personalBests.longestContinuousJump.value}</span> seconds
+                            {stats.personalBests.longestContinuousJump.date && (
+                                <p className="text-xs">
+                                    on {new Date(stats.personalBests.longestContinuousJump.date).toLocaleDateString()} in "{stats.personalBests.longestContinuousJump.workoutName}"
+                                </p>
+                            )}
+                        </div>
+                    ) : (
+                        <p className="text-gray-500 text-sm">No record yet.</p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -172,6 +235,22 @@ const Dashboard: React.FC = () => {
             </div>
           )}
         </div>
+      </div>
+       {/* Available Exercises Section */}
+      <div>
+        <h2 className="text-3xl font-bold mb-4">Available Exercises</h2>
+        <Link to="/exercises" className="block bg-gray-800 hover:bg-gray-700/80 p-6 rounded-2xl shadow-lg transition-colors group">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-indigo-500 rounded-full">
+              <BookOpenIcon className="w-6 h-6 text-white"/>
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-white">Exercise Library</h3>
+              <p className="text-gray-400">Browse all available exercises and view your history.</p>
+            </div>
+            <span className="ml-auto text-indigo-400 group-hover:translate-x-1 transition-transform">&rarr;</span>
+          </div>
+        </Link>
       </div>
     </div>
   );

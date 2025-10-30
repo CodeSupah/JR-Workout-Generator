@@ -41,6 +41,12 @@ const EditableWorkoutPlan: React.FC<EditableWorkoutPlanProps> = ({ editor }) => 
     return Math.floor((warmUpTime + roundsTime + coolDownTime) / 60);
   }, [plan]);
 
+  const mainWorkoutTime = useMemo(() => {
+    if (!plan) return 0;
+    const roundsTimeInSeconds = plan.rounds.reduce((acc, round) => acc + round.duration + round.rest, 0);
+    return Math.round(roundsTimeInSeconds / 60);
+  }, [plan]);
+
   const purpose = useMemo(() => {
     if (!modalState) return 'main';
     if (modalState.section === 'warmUp') return 'warmup';
@@ -223,7 +229,7 @@ const EditableWorkoutPlan: React.FC<EditableWorkoutPlanProps> = ({ editor }) => 
 
         {plan.warmUp && plan.warmUp.length > 0 && renderExerciseList(plan.warmUp, 'warmUp', 'Warm-up', plan.warmUpDuration, 'text-orange-300')}
 
-        {renderExerciseList(plan.rounds, 'rounds', 'Main Workout', 0, 'text-white')}
+        {renderExerciseList(plan.rounds, 'rounds', 'Main Workout', mainWorkoutTime, 'text-white')}
 
         {plan.coolDown && plan.coolDown.length > 0 && renderExerciseList(plan.coolDown, 'coolDown', 'Cool-down', plan.coolDownDuration, 'text-indigo-400')}
         

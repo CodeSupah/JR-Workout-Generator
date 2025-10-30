@@ -183,6 +183,12 @@ export const useWorkoutTimer = (initialWorkoutPlan: WorkoutPlan | undefined, isS
         planId: workoutPlan.id || '',
         // Store the final state of the exercises (completed, skipped, pending)
         workoutPlan: { ...workoutPlan, rounds: exercises },
+        // Simulate jump tracking metrics for demonstration purposes
+        jumpMetrics: {
+            peakJumpsPerMinute: Math.floor(Math.random() * 50) + 140, // Random value between 140-190
+            longestCombo: `Double Under x ${Math.floor(Math.random() * 20) + 10}`, // Random DU combo
+            longestContinuousJump: Math.floor(Math.random() * 60) + 30, // Random 30-90 seconds
+        },
     };
     
     // 7. Persist summary and set final state
@@ -196,7 +202,7 @@ export const useWorkoutTimer = (initialWorkoutPlan: WorkoutPlan | undefined, isS
         initialStageDuration: 0,
         timeRemaining: 0,
     };
-}, [isSoundOn]);
+  }, [isSoundOn]);
 
 
   const stopWorkout = useCallback(() => {

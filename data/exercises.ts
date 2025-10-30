@@ -37,6 +37,11 @@ export const EXERCISE_SUGGESTIONS: ExerciseSuggestion[] = [
   { name: 'Resistance Band Rows', difficulty: 'Easy', goals: [WorkoutGoal.Power, WorkoutGoal.FullBody], equipment: 'resistance-band', purpose: 'main' },
   { name: 'Resistance Band Squats', difficulty: 'Medium', goals: [WorkoutGoal.Power, WorkoutGoal.FullBody], equipment: 'resistance-band', purpose: 'main' },
   { name: 'Band Pull-Aparts', difficulty: 'Easy', goals: [WorkoutGoal.Power], equipment: 'resistance-band', purpose: 'main' },
+  { name: 'Banded Glute Bridge', difficulty: 'Easy', goals: [WorkoutGoal.Power, WorkoutGoal.FullBody], equipment: 'resistance-band', purpose: 'main' },
+  { name: 'Banded Bicep Curls', difficulty: 'Easy', goals: [WorkoutGoal.Power], equipment: 'resistance-band', purpose: 'main' },
+  { name: 'Banded Tricep Extensions', difficulty: 'Easy', goals: [WorkoutGoal.Power], equipment: 'resistance-band', purpose: 'main' },
+  { name: 'Banded Lateral Walks', difficulty: 'Medium', goals: [WorkoutGoal.FullBody, WorkoutGoal.CoreStrength], equipment: 'resistance-band', purpose: 'main' },
+  { name: 'Banded Chest Press', difficulty: 'Medium', goals: [WorkoutGoal.Power, WorkoutGoal.FullBody], equipment: 'resistance-band', purpose: 'main' },
 
   // KETTLEBELL
   { name: 'Kettlebell Swings', difficulty: 'Hard', goals: [WorkoutGoal.Power, WorkoutGoal.CardioEndurance, WorkoutGoal.CoreStrength, WorkoutGoal.FullBody], equipment: 'kettlebell', purpose: 'main' },

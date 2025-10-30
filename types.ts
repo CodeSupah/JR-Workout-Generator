@@ -69,6 +69,12 @@ export interface WorkoutPlan {
   numberOfRounds: number;
 }
 
+export interface PersonalBestRecord<T> {
+  value: T;
+  date: string | null; // ISO string
+  workoutName: string | null;
+}
+
 export interface SessionSummary {
   id: string;
   date: string; // ISO string
@@ -79,6 +85,11 @@ export interface SessionSummary {
   totalCalories: number;
   planId: string;
   workoutPlan: WorkoutPlan;
+  jumpMetrics?: {
+    peakJumpsPerMinute: number;
+    longestCombo: string;
+    longestContinuousJump: number; // in seconds
+  };
 }
 
 export interface WorkoutStats {
@@ -88,8 +99,9 @@ export interface WorkoutStats {
   currentStreak: number;
   customWorkouts: number;
   personalBests: {
-    quickest1MinCount: number;
-    longestCombo: string;
+    quickest1MinCount: PersonalBestRecord<number>;
+    longestCombo: PersonalBestRecord<string>;
+    longestContinuousJump: PersonalBestRecord<number>;
   };
   weeklySummary: {
     name: string; // Changed from day to name
@@ -165,4 +177,18 @@ export interface UserProfile {
     };
     adaptiveDifficulty: boolean;
   };
+}
+
+// --- Exercise Database Types ---
+export interface ExerciseDetails {
+  id: string;
+  name: string;
+  category: 'Jump Rope' | 'Upper Body' | 'Lower Body' | 'Core' | 'Full Body' | 'Cardio';
+  difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
+  equipment: ExerciseEquipment;
+  description: string;
+  instructions: string[];
+  muscleGroups: string[];
+  videoUrl?: string;
+  keywords?: string[];
 }
