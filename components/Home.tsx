@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { WorkoutStats, WorkoutPlan, WorkoutGoal, SkillLevel, Equipment, Achievement, AchievementTier, WorkoutPreferences } from '../types';
 import { getWorkoutStats, loadCustomWorkouts } from '../services/workoutService';
 import { getNextChallenge } from '../services/achievementService';
 import { generateWorkoutPlan } from '../services/geminiService';
 import { toastStore } from '../store/toastStore';
+import { profileStore } from '../store/profileStore';
 import SavedRoutineCard from './SavedRoutineCard';
 import { JumpLogoIcon, BellIcon, CogIcon, FlameIcon, ChartBarIcon, ClockIcon, TrophyIcon, SparklesIcon, ZapIcon } from './icons/Icons';
 
@@ -28,7 +29,17 @@ const Home: React.FC = () => {
     const [suggestedWorkout, setSuggestedWorkout] = useState({ title: '', duration: 0, preferences: {} as Partial<WorkoutPreferences> });
     const [isLoading, setIsLoading] = useState(true);
     const [isGenerating, setIsGenerating] = useState(false);
+    const [userName, setUserName] = useState('Jumper');
     const navigate = useNavigate();
+
+    useEffect(() => {
+        const unsubscribe = profileStore.subscribe((profile) => {
+            if (profile) {
+                setUserName(profile.name);
+            }
+        });
+        return () => unsubscribe();
+    }, []);
 
     useEffect(() => {
         const fetchHomeScreenData = async () => {
@@ -95,7 +106,7 @@ const Home: React.FC = () => {
             };
             sessionStorage.setItem('suggestedWorkoutPlan', JSON.stringify(storageObject));
 
-            navigate('/generator');
+            navigate('/workout');
         } catch (error: any) {
             toastStore.addToast(error.message || 'Failed to generate workout', 'error');
             console.error(error);
@@ -103,8 +114,6 @@ const Home: React.FC = () => {
             setIsGenerating(false);
         }
     }
-    
-    const userName = "Sarah"; // Mock user name
 
     if (isLoading) {
         return <div className="text-center p-10">Loading your space...</div>;
@@ -117,7 +126,9 @@ const Home: React.FC = () => {
                 <JumpLogoIcon className="h-10 w-auto" />
                 <div className="flex items-center gap-2">
                     <button className="p-2 bg-white/10 rounded-full hover:bg-white/20"><BellIcon className="w-5 h-5"/></button>
-                    <button className="p-2 bg-white/10 rounded-full hover:bg-white/20"><CogIcon className="w-5 h-5"/></button>
+                    <Link to="/preferences" className="p-2 bg-white/10 rounded-full hover:bg-white/20" title="Settings & Preferences">
+                        <CogIcon className="w-5 h-5"/>
+                    </Link>
                 </div>
             </header>
 
@@ -140,16 +151,16 @@ const Home: React.FC = () => {
                         </>
                     )}
                 </button>
-                 <button onClick={() => navigate('/generator')} className="text-sm text-gray-300 hover:text-white">Or Generate a Custom Workout</button>
+                 <button onClick={() => navigate('/workout')} className="text-sm text-gray-300 hover:text-white">Or Build a Custom Workout</button>
             </section>
 
             {/* Mini Dashboard */}
             {stats && (
                  <section>
                     <div className="grid grid-cols-3 gap-3">
-                        <StatCard icon={<ChartBarIcon className="w-5 h-5 text-white"/>} title="Workouts" value={stats.totalWorkouts} color="bg-blue-500" onClick={() => navigate('/dashboard')} />
-                        <StatCard icon={<FlameIcon className="w-5 h-5 text-white"/>} title="Day Streak" value={stats.currentStreak} color="bg-orange-500" onClick={() => navigate('/dashboard')} />
-                        <StatCard icon={<ClockIcon className="w-5 h-5 text-white"/>} title="Mins This Week" value={stats.weeklySummary.reduce((a, b) => a + b.minutes, 0)} color="bg-green-500" onClick={() => navigate('/dashboard')} />
+                        <StatCard icon={<ChartBarIcon className="w-5 h-5 text-white"/>} title="Workouts" value={stats.totalWorkouts} color="bg-blue-500" onClick={() => navigate('/profile')} />
+                        <StatCard icon={<FlameIcon className="w-5 h-5 text-white"/>} title="Day Streak" value={stats.currentStreak} color="bg-orange-500" onClick={() => navigate('/profile')} />
+                        <StatCard icon={<ClockIcon className="w-5 h-5 text-white"/>} title="Mins This Week" value={stats.weeklySummary.reduce((a, b) => a + b.minutes, 0)} color="bg-green-500" onClick={() => navigate('/profile')} />
                     </div>
                 </section>
             )}
@@ -168,7 +179,7 @@ const Home: React.FC = () => {
                                 <p className="text-sm text-purple-200">{nextChallenge.tier.description}</p>
                             </div>
                         </div>
-                        <button onClick={() => navigate('/dashboard')} className="px-4 py-2 bg-purple-500 text-white rounded-md text-sm font-semibold hover:bg-purple-600">
+                        <button onClick={() => navigate('/profile')} className="px-4 py-2 bg-purple-500 text-white rounded-md text-sm font-semibold hover:bg-purple-600">
                             View
                         </button>
                     </div>
@@ -179,7 +190,7 @@ const Home: React.FC = () => {
             <section>
                 <div className="flex justify-between items-center mb-3">
                     <h2 className="text-xl font-bold">Quick Routines</h2>
-                    <button onClick={() => navigate('/dashboard')} className="text-sm text-orange-400 hover:text-orange-300 font-semibold">View All</button>
+                    <button onClick={() => navigate('/profile')} className="text-sm text-orange-400 hover:text-orange-300 font-semibold">View All</button>
                 </div>
                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {recentRoutines.length > 0 ? (

@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { HomeIcon, SparklesIcon, ChartBarIcon, UserIcon } from './icons/Icons';
+import { HomeIcon, DumbbellIcon, ChartBarIcon, UserIcon } from './icons/Icons';
 
 const FooterNav: React.FC = () => {
   const commonLinkClass = "flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-colors duration-200 flex-1";
@@ -9,8 +9,7 @@ const FooterNav: React.FC = () => {
 
   const navItems = [
     { to: "/", label: "Home", icon: <HomeIcon className="w-6 h-6" />, end: true },
-    { to: "/generator", label: "Generator", icon: <SparklesIcon className="w-6 h-6" /> },
-    { to: "/dashboard", label: "Dashboard", icon: <ChartBarIcon className="w-6 h-6" /> },
+    { to: "/workout", label: "Workout", icon: <DumbbellIcon className="w-6 h-6" /> },
     { to: "/profile", label: "Profile", icon: <UserIcon className="w-6 h-6" /> },
   ];
 

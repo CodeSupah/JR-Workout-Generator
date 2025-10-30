@@ -183,7 +183,8 @@ export interface UserProfile {
 export interface ExerciseDetails {
   id: string;
   name: string;
-  category: 'Jump Rope' | 'Upper Body' | 'Lower Body' | 'Core' | 'Full Body' | 'Cardio';
+  category: 'Jump Rope' | 'Upper Body' | 'Lower Body' | 'Core' | 'Full Body' | 'Cardio' | 'Flexibility & Mobility';
+  purpose: 'warmup' | 'cooldown' | 'main';
   difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
   equipment: ExerciseEquipment;
   description: string;

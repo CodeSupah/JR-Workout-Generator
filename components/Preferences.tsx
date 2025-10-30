@@ -1,31 +1,31 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { UserProfile, WorkoutGoal } from '../types';
-import { getUserProfile, saveUserProfile } from '../services/profileService';
+import { profileStore } from '../store/profileStore';
 import { toastStore } from '../store/toastStore';
 import { CameraIcon, ChevronDownIcon, UserIcon } from './icons/Icons';
 import ToggleSwitch from './ToggleSwitch';
 
-const Profile: React.FC = () => {
+const Preferences: React.FC = () => {
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [initialProfile, setInitialProfile] = useState<UserProfile | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
     const avatarInputRef = useRef<HTMLInputElement>(null);
 
     // State for imperial height inputs
     const [feet, setFeet] = useState<string>('');
     const [inches, setInches] = useState<string>('');
 
-
     useEffect(() => {
-        const loadProfile = async () => {
-            setIsLoading(true);
-            const data = await getUserProfile();
-            setProfile(data);
-            setInitialProfile(data);
-            setIsLoading(false);
-        };
-        loadProfile();
-    }, []);
+        const unsubscribe = profileStore.subscribe((storeProfile) => {
+            if (storeProfile) {
+                setProfile(JSON.parse(JSON.stringify(storeProfile))); // Deep copy
+                // Set initial profile only once to compare against for changes
+                if (!initialProfile) {
+                    setInitialProfile(JSON.parse(JSON.stringify(storeProfile)));
+                }
+            }
+        });
+        return () => unsubscribe();
+    }, [initialProfile]);
 
     const handleInputChange = useCallback(<K extends keyof UserProfile>(key: K, value: UserProfile[K]) => {
         setProfile(prev => prev ? { ...prev, [key]: value } : null);
@@ -108,8 +108,8 @@ const Profile: React.FC = () => {
     
     const handleSave = async () => {
         if (!profile) return;
-        await saveUserProfile(profile);
-        setInitialProfile(profile);
+        await profileStore.setProfile(profile);
+        setInitialProfile(profile); // Reset the baseline for changes
         
         // Sync primary goal with workout generator defaults
         try {
@@ -119,8 +119,7 @@ const Profile: React.FC = () => {
             localStorage.setItem('workoutPreferences', JSON.stringify(savedPrefs));
         } catch(e) { console.error("Could not sync goal to workout prefs", e)}
 
-
-        toastStore.addToast('Profile updated successfully!');
+        toastStore.addToast('Preferences updated successfully!');
     };
 
     const handleReset = () => {
@@ -142,9 +141,8 @@ const Profile: React.FC = () => {
         handleInputChange('weight', newWeightInKg);
     }
     
-
-    if (isLoading || !profile) {
-        return <div className="text-center p-10">Loading profile...</div>;
+    if (!profile) {
+        return <div className="text-center p-10">Loading preferences...</div>;
     }
 
     return (
@@ -319,4 +317,4 @@ const Profile: React.FC = () => {
     );
 };
 
-export default Profile;
+export default Preferences;

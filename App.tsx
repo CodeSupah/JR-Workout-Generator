@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import Dashboard from './components/Dashboard';
-import WorkoutGenerator from './components/WorkoutGenerator';
+import WorkoutHub from './components/WorkoutHub';
+import ManualBuilder from './components/ManualBuilder';
 import LiveSession from './components/LiveSession';
 import Home from './components/Home';
 import FooterNav from './components/FooterNav';
-import Profile from './components/Profile';
+import Preferences from './components/Preferences';
 import { toastStore, Toast } from './store/toastStore';
 import { CheckCircleIcon, XCircleIcon } from './components/icons/Icons';
 import ExerciseList from './components/ExerciseList';
@@ -51,10 +52,11 @@ const App: React.FC = () => {
       <main className="container mx-auto p-4 md:p-6 lg:p-8 pb-24">
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/generator" element={<WorkoutGenerator />} />
-          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/workout" element={<WorkoutHub />} />
+          <Route path="/manual-builder" element={<ManualBuilder />} />
+          <Route path="/profile" element={<Dashboard />} />
           <Route path="/session" element={<LiveSession />} />
-          <Route path="/profile" element={<Profile />} />
+          <Route path="/preferences" element={<Preferences />} />
           <Route path="/exercises" element={<ExerciseList />} />
           <Route path="/exercises/:exerciseId" element={<ExerciseDetail />} />
         </Routes>

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { WorkoutPlan, Exercise, UnlockedAchievementInfo } from '../types';
+import { WorkoutPlan, Exercise, UnlockedAchievementInfo, WorkoutPreferences } from '../types';
 import { useWorkoutTimer } from '../hooks/useWorkoutTimer';
 import { PlayIcon, PauseIcon, StopIcon, VolumeUpIcon, VolumeOffIcon, SkipNextIcon, SkipPreviousIcon, TrophyIcon, TrashIcon, ChevronDoubleRightIcon, SaveIcon, ArrowPathIcon } from './icons/Icons';
 import { saveCustomWorkout } from '../services/workoutService';
@@ -13,6 +13,7 @@ import AchievementUnlockedToast from './AchievementUnlockedToast';
 const LiveSession: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const preferences = location.state?.preferences as WorkoutPreferences | undefined;
 
   const [isSoundOn, setIsSoundOn] = useState(true);
   const [isReplaceModalOpen, setIsReplaceModalOpen] = useState(false);
@@ -200,6 +201,7 @@ const LiveSession: React.FC = () => {
             mode='replace'
             exerciseToEdit={currentExercise}
             purposeFilter={exercisePurpose}
+            originalPreferences={preferences}
         />}
         <div className="absolute top-5 right-5 z-10">
             <button onClick={() => setIsSoundOn(!isSoundOn)} className="p-3 bg-black/20 rounded-full text-white">

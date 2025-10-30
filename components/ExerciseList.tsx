@@ -2,13 +2,17 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { ExerciseDetails } from '../types';
 import { getAllExercises } from '../services/exerciseService';
-import { BookOpenIcon } from './icons/Icons';
+import { BookOpenIcon, DumbbellIcon, RunIcon } from './icons/Icons';
+
+type ViewMode = 'equipment' | 'muscleGroup';
 
 const ExerciseList: React.FC = () => {
     const [exercises, setExercises] = useState<ExerciseDetails[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedDifficulties, setSelectedDifficulties] = useState<string[]>([]);
     const [selectedEquipment, setSelectedEquipment] = useState<string[]>([]);
+    const [selectedMuscleGroup, setSelectedMuscleGroup] = useState('All Muscles');
+    const [viewMode, setViewMode] = useState<ViewMode | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -22,9 +26,17 @@ const ExerciseList: React.FC = () => {
     }, []);
 
     const availableDifficulties = useMemo(() => ['Beginner', 'Intermediate', 'Advanced'], []);
-    const availableEquipment = useMemo(() => {
-        const equipmentSet = new Set(exercises.map(ex => ex.equipment));
-        return Array.from(equipmentSet).sort().map(e => e.replace(/-/g, ' '));
+    
+    const equipmentCategories = useMemo(() => ['Barbell', 'Bodyweight', 'Dumbbell', 'Jump Rope', 'Kettlebell', 'Machine', 'Plate', 'Resistance Band'], []);
+    
+    const muscleGroupCategories = useMemo(() => {
+        const muscleSet = new Set<string>();
+        exercises.forEach(ex => {
+            if (ex.category !== 'Flexibility & Mobility') {
+                ex.muscleGroups.forEach(m => muscleSet.add(m));
+            }
+        });
+        return ['All Muscles', 'Stretches', ...Array.from(muscleSet).sort()];
     }, [exercises]);
 
     const handleToggleFilter = (setter: React.Dispatch<React.SetStateAction<string[]>>, value: string) => {
@@ -34,10 +46,20 @@ const ExerciseList: React.FC = () => {
             : [...prev, value]
         );
     };
+    
+    const handleSetViewMode = (mode: ViewMode) => {
+        if (viewMode !== mode) {
+            setViewMode(mode);
+            // Reset filters when changing view
+            setSearchTerm('');
+            setSelectedEquipment([]);
+            setSelectedMuscleGroup('All Muscles');
+            setSelectedDifficulties([]);
+        }
+    }
 
     const filteredAndGroupedExercises = useMemo(() => {
         const filtered = exercises.filter(ex => {
-            // 1. Search term filter
             const searchTermLower = searchTerm.toLowerCase();
             const searchMatch = searchTermLower === '' ||
                 ex.name.toLowerCase().includes(searchTermLower) ||
@@ -45,26 +67,76 @@ const ExerciseList: React.FC = () => {
                 ex.muscleGroups.some(m => m.toLowerCase().includes(searchTermLower)) ||
                 (ex.keywords && ex.keywords.some(k => k.toLowerCase().includes(searchTermLower)));
 
-            // 2. Difficulty filter
-            const difficultyMatch = selectedDifficulties.length === 0 || selectedDifficulties.includes(ex.difficulty);
-
-            // 3. Equipment filter
-            const equipmentMatch = selectedEquipment.length === 0 || selectedEquipment.includes(ex.equipment.replace(/-/g, ' '));
+            if (viewMode === null) {
+                return searchMatch;
+            }
             
-            return searchMatch && difficultyMatch && equipmentMatch;
+            const difficultyMatch = selectedDifficulties.length === 0 || selectedDifficulties.includes(ex.difficulty);
+            
+            let viewSpecificMatch = true;
+            if (viewMode === 'equipment') {
+                viewSpecificMatch = selectedEquipment.length === 0 || selectedEquipment.some(selected => {
+                    const selectedFormatted = selected.toLowerCase().replace(/ /g, '-');
+                    if (selected === 'Jump Rope') return ['rope', 'weighted-rope'].includes(ex.equipment);
+                    if (selected === 'Machine') return ['cable-machine', 'leg-press-machine'].includes(ex.equipment);
+                    return ex.equipment === selectedFormatted;
+                });
+            } else { // muscleGroup view
+                if (selectedMuscleGroup === 'Stretches') {
+                    viewSpecificMatch = ex.category === 'Flexibility & Mobility';
+                } else if (selectedMuscleGroup !== 'All Muscles') {
+                    viewSpecificMatch = ex.muscleGroups.includes(selectedMuscleGroup);
+                }
+            }
+
+            return searchMatch && difficultyMatch && viewSpecificMatch;
         });
 
-        return filtered.reduce((acc, ex) => {
-            const category = ex.category;
-            if (!acc[category]) {
-                acc[category] = [];
+        const grouped: Record<string, ExerciseDetails[]> = {};
+
+        if (viewMode === null) {
+            if (filtered.length > 0) grouped['All Exercises'] = filtered;
+        } else if (viewMode === 'equipment') {
+            filtered.forEach(ex => {
+                let key = ex.equipment.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                if (['Rope', 'Weighted Rope'].includes(key)) key = 'Jump Rope';
+                if (['Cable Machine', 'Leg Press Machine'].includes(key)) key = 'Machine';
+                if (ex.category === 'Flexibility & Mobility') key = 'Flexibility & Mobility';
+
+                if (!grouped[key]) grouped[key] = [];
+                grouped[key].push(ex);
+            });
+        } else { // 'muscleGroup' view
+            if (selectedMuscleGroup === 'Stretches') {
+                if(filtered.length > 0) grouped['Stretches'] = filtered;
+            } else {
+                 filtered.forEach(ex => {
+                    if (ex.category !== 'Flexibility & Mobility') {
+                        ex.muscleGroups.forEach(muscle => {
+                            if (selectedMuscleGroup === 'All Muscles' || selectedMuscleGroup === muscle) {
+                                if (!grouped[muscle]) grouped[muscle] = [];
+                                // Avoid duplicates if 'All Muscles' is selected
+                                if (!grouped[muscle].some(e => e.id === ex.id)) {
+                                    grouped[muscle].push(ex);
+                                }
+                            }
+                        });
+                    }
+                });
             }
-            acc[category].push(ex);
-            return acc;
-        }, {} as Record<string, ExerciseDetails[]>);
-    }, [exercises, searchTerm, selectedDifficulties, selectedEquipment]);
+        }
+        
+        // Sort groups and exercises within groups
+        const sortedGrouped: Record<string, ExerciseDetails[]> = {};
+        Object.keys(grouped).sort().forEach(key => {
+            sortedGrouped[key] = grouped[key].sort((a, b) => a.name.localeCompare(b.name));
+        });
+        
+        return sortedGrouped;
+
+    }, [exercises, searchTerm, selectedDifficulties, selectedEquipment, selectedMuscleGroup, viewMode]);
     
-    const hasActiveFilters = searchTerm || selectedDifficulties.length > 0 || selectedEquipment.length > 0;
+    const hasActiveFilters = searchTerm || selectedDifficulties.length > 0 || selectedEquipment.length > 0 || selectedMuscleGroup !== 'All Muscles';
 
     if (loading) {
         return <div className="text-center p-10">Loading exercises...</div>;
@@ -82,6 +154,9 @@ const ExerciseList: React.FC = () => {
             {label}
         </button>
     );
+    
+    const results = Object.entries(filteredAndGroupedExercises);
+    const hasResults = results.length > 0;
 
     return (
         <div className="space-y-8 animate-fade-in pb-24">
@@ -100,67 +175,128 @@ const ExerciseList: React.FC = () => {
                     </div>
                 </div>
             </div>
-
-            {/* Filters */}
-            <div className="bg-gray-800/50 p-4 rounded-xl space-y-4">
-                <div>
-                    <h3 className="font-semibold text-gray-300 mb-2 text-sm">Difficulty</h3>
-                    <div className="flex flex-wrap gap-2">
-                        {availableDifficulties.map(diff => (
-                            <FilterButton
-                                key={diff}
-                                label={diff}
-                                isSelected={selectedDifficulties.includes(diff)}
-                                onClick={() => handleToggleFilter(setSelectedDifficulties, diff)}
-                            />
-                        ))}
-                    </div>
-                </div>
-                <div>
-                    <h3 className="font-semibold text-gray-300 mb-2 text-sm">Equipment</h3>
-                    <div className="flex flex-wrap gap-2">
-                         {availableEquipment.map(equip => (
-                            <FilterButton
-                                key={equip}
-                                label={equip.charAt(0).toUpperCase() + equip.slice(1)}
-                                isSelected={selectedEquipment.includes(equip)}
-                                onClick={() => handleToggleFilter(setSelectedEquipment, equip)}
-                            />
-                        ))}
-                    </div>
-                </div>
-                {hasActiveFilters && (
-                    <button
-                        onClick={() => {
-                            setSearchTerm('');
-                            setSelectedDifficulties([]);
-                            setSelectedEquipment([]);
-                        }}
-                        className="text-xs text-orange-400 hover:text-orange-300 font-semibold pt-2"
-                    >
-                        Clear All Filters
+            
+             {/* View Toggle */}
+            <div className="bg-gray-800/50 p-4 rounded-xl space-y-3">
+                <h3 className="font-semibold text-gray-300 text-sm">Organize By</h3>
+                <div className="flex bg-gray-900/50 p-1 rounded-lg">
+                    <button onClick={() => handleSetViewMode('equipment')} className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md text-sm font-semibold transition-colors ${viewMode === 'equipment' ? 'bg-orange-500 text-white' : 'text-gray-300 hover:bg-gray-700'}`}>
+                        <DumbbellIcon className="w-5 h-5" /> Equipment
                     </button>
-                )}
+                    <button onClick={() => handleSetViewMode('muscleGroup')} className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md text-sm font-semibold transition-colors ${viewMode === 'muscleGroup' ? 'bg-orange-500 text-white' : 'text-gray-300 hover:bg-gray-700'}`}>
+                        <RunIcon className="w-5 h-5" /> Muscle Group
+                    </button>
+                </div>
             </div>
 
-            {Object.keys(filteredAndGroupedExercises).length > 0 ? (
-                Object.entries(filteredAndGroupedExercises).map(([category, exercisesInCategory]) => (
-                    <div key={category} className="bg-gray-800/50 p-6 rounded-2xl">
-                        <h2 className="text-xl font-bold text-orange-400 mb-4">{category}</h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {exercisesInCategory.map(ex => (
-                                <Link
-                                    key={ex.id}
-                                    to={`/exercises/${ex.id}`}
-                                    className="block bg-gray-700 p-4 rounded-lg hover:bg-gray-600 hover:ring-2 hover:ring-orange-500 transition-all"
-                                >
-                                    <h3 className="font-semibold text-white">{ex.name}</h3>
-                                    <p className="text-sm text-gray-400 capitalize">{ex.difficulty} &bull; {ex.equipment.replace(/-/g, ' ')}</p>
-                                </Link>
+            {/* Filters */}
+            {viewMode && (
+                <div className="bg-gray-800/50 p-4 rounded-xl space-y-4 animate-fade-in">
+                    <h3 className="font-semibold text-gray-300 text-sm">Filters</h3>
+                    
+                    <div>
+                        <h4 className="font-medium text-gray-400 mb-2 text-xs">Difficulty</h4>
+                        <div className="flex flex-wrap gap-2">
+                            {availableDifficulties.map(diff => (
+                                <FilterButton
+                                    key={diff}
+                                    label={diff}
+                                    isSelected={selectedDifficulties.includes(diff)}
+                                    onClick={() => handleToggleFilter(setSelectedDifficulties, diff)}
+                                />
                             ))}
                         </div>
                     </div>
-                ))
+                    
+                    {viewMode === 'equipment' && (
+                        <div>
+                            <h4 className="font-medium text-gray-400 mb-2 text-xs">Equipment</h4>
+                            <div className="flex flex-wrap gap-2">
+                                {equipmentCategories.map(equip => (
+                                    <FilterButton
+                                        key={equip}
+                                        label={equip}
+                                        isSelected={selectedEquipment.includes(equip)}
+                                        onClick={() => handleToggleFilter(setSelectedEquipment, equip)}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                    
+                    {viewMode === 'muscleGroup' && (
+                        <div>
+                            <h4 className="font-medium text-gray-400 mb-2 text-xs">Muscle Group</h4>
+                            <div className="flex flex-wrap gap-2">
+                                {muscleGroupCategories.map(group => (
+                                    <FilterButton
+                                        key={group}
+                                        label={group}
+                                        isSelected={selectedMuscleGroup === group}
+                                        onClick={() => setSelectedMuscleGroup(group)}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {hasActiveFilters && (
+                        <button
+                            onClick={() => {
+                                setSearchTerm('');
+                                setSelectedDifficulties([]);
+                                setSelectedEquipment([]);
+                                setSelectedMuscleGroup('All Muscles');
+                            }}
+                            className="text-xs text-orange-400 hover:text-orange-300 font-semibold pt-2"
+                        >
+                            Clear All Filters
+                        </button>
+                    )}
+                </div>
+            )}
+
+            {hasResults ? (
+                <div className="space-y-8">
+                     {viewMode === null ? (
+                        <div className="bg-gray-800/50 p-6 rounded-2xl">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {results[0][1].map(ex => (
+                                    <Link
+                                        key={ex.id}
+                                        to={`/exercises/${ex.id}`}
+                                        className="block bg-gray-700 p-4 rounded-lg hover:bg-gray-600 hover:ring-2 hover:ring-orange-500 transition-all"
+                                    >
+                                        <h3 className="font-semibold text-white">{ex.name}</h3>
+                                        <p className="text-sm text-gray-400 capitalize">{ex.difficulty} &bull; {ex.category}</p>
+                                    </Link>
+                                ))}
+                            </div>
+                        </div>
+                    ) : (
+                        results.map(([groupName, exercisesInGroup]) => {
+                            if (exercisesInGroup.length === 0) return null;
+                            const groupColor = groupName === 'Stretches' || groupName === 'Flexibility & Mobility' ? 'text-teal-400' : 'text-orange-400';
+                            return (
+                                <div key={groupName} className="bg-gray-800/50 p-6 rounded-2xl animate-fade-in">
+                                    <h2 className={`text-2xl font-bold ${groupColor} mb-4 border-b border-gray-700 pb-2`}>{groupName}</h2>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {exercisesInGroup.map(ex => (
+                                            <Link
+                                                key={ex.id}
+                                                to={`/exercises/${ex.id}`}
+                                                className="block bg-gray-700 p-4 rounded-lg hover:bg-gray-600 hover:ring-2 hover:ring-orange-500 transition-all"
+                                            >
+                                                <h3 className="font-semibold text-white">{ex.name}</h3>
+                                                <p className="text-sm text-gray-400 capitalize">{ex.difficulty} &bull; {ex.category}</p>
+                                            </Link>
+                                        ))}
+                                    </div>
+                                </div>
+                            );
+                        })
+                    )}
+                </div>
             ) : (
                 <div className="text-center p-10 bg-gray-800/50 rounded-lg">
                     <BookOpenIcon className="w-12 h-12 mx-auto text-gray-500 mb-4" />

@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { WorkoutStats, WorkoutPlan, Achievement, UserAchievementProgress } from '../types';
-import { getWorkoutStats, loadCustomWorkouts, deleteCustomWorkout, resetPersonalBests } from '../services/workoutService';
+import { getWorkoutStats, loadCustomWorkouts, deleteCustomWorkout } from '../services/workoutService';
 import { getAchievements, getUserAchievementProgress } from '../services/achievementService';
 import StatsChart from './StatsChart';
 import SavedRoutineCard from './SavedRoutineCard';
 import AchievementBadge from './AchievementBadge';
-import { FlameIcon, ChartBarIcon, ClockIcon, TrophyIcon, SparklesIcon, MedalIcon, ArrowPathIcon, BookOpenIcon } from './icons/Icons';
+import { FlameIcon, ChartBarIcon, ClockIcon, SparklesIcon, MedalIcon, BookOpenIcon, CogIcon } from './icons/Icons';
 
 const StatCard: React.FC<{ icon: React.ReactNode, title: string, value: string | number, color: string }> = ({ icon, title, value, color }) => (
   <div className="bg-gray-800 p-6 rounded-xl shadow-lg flex items-center gap-4">
@@ -67,20 +67,19 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  const handleResetBests = async () => {
-    if (window.confirm("Are you sure you want to reset all your personal bests? This action cannot be undone.")) {
-        await resetPersonalBests();
-        fetchAllData(); // Refetch stats to update the UI
-    }
-  };
-
-
   if (loading) {
     return <div className="text-center p-10">Loading dashboard...</div>;
   }
 
   return (
     <div className="space-y-8 animate-fade-in pb-24">
+      <div className="flex justify-between items-center">
+        <h1 className="text-4xl font-bold">Profile</h1>
+        <Link to="/preferences" className="p-3 bg-gray-700/50 rounded-full hover:bg-gray-600 transition-colors" title="Settings & Preferences">
+            <CogIcon className="w-6 h-6" />
+        </Link>
+      </div>
+
       {stats ? (
         <>
           <div>
@@ -95,90 +94,11 @@ const Dashboard: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2 bg-gray-800/50 p-6 rounded-2xl shadow-lg">
+            <div className="lg:col-span-3 bg-gray-800/50 p-6 rounded-2xl shadow-lg">
               <h3 className="text-xl font-bold mb-4 text-white">Weekly Summary</h3>
               <p className="text-gray-400 mb-6">Minutes of activity this week</p>
               <div className="h-72">
                 <StatsChart data={stats.weeklySummary} />
-              </div>
-            </div>
-            
-            <div className="bg-gray-800/50 p-6 rounded-2xl shadow-lg">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-bold text-white">Personal Bests</h3>
-                <button
-                    onClick={handleResetBests}
-                    className="flex items-center gap-1 text-sm text-gray-400 hover:text-white bg-gray-700 hover:bg-gray-600 px-2 py-1 rounded-md transition-colors"
-                    title="Reset Personal Bests"
-                >
-                    <ArrowPathIcon className="w-4 h-4" />
-                    Reset
-                </button>
-              </div>
-              <div className="space-y-4">
-                 {/* Quickest 1-min Count */}
-                <div className="flex items-start gap-4">
-                  <div className="p-3 bg-purple-500 rounded-full flex-shrink-0">
-                    <TrophyIcon className="w-6 h-6 text-white"/>
-                  </div>
-                  <div>
-                    <p className="font-semibold text-white">Quickest 1-min Count</p>
-                    {stats.personalBests.quickest1MinCount.value > 0 ? (
-                        <div className="text-gray-400 text-sm">
-                            <span className="font-bold text-lg text-purple-300">{stats.personalBests.quickest1MinCount.value}</span> jumps
-                            {stats.personalBests.quickest1MinCount.date && (
-                                <p className="text-xs">
-                                    on {new Date(stats.personalBests.quickest1MinCount.date).toLocaleDateString()} in "{stats.personalBests.quickest1MinCount.workoutName}"
-                                </p>
-                            )}
-                        </div>
-                    ) : (
-                        <p className="text-gray-500 text-sm">No record yet.</p>
-                    )}
-                  </div>
-                </div>
-                {/* Longest Combo */}
-                <div className="flex items-start gap-4">
-                   <div className="p-3 bg-indigo-500 rounded-full flex-shrink-0">
-                    <TrophyIcon className="w-6 h-6 text-white"/>
-                  </div>
-                  <div>
-                    <p className="font-semibold text-white">Longest Combo</p>
-                     {stats.personalBests.longestCombo.value !== 'N/A' ? (
-                        <div className="text-gray-400 text-sm">
-                            <span className="font-bold text-lg text-indigo-300">{stats.personalBests.longestCombo.value}</span>
-                            {stats.personalBests.longestCombo.date && (
-                                <p className="text-xs">
-                                    on {new Date(stats.personalBests.longestCombo.date).toLocaleDateString()} in "{stats.personalBests.longestCombo.workoutName}"
-                                </p>
-                            )}
-                        </div>
-                    ) : (
-                         <p className="text-gray-500 text-sm">No record yet.</p>
-                    )}
-                  </div>
-                </div>
-                 {/* Longest Continuous Jump */}
-                <div className="flex items-start gap-4">
-                   <div className="p-3 bg-teal-500 rounded-full flex-shrink-0">
-                    <TrophyIcon className="w-6 h-6 text-white"/>
-                  </div>
-                  <div>
-                    <p className="font-semibold text-white">Longest Continuous Jump</p>
-                    {stats.personalBests.longestContinuousJump.value > 0 ? (
-                         <div className="text-gray-400 text-sm">
-                            <span className="font-bold text-lg text-teal-300">{stats.personalBests.longestContinuousJump.value}</span> seconds
-                            {stats.personalBests.longestContinuousJump.date && (
-                                <p className="text-xs">
-                                    on {new Date(stats.personalBests.longestContinuousJump.date).toLocaleDateString()} in "{stats.personalBests.longestContinuousJump.workoutName}"
-                                </p>
-                            )}
-                        </div>
-                    ) : (
-                        <p className="text-gray-500 text-sm">No record yet.</p>
-                    )}
-                  </div>
-                </div>
               </div>
             </div>
           </div>

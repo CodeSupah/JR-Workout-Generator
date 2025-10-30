@@ -1,5 +1,6 @@
 import { GoogleGenAI, Type } from '@google/genai';
-import { WorkoutPreferences, WorkoutPlan, Exercise, WorkoutMode } from '../types';
+import { WorkoutPreferences, WorkoutPlan, Exercise, WorkoutMode, Equipment } from '../types';
+import { EXERCISE_DATABASE } from '../data/exerciseDatabase';
 
 const API_KEY = process.env.API_KEY;
 if (!API_KEY) {
@@ -89,6 +90,58 @@ export const generateWorkoutPlan = async (prefs: WorkoutPreferences): Promise<Wo
   
   const targetExerciseSeconds = targetExerciseMinutes * 60;
   const targetSecondsPerCircuit = Math.round(targetExerciseSeconds / prefs.rounds);
+  
+  // --- Filter Exercise Database based on Preferences ---
+  const flexibilityExercises = EXERCISE_DATABASE
+    .filter(ex => ex.category === 'Flexibility & Mobility')
+    .map(ex => `'${ex.name}'`)
+    .join(', ');
+
+  let mainExercises: string[];
+
+  const ropeTypeToEquipmentMap: { [key in Equipment]: 'rope' | 'weighted-rope' } = {
+      [Equipment.Regular]: 'rope',
+      [Equipment.Speed]: 'rope',
+      [Equipment.Weighted]: 'weighted-rope',
+  };
+  const availableRopeEquipment = [...new Set(prefs.equipment.map(r => ropeTypeToEquipmentMap[r]))];
+  const userEquipmentLower = prefs.availableEquipment.map(e => e.toLowerCase().replace(/ /g, '-'));
+
+  switch (prefs.mode) {
+      case 'jump-rope':
+          mainExercises = EXERCISE_DATABASE
+              .filter(ex => ex.purpose === 'main' && availableRopeEquipment.includes(ex.equipment as any))
+              .map(ex => ex.name);
+          break;
+      case 'equipment':
+          const gymEquipmentTypes = ['dumbbell', 'resistance-band', 'kettlebell', 'barbell', 'cable-machine', 'leg-press-machine'];
+          if (userEquipmentLower.includes('gym')) {
+              mainExercises = EXERCISE_DATABASE
+                  .filter(ex => ex.purpose === 'main' && (gymEquipmentTypes.includes(ex.equipment) || ex.equipment === 'bodyweight'))
+                  .map(ex => ex.name);
+          } else {
+              mainExercises = EXERCISE_DATABASE
+                  .filter(ex => ex.purpose === 'main' && (userEquipmentLower.includes(ex.equipment) || ex.equipment === 'bodyweight'))
+                  .map(ex => ex.name);
+          }
+          break;
+      case 'no-equipment':
+      default:
+          mainExercises = EXERCISE_DATABASE
+              .filter(ex => ex.purpose === 'main' && ex.equipment === 'bodyweight')
+              .map(ex => ex.name);
+          break;
+  }
+  
+  if (prefs.includeJumpRopeIntervals && (prefs.mode === 'equipment' || prefs.mode === 'no-equipment')) {
+      const ropeIntervalExercises = EXERCISE_DATABASE
+          .filter(ex => ex.purpose === 'main' && ex.equipment === 'rope')
+          .map(ex => ex.name);
+      mainExercises.push(...ropeIntervalExercises);
+  }
+
+  const availableMainExercises = [...new Set(mainExercises)].map(name => `'${name}'`).join(', ');
+
 
   const prompt = `
     You are an expert fitness AI. Your MOST IMPORTANT task is to create a workout plan that precisely matches a specific duration.
@@ -131,6 +184,13 @@ export const generateWorkoutPlan = async (prefs: WorkoutPreferences): Promise<Wo
         - **Intermediate:** Exercises can be 'Easy' or 'Medium'. Work durations around 40s.
         - **Advanced:** Exercises can be 'Easy', 'Medium', or 'Hard'. Work durations 45-60s. Can include complex movements like Double Unders.
     - **Prevent Repetition:** Do not use the exact same exercise back-to-back within the generated circuit.
+
+    **RULE 4: AVAILABLE EXERCISES (MANDATORY)**
+    You MUST select exercises for the plan exclusively from the lists provided below. Do not invent any exercises or use exercises not on these lists. The 'exercise' field in the JSON response MUST be an exact string match from these lists.
+    - Available Main Workout Exercises for the 'rounds' array: ${availableMainExercises}
+    - Available Warm-up Exercises for the 'warmUp' array: ${flexibilityExercises}
+    - Available Cool-down Exercises for the 'coolDown' array: ${flexibilityExercises}
+
 
     **FINAL CHECK:** Before outputting the JSON, double-check that the sum of 'duration' and 'rest' for all exercises in the generated 'rounds' circuit array equals exactly ${targetSecondsPerCircuit} seconds.
   `;
@@ -177,7 +237,10 @@ export const generateWorkoutPlan = async (prefs: WorkoutPreferences): Promise<Wo
     };
 
     if (!workoutPlan.rounds || workoutPlan.rounds.length === 0) {
-        throw new Error("Generated plan has no rounds.");
+        // If there are no main rounds, but we have a warm-up or cool-down, that's still a valid workout.
+        if (workoutPlan.warmUp.length === 0 && workoutPlan.coolDown.length === 0) {
+            throw new Error("Generated plan has no exercises.");
+        }
     }
     
     workoutPlan.rounds = workoutPlan.rounds.map(r => ({...r, difficulty: (r.difficulty.charAt(0).toUpperCase() + r.difficulty.slice(1)) as Exercise['difficulty']}))

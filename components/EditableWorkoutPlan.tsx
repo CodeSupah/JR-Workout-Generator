@@ -1,7 +1,7 @@
 import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useWorkoutEditor } from '../hooks/useWorkoutEditor';
-import { Exercise, WorkoutPlan } from '../types';
+import { Exercise, WorkoutPlan, WorkoutPreferences } from '../types';
 import { PlusIcon, ArrowPathIcon, TrashIcon, DragHandleIcon, UndoIcon, RedoIcon, SaveIcon, ZapIcon, FolderOpenIcon, CogIcon } from './icons/Icons';
 import ExerciseModal from './ExerciseModal';
 import ConfirmModal from './ConfirmModal';
@@ -14,11 +14,12 @@ import { saveCustomWorkout } from '../services/workoutService';
 
 type EditableWorkoutPlanProps = {
   editor: ReturnType<typeof useWorkoutEditor>;
+  originalPreferences: WorkoutPreferences | null;
 };
 
 type WorkoutSection = 'warmUp' | 'rounds' | 'coolDown';
 
-const EditableWorkoutPlan: React.FC<EditableWorkoutPlanProps> = ({ editor }) => {
+const EditableWorkoutPlan: React.FC<EditableWorkoutPlanProps> = ({ editor, originalPreferences }) => {
   const navigate = useNavigate();
   const { plan, reorderExercises, undo, redo, canUndo, canRedo, updateExercise, removeExercise } = editor;
 
@@ -115,7 +116,7 @@ const EditableWorkoutPlan: React.FC<EditableWorkoutPlanProps> = ({ editor }) => 
 
   const startWorkout = () => {
     sessionStorage.removeItem('suggestedWorkoutPlan');
-    navigate('/session', { state: { workout: plan } });
+    navigate('/session', { state: { workout: plan, preferences: originalPreferences } });
   };
   
   const difficultyColors: Record<Exercise['difficulty'], string> = {
@@ -241,6 +242,7 @@ const EditableWorkoutPlan: React.FC<EditableWorkoutPlanProps> = ({ editor }) => 
             mode={modalState.mode}
             exerciseToEdit={modalState.exerciseToEdit}
             purposeFilter={purpose}
+            originalPreferences={originalPreferences}
         />}
         {confirmDelete && <ConfirmModal isOpen={!!confirmDelete} onClose={() => setConfirmDelete(null)} onConfirm={() => { removeExercise(confirmDelete.id); setConfirmDelete(null);}} title="Delete Exercise?" message={`Are you sure you want to remove "${confirmDelete.exercise}"?`} />}
         {showRestSettings && <RestSettingsPanel isOpen={showRestSettings} onClose={() => setShowRestSettings(false)} editor={editor} />}
