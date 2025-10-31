@@ -58,83 +58,93 @@ const ExerciseList: React.FC = () => {
         }
     }
 
-    const filteredAndGroupedExercises = useMemo(() => {
-        const filtered = exercises.filter(ex => {
-            const searchTermLower = searchTerm.toLowerCase();
-            const searchMatch = searchTermLower === '' ||
-                ex.name.toLowerCase().includes(searchTermLower) ||
-                ex.category.toLowerCase().includes(searchTermLower) ||
-                ex.muscleGroups.some(m => m.toLowerCase().includes(searchTermLower)) ||
-                (ex.keywords && ex.keywords.some(k => k.toLowerCase().includes(searchTermLower)));
-
-            if (viewMode === null) {
-                return searchMatch;
-            }
-            
-            const difficultyMatch = selectedDifficulties.length === 0 || selectedDifficulties.includes(ex.difficulty);
-            
-            let viewSpecificMatch = true;
-            if (viewMode === 'equipment') {
-                viewSpecificMatch = selectedEquipment.length === 0 || selectedEquipment.some(selected => {
-                    const selectedFormatted = selected.toLowerCase().replace(/ /g, '-');
-                    if (selected === 'Jump Rope') return ['rope', 'weighted-rope'].includes(ex.equipment);
-                    if (selected === 'Machine') return ['cable-machine', 'leg-press-machine'].includes(ex.equipment);
-                    return ex.equipment === selectedFormatted;
-                });
-            } else { // muscleGroup view
-                if (selectedMuscleGroup === 'Stretches') {
-                    viewSpecificMatch = ex.category === 'Flexibility & Mobility';
-                } else if (selectedMuscleGroup !== 'All Muscles') {
-                    viewSpecificMatch = ex.muscleGroups.includes(selectedMuscleGroup);
-                }
-            }
-
-            return searchMatch && difficultyMatch && viewSpecificMatch;
-        });
-
-        const grouped: Record<string, ExerciseDetails[]> = {};
-
-        if (viewMode === null) {
-            if (filtered.length > 0) grouped['All Exercises'] = filtered;
-        } else if (viewMode === 'equipment') {
-            filtered.forEach(ex => {
-                let key = ex.equipment.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                if (['Rope', 'Weighted Rope'].includes(key)) key = 'Jump Rope';
-                if (['Cable Machine', 'Leg Press Machine'].includes(key)) key = 'Machine';
-                if (ex.category === 'Flexibility & Mobility') key = 'Flexibility & Mobility';
-
-                if (!grouped[key]) grouped[key] = [];
-                grouped[key].push(ex);
-            });
-        } else { // 'muscleGroup' view
+    const filteredExercises = useMemo(() => {
+        return exercises.filter(ex => {
+          const searchTermLower = searchTerm.toLowerCase();
+          const searchMatch =
+            searchTermLower === '' ||
+            ex.name.toLowerCase().includes(searchTermLower) ||
+            ex.category.toLowerCase().includes(searchTermLower) ||
+            ex.muscleGroups.some(m => m.toLowerCase().includes(searchTermLower)) ||
+            (ex.keywords && ex.keywords.some(k => k.toLowerCase().includes(searchTermLower)));
+      
+          if (!searchMatch) return false;
+      
+          if (viewMode === null) return true; // Only search matters if no view is selected
+      
+          const difficultyMatch = selectedDifficulties.length === 0 || selectedDifficulties.includes(ex.difficulty);
+          if (!difficultyMatch) return false;
+      
+          if (viewMode === 'equipment') {
+            return (
+              selectedEquipment.length === 0 ||
+              selectedEquipment.some(selected => {
+                const selectedFormatted = selected.toLowerCase().replace(/ /g, '-');
+                if (selected === 'Jump Rope') return ['rope', 'weighted-rope'].includes(ex.equipment);
+                if (selected === 'Machine') return ['cable-machine', 'leg-press-machine'].includes(ex.equipment);
+                return ex.equipment === selectedFormatted;
+              })
+            );
+          }
+      
+          if (viewMode === 'muscleGroup') {
             if (selectedMuscleGroup === 'Stretches') {
-                if(filtered.length > 0) grouped['Stretches'] = filtered;
-            } else {
-                 filtered.forEach(ex => {
-                    if (ex.category !== 'Flexibility & Mobility') {
-                        ex.muscleGroups.forEach(muscle => {
-                            if (selectedMuscleGroup === 'All Muscles' || selectedMuscleGroup === muscle) {
-                                if (!grouped[muscle]) grouped[muscle] = [];
-                                // Avoid duplicates if 'All Muscles' is selected
-                                if (!grouped[muscle].some(e => e.id === ex.id)) {
-                                    grouped[muscle].push(ex);
-                                }
-                            }
-                        });
-                    }
-                });
+              return ex.category === 'Flexibility & Mobility';
             }
+            if (selectedMuscleGroup !== 'All Muscles') {
+              return ex.muscleGroups.includes(selectedMuscleGroup);
+            }
+          }
+          return true;
+        });
+      }, [exercises, searchTerm, selectedDifficulties, selectedEquipment, selectedMuscleGroup, viewMode]);
+
+      const groupedExercises = useMemo(() => {
+        const grouped: Record<string, ExerciseDetails[]> = {};
+    
+        if (viewMode === 'equipment') {
+          filteredExercises.forEach(ex => {
+            let key = ex.equipment.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            if (['Rope', 'Weighted Rope'].includes(key)) key = 'Jump Rope';
+            if (['Cable Machine', 'Leg Press Machine'].includes(key)) key = 'Machine';
+            if (ex.category === 'Flexibility & Mobility') key = 'Flexibility & Mobility';
+    
+            if (!grouped[key]) grouped[key] = [];
+            grouped[key].push(ex);
+          });
+        } else if (viewMode === 'muscleGroup') {
+          if (selectedMuscleGroup === 'Stretches') {
+            if (filteredExercises.length > 0) grouped['Stretches'] = filteredExercises;
+          } else {
+            filteredExercises.forEach(ex => {
+              if (ex.category !== 'Flexibility & Mobility') {
+                ex.muscleGroups.forEach(muscle => {
+                  if (selectedMuscleGroup === 'All Muscles' || selectedMuscleGroup === muscle) {
+                    if (!grouped[muscle]) grouped[muscle] = [];
+                    // Avoid duplicates if 'All Muscles' is selected
+                    if (!grouped[muscle].some(e => e.id === ex.id)) {
+                      grouped[muscle].push(ex);
+                    }
+                  }
+                });
+              }
+            });
+          }
+        } else {
+          // viewMode is null
+          if (filteredExercises.length > 0) grouped['All Exercises'] = filteredExercises;
         }
-        
+    
         // Sort groups and exercises within groups
         const sortedGrouped: Record<string, ExerciseDetails[]> = {};
-        Object.keys(grouped).sort().forEach(key => {
+        Object.keys(grouped)
+          .sort()
+          .forEach(key => {
             sortedGrouped[key] = grouped[key].sort((a, b) => a.name.localeCompare(b.name));
-        });
-        
+          });
+    
         return sortedGrouped;
-
-    }, [exercises, searchTerm, selectedDifficulties, selectedEquipment, selectedMuscleGroup, viewMode]);
+      }, [filteredExercises, viewMode, selectedMuscleGroup]);
     
     const hasActiveFilters = searchTerm || selectedDifficulties.length > 0 || selectedEquipment.length > 0 || selectedMuscleGroup !== 'All Muscles';
 
@@ -155,7 +165,7 @@ const ExerciseList: React.FC = () => {
         </button>
     );
     
-    const results = Object.entries(filteredAndGroupedExercises);
+    const results = Object.entries(groupedExercises);
     const hasResults = results.length > 0;
 
     return (

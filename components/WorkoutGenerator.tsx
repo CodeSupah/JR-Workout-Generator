@@ -9,6 +9,21 @@ import WorkoutModeToggle from './WorkoutModeToggle';
 import EquipmentSelector from './EquipmentSelector';
 import { toastStore } from '../store/toastStore';
 import StepperInput from './StepperInput';
+import ToggleSwitch from './ToggleSwitch';
+
+const formatTime = (totalSeconds: number): string => {
+  if (totalSeconds < 0) return '0s';
+  if (totalSeconds < 60) {
+    return `${totalSeconds}s`;
+  }
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  if (seconds === 0) {
+    return `${minutes}m`;
+  }
+  return `${minutes}m ${seconds}s`;
+};
+
 
 const WorkoutGenerator: React.FC = () => {
   const [preferences, setPreferences] = useState<Omit<WorkoutPreferences, 'mode' | 'includeJumpRopeIntervals' | 'rounds' | 'availableEquipment' | 'includeWarmUp' | 'warmUpDuration' | 'includeCoolDown' | 'coolDownDuration' | 'defaultRestDuration' | 'restBetweenRounds'>>({
@@ -27,6 +42,8 @@ const WorkoutGenerator: React.FC = () => {
   const [coolDownDuration, setCoolDownDuration] = useState(2);
   const [defaultRestDuration, setDefaultRestDuration] = useState(60);
   const [restBetweenRounds, setRestBetweenRounds] = useState(120);
+  const [useGlobalExerciseRest, setUseGlobalExerciseRest] = useState(true);
+  const [useGlobalRoundRest, setUseGlobalRoundRest] = useState(true);
   
   const [originalPreferences, setOriginalPreferences] = useState<WorkoutPreferences | null>(null);
 
@@ -36,9 +53,21 @@ const WorkoutGenerator: React.FC = () => {
   
   const editor = useWorkoutEditor();
   
-  const savePreferencesToLocalStorage = (prefsToSave: any) => {
-    localStorage.setItem('workoutPreferences', JSON.stringify(prefsToSave));
-  }
+  const getFullPreferencesForSaving = () => ({
+      ...preferences,
+      mode,
+      includeJumpRopeIntervals: includeIntervals,
+      rounds,
+      availableEquipment,
+      includeWarmUp,
+      warmUpDuration,
+      includeCoolDown,
+      coolDownDuration,
+      defaultRestDuration,
+      restBetweenRounds,
+      useGlobalExerciseRest,
+      useGlobalRoundRest,
+  });
 
   useEffect(() => {
     const savedPrefs = localStorage.getItem('workoutPreferences');
@@ -60,8 +89,15 @@ const WorkoutGenerator: React.FC = () => {
       setCoolDownDuration(parsedPrefs.coolDownDuration || 2);
       setDefaultRestDuration(parsedPrefs.defaultRestDuration || 60);
       setRestBetweenRounds(parsedPrefs.restBetweenRounds || 120);
+      setUseGlobalExerciseRest(parsedPrefs.useGlobalExerciseRest !== undefined ? parsedPrefs.useGlobalExerciseRest : true);
+      setUseGlobalRoundRest(parsedPrefs.useGlobalRoundRest !== undefined ? parsedPrefs.useGlobalRoundRest : true);
     }
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem('workoutPreferences', JSON.stringify(getFullPreferencesForSaving()));
+  }, [preferences, mode, includeIntervals, rounds, availableEquipment, includeWarmUp, warmUpDuration, includeCoolDown, coolDownDuration, defaultRestDuration, restBetweenRounds, useGlobalExerciseRest, useGlobalRoundRest]);
+
 
   useEffect(() => {
     // Only run if no workout is currently being edited.
@@ -110,7 +146,7 @@ const WorkoutGenerator: React.FC = () => {
   }, []); // Run only on mount.
 
 
-  const getFullPreferences = (): WorkoutPreferences => ({
+  const getFullPreferencesForGeneration = (): WorkoutPreferences => ({
       ...preferences,
       mode,
       includeJumpRopeIntervals: includeIntervals,
@@ -120,25 +156,21 @@ const WorkoutGenerator: React.FC = () => {
       warmUpDuration,
       includeCoolDown,
       coolDownDuration,
-      defaultRestDuration,
-      restBetweenRounds,
+      defaultRestDuration: useGlobalExerciseRest ? defaultRestDuration : 0,
+      restBetweenRounds: useGlobalRoundRest ? restBetweenRounds : 0,
   });
   
   const hasChanges = useMemo(() => {
     if (!originalPreferences) return false;
-    return JSON.stringify(getFullPreferences()) !== JSON.stringify(originalPreferences);
-  }, [preferences, mode, includeIntervals, rounds, availableEquipment, includeWarmUp, warmUpDuration, includeCoolDown, coolDownDuration, defaultRestDuration, restBetweenRounds, originalPreferences]);
+    return JSON.stringify(getFullPreferencesForGeneration()) !== JSON.stringify(originalPreferences);
+  }, [preferences, mode, includeIntervals, rounds, availableEquipment, includeWarmUp, warmUpDuration, includeCoolDown, coolDownDuration, defaultRestDuration, restBetweenRounds, useGlobalExerciseRest, useGlobalRoundRest, originalPreferences]);
 
 
   const handlePreferenceChange = <K extends keyof Omit<WorkoutPreferences, 'mode' | 'includeJumpRopeIntervals' | 'rounds' | 'availableEquipment' | 'includeWarmUp' | 'warmUpDuration' | 'includeCoolDown' | 'coolDownDuration' | 'defaultRestDuration' | 'restBetweenRounds'>>(
     key: K,
     value: Omit<WorkoutPreferences, 'mode' | 'includeJumpRopeIntervals' | 'rounds' | 'availableEquipment' | 'includeWarmUp' | 'warmUpDuration' | 'includeCoolDown' | 'coolDownDuration' | 'defaultRestDuration' | 'restBetweenRounds'>[K]
   ) => {
-    setPreferences(prev => {
-        const newPreferences = { ...prev, [key]: value };
-        savePreferencesToLocalStorage({ ...getFullPreferences(), ...newPreferences });
-        return newPreferences;
-    });
+    setPreferences(prev => ({ ...prev, [key]: value }));
   };
   
   const handleRopeTypeChange = (rope: Equipment) => {
@@ -148,23 +180,9 @@ const WorkoutGenerator: React.FC = () => {
             : [...prev.equipment, rope];
           // Ensure at least one rope is selected
           if (newEquipment.length === 0) newEquipment.push(rope);
-          const newPrefs = { ...prev, equipment: newEquipment };
-          savePreferencesToLocalStorage({ ...getFullPreferences(), ...newPrefs });
-          return newPrefs;
+          return { ...prev, equipment: newEquipment };
       })
   }
-  
-  const handleStateChange = (setter: React.Dispatch<React.SetStateAction<any>>, value: any) => {
-      setter(value);
-      // This is a bit tricky due to state closure, so we pass the new value directly
-      const currentPrefs = getFullPreferences();
-      // A bit of a hacky way to get the key name from the setter function name
-      const key = (setter.toString().match(/set(\w+)/) || [])[1];
-      if (key) {
-        const stateKey = key.charAt(0).toLowerCase() + key.slice(1);
-        savePreferencesToLocalStorage({ ...currentPrefs, [stateKey]: value });
-      }
-  };
 
   const handleGenerate = async () => {
     setIsLoading(true);
@@ -173,7 +191,7 @@ const WorkoutGenerator: React.FC = () => {
     editor.reset();
 
     try {
-      const fullPreferences: WorkoutPreferences = getFullPreferences();
+      const fullPreferences: WorkoutPreferences = getFullPreferencesForGeneration();
       const plan = await generateWorkoutPlan(fullPreferences);
       editor.setExercises(plan);
       setOriginalPreferences(fullPreferences);
@@ -207,7 +225,7 @@ const WorkoutGenerator: React.FC = () => {
         {/* Hide form when editing to focus on the plan */}
         <div className={`${isEditing ? 'hidden' : 'animate-fade-in'}`}>
             <div className="space-y-6">
-                <WorkoutModeToggle selectedMode={mode} onModeChange={(v) => handleStateChange(setMode, v)} />
+                <WorkoutModeToggle selectedMode={mode} onModeChange={setMode} />
                 
                 {mode === 'jump-rope' && (
                     <div className="space-y-2 animate-fade-in">
@@ -228,7 +246,7 @@ const WorkoutGenerator: React.FC = () => {
                 
                 {mode === 'equipment' && (
                     <div className="animate-fade-in">
-                        <EquipmentSelector selectedEquipment={availableEquipment} onChange={(v) => handleStateChange(setAvailableEquipment, v)} />
+                        <EquipmentSelector selectedEquipment={availableEquipment} onChange={setAvailableEquipment} />
                     </div>
                 )}
                 
@@ -242,7 +260,7 @@ const WorkoutGenerator: React.FC = () => {
                             </div>
                         </div>
                         <label htmlFor="include-intervals" className="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" id="include-intervals" className="sr-only peer" checked={includeIntervals} onChange={(e) => handleStateChange(setIncludeIntervals, e.target.checked)} />
+                            <input type="checkbox" id="include-intervals" className="sr-only peer" checked={includeIntervals} onChange={(e) => setIncludeIntervals(e.target.checked)} />
                             <div className="w-11 h-6 bg-gray-600 rounded-full peer peer-focus:ring-2 peer-focus:ring-orange-500/50 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
                         </label>
                     </div>
@@ -251,26 +269,19 @@ const WorkoutGenerator: React.FC = () => {
                 {/* Warm-up & Cool-down Settings */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="bg-gray-900/50 p-4 rounded-lg animate-fade-in space-y-3">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <FlameIcon className="w-6 h-6 text-orange-400" />
-                                <div>
-                                    <label htmlFor="include-warmup" className="font-semibold text-white">Include Warm-up</label>
-                                    <p className="text-xs text-gray-400">Recommended to prevent injury.</p>
-                                </div>
-                            </div>
-                            <label htmlFor="include-warmup" className="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" id="include-warmup" className="sr-only peer" checked={includeWarmUp} onChange={(e) => handleStateChange(setIncludeWarmUp, e.target.checked)} />
-                                <div className="w-11 h-6 bg-gray-600 rounded-full peer peer-focus:ring-2 peer-focus:ring-orange-500/50 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
-                            </label>
-                        </div>
+                        <ToggleSwitch
+                            label="Include Warm-up"
+                            description="Recommended to prevent injury."
+                            checked={includeWarmUp}
+                            onChange={setIncludeWarmUp}
+                        />
                         {includeWarmUp && (
-                            <div className="space-y-2 animate-fade-in">
+                            <div className="space-y-2 animate-fade-in pl-4 border-l-2 border-gray-700 ml-2">
                                 <label className="text-sm font-medium">Warm-up Duration: <span className="text-orange-400">{warmUpDuration} mins</span></label>
                                 <input
                                     type="range" min="1" max="10" step="1"
                                     value={warmUpDuration}
-                                    onChange={(e) => handleStateChange(setWarmUpDuration, parseInt(e.target.value))}
+                                    onChange={(e) => setWarmUpDuration(parseInt(e.target.value))}
                                     className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer range-lg accent-orange-500"
                                 />
                             </div>
@@ -278,26 +289,19 @@ const WorkoutGenerator: React.FC = () => {
                     </div>
 
                     <div className="bg-gray-900/50 p-4 rounded-lg animate-fade-in space-y-3">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <SparklesIcon className="w-6 h-6 text-blue-400" />
-                                <div>
-                                    <label htmlFor="include-cooldown" className="font-semibold text-white">Include Cool-down</label>
-                                    <p className="text-xs text-gray-400">Aids in muscle recovery.</p>
-                                </div>
-                            </div>
-                            <label htmlFor="include-cooldown" className="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" id="include-cooldown" className="sr-only peer" checked={includeCoolDown} onChange={(e) => handleStateChange(setIncludeCoolDown, e.target.checked)} />
-                                <div className="w-11 h-6 bg-gray-600 rounded-full peer peer-focus:ring-2 peer-focus:ring-blue-500/50 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
-                            </label>
-                        </div>
+                        <ToggleSwitch
+                            label="Include Cool-down"
+                            description="Aids in muscle recovery."
+                            checked={includeCoolDown}
+                            onChange={setIncludeCoolDown}
+                        />
                         {includeCoolDown && (
-                            <div className="space-y-2 animate-fade-in">
+                            <div className="space-y-2 animate-fade-in pl-4 border-l-2 border-gray-700 ml-2">
                                 <label className="text-sm font-medium">Cool-down Duration: <span className="text-blue-400">{coolDownDuration} mins</span></label>
                                 <input
                                     type="range" min="1" max="10" step="1"
                                     value={coolDownDuration}
-                                    onChange={(e) => handleStateChange(setCoolDownDuration, parseInt(e.target.value))}
+                                    onChange={(e) => setCoolDownDuration(parseInt(e.target.value))}
                                     className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer range-lg accent-blue-500"
                                 />
                             </div>
@@ -306,29 +310,45 @@ const WorkoutGenerator: React.FC = () => {
                 </div>
 
                 {/* Rest Settings */}
-                <div className="bg-gray-900/50 p-4 rounded-lg animate-fade-in space-y-3">
+                <div className="bg-gray-900/50 p-4 rounded-lg animate-fade-in space-y-4">
                     <h3 className="font-semibold text-white">Rest Settings</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium">Rest Between Exercises (Default): <span className="text-orange-400">{defaultRestDuration}s</span></label>
-                             <StepperInput
-                                value={defaultRestDuration}
-                                onChange={(v) => handleStateChange(setDefaultRestDuration, v)}
-                                step={5}
-                                min={0}
-                                aria-label="Default rest between exercises in seconds"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                             <label className="text-sm font-medium">Rest Between Rounds: <span className="text-orange-400">{restBetweenRounds}s</span></label>
-                            <StepperInput
-                                value={restBetweenRounds}
-                                onChange={(v) => handleStateChange(setRestBetweenRounds, v)}
-                                step={15}
-                                min={0}
-                                aria-label="Rest between rounds in seconds"
-                            />
-                        </div>
+                     <div className="space-y-2">
+                        <ToggleSwitch
+                            label="Global Rest Between Exercises"
+                            checked={useGlobalExerciseRest}
+                            onChange={setUseGlobalExerciseRest}
+                        />
+                        {useGlobalExerciseRest && (
+                            <div className="pl-4 border-l-2 border-gray-700 ml-2 animate-fade-in space-y-2">
+                                <label className="text-sm font-medium">Duration: <span className="text-orange-400">{formatTime(defaultRestDuration)}</span></label>
+                                <StepperInput
+                                    value={defaultRestDuration}
+                                    onChange={setDefaultRestDuration}
+                                    step={5}
+                                    min={0}
+                                    aria-label="Rest between exercises in seconds"
+                                />
+                            </div>
+                        )}
+                    </div>
+                     <div className="space-y-2">
+                        <ToggleSwitch
+                            label="Global Rest Between Rounds"
+                            checked={useGlobalRoundRest}
+                            onChange={setUseGlobalRoundRest}
+                        />
+                        {useGlobalRoundRest && (
+                             <div className="pl-4 border-l-2 border-gray-700 ml-2 animate-fade-in space-y-2">
+                                <label className="text-sm font-medium">Duration: <span className="text-orange-400">{formatTime(restBetweenRounds)}</span></label>
+                                <StepperInput
+                                    value={restBetweenRounds}
+                                    onChange={setRestBetweenRounds}
+                                    step={15}
+                                    min={0}
+                                    aria-label="Rest between rounds in seconds"
+                                />
+                            </div>
+                        )}
                     </div>
                 </div>
                
@@ -356,7 +376,7 @@ const WorkoutGenerator: React.FC = () => {
                     max="5"
                     step="1"
                     value={rounds}
-                    onChange={(e) => handleStateChange(setRounds, parseInt(e.target.value))}
+                    onChange={(e) => setRounds(parseInt(e.target.value))}
                     className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer range-lg accent-orange-500"
                     />
                 </div>

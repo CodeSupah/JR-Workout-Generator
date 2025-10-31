@@ -121,6 +121,7 @@ const ExerciseModal: React.FC<ExerciseModalProps> = ({ isOpen, onClose, onSelect
   const handleSetViewMode = (mode: 'equipment' | 'muscleGroup') => {
       if (viewMode !== mode) {
           setViewMode(mode);
+          setSearchTerm(''); // Fix: Reset search term on view change
           setSelectedEquipment([]);
           setSelectedMuscleGroup('All Muscles');
           setSelectedDifficulties([]);
@@ -129,36 +130,42 @@ const ExerciseModal: React.FC<ExerciseModalProps> = ({ isOpen, onClose, onSelect
 
   const filteredExercises = useMemo(() => {
     return EXERCISE_DATABASE.filter(ex => {
-        const purposeMatch = purposeFilter ? ex.purpose === purposeFilter : true;
-        const searchTermLower = searchTerm.toLowerCase();
-        const searchMatch = searchTermLower === '' || 
-            ex.name.toLowerCase().includes(searchTermLower) ||
-            (ex.keywords && ex.keywords.some(k => k.toLowerCase().includes(searchTermLower)));
-
-        if (!viewMode) {
-            return purposeMatch && searchMatch;
+      const purposeMatch = purposeFilter ? ex.purpose === purposeFilter : true;
+      if (!purposeMatch) return false;
+  
+      const searchTermLower = searchTerm.toLowerCase();
+      const searchMatch =
+        searchTermLower === '' ||
+        ex.name.toLowerCase().includes(searchTermLower) ||
+        (ex.keywords && ex.keywords.some(k => k.toLowerCase().includes(searchTermLower)));
+      if (!searchMatch) return false;
+  
+      if (!viewMode) return true; // Only purpose and search matter if no view mode
+  
+      const difficultyMatch = selectedDifficulties.length === 0 || selectedDifficulties.includes(ex.difficulty);
+      if (!difficultyMatch) return false;
+  
+      if (viewMode === 'equipment') {
+        return (
+          selectedEquipment.length === 0 ||
+          selectedEquipment.some(selected => {
+            const selectedFormatted = selected.toLowerCase().replace(/ /g, '-');
+            if (selected === 'Jump Rope') return ['rope', 'weighted-rope'].includes(ex.equipment);
+            if (selected === 'Machine') return ['cable-machine', 'leg-press-machine'].includes(ex.equipment);
+            return ex.equipment === selectedFormatted;
+          })
+        );
+      }
+  
+      if (viewMode === 'muscleGroup') {
+        if (selectedMuscleGroup === 'Stretches') {
+          return ex.category === 'Flexibility & Mobility';
         }
-
-        const difficultyMatch = selectedDifficulties.length === 0 || selectedDifficulties.includes(ex.difficulty);
-        
-        let viewSpecificMatch = true;
-        if (viewMode === 'equipment') {
-            viewSpecificMatch = selectedEquipment.length === 0 || selectedEquipment.some(selected => {
-                const selectedFormatted = selected.toLowerCase().replace(/ /g, '-');
-                if (selected === 'Jump Rope') return ['rope', 'weighted-rope'].includes(ex.equipment);
-                if (selected === 'Machine') return ['cable-machine', 'leg-press-machine'].includes(ex.equipment);
-                return ex.equipment === selectedFormatted;
-            });
-        } else { // muscleGroup view
-            if (selectedMuscleGroup === 'Stretches') {
-                viewSpecificMatch = ex.category === 'Flexibility & Mobility';
-            } else if (selectedMuscleGroup !== 'All Muscles') {
-                viewSpecificMatch = ex.muscleGroups.includes(selectedMuscleGroup) && ex.category !== 'Flexibility & Mobility';
-            } else {
-                viewSpecificMatch = ex.category !== 'Flexibility & Mobility';
-            }
+        if (selectedMuscleGroup !== 'All Muscles') {
+          return ex.muscleGroups.includes(selectedMuscleGroup) && ex.category !== 'Flexibility & Mobility';
         }
-        return purposeMatch && searchMatch && difficultyMatch && viewSpecificMatch;
+      }
+      return true;
     });
   }, [purposeFilter, searchTerm, selectedDifficulties, selectedEquipment, selectedMuscleGroup, viewMode]);
 

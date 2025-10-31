@@ -2,13 +2,14 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { WorkoutPlan, Exercise, UnlockedAchievementInfo, WorkoutPreferences } from '../types';
 import { useWorkoutTimer } from '../hooks/useWorkoutTimer';
-import { PlayIcon, PauseIcon, StopIcon, VolumeUpIcon, VolumeOffIcon, SkipNextIcon, SkipPreviousIcon, TrophyIcon, TrashIcon, ChevronDoubleRightIcon, SaveIcon, ArrowPathIcon, CheckCircleIcon } from './icons/Icons';
+import { PlayIcon, PauseIcon, StopIcon, VolumeUpIcon, VolumeOffIcon, SkipNextIcon, SkipPreviousIcon, TrophyIcon, ChevronDoubleRightIcon, SaveIcon, ArrowPathIcon, CheckCircleIcon } from './icons/Icons';
 import { saveCustomWorkout } from '../services/workoutService';
 import { checkAndUnlockAchievements } from '../services/achievementService';
 import { toastStore } from '../store/toastStore';
 import ExerciseModal from './ExerciseModal';
 import SaveRoutineModal from './SaveRoutineModal';
 import AchievementUnlockedToast from './AchievementUnlockedToast';
+import VerticalTimeline from './VerticalTimeline';
 
 const LiveSession: React.FC = () => {
   const navigate = useNavigate();
@@ -24,7 +25,6 @@ const LiveSession: React.FC = () => {
   const { workoutPlan: workout } = timer;
   
   useEffect(() => {
-    // If the hook initializes and finds no workout (neither new nor saved), navigate away.
     if (!workout) {
       navigate('/');
     }
@@ -38,8 +38,8 @@ const LiveSession: React.FC = () => {
     summary,
     displayInfo,
     currentExercise,
-    exercises,
-    exerciseIndex,
+    sessionItems,
+    currentIndex,
     togglePause,
     stopWorkout,
     skipExercise,
@@ -51,7 +51,6 @@ const LiveSession: React.FC = () => {
 
   useEffect(() => {
     if (stage === 'Finished' && summary) {
-        // Run achievement check only once when summary is available
         const checkAchievements = async () => {
             const newlyUnlocked = await checkAndUnlockAchievements();
             setUnlockedAchievements(newlyUnlocked);
@@ -62,10 +61,8 @@ const LiveSession: React.FC = () => {
 
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      // If the workout is running and not finished, show the prompt.
       if (isRunning && stage !== 'Finished') {
         event.preventDefault();
-        // Standard way to show the browser's native confirmation dialog.
         event.returnValue = 'Are you sure you want to leave? Your workout progress will be lost.';
       }
     };
@@ -75,48 +72,15 @@ const LiveSession: React.FC = () => {
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [isRunning, stage]); // Dependencies ensure we have the latest state
-
-  const exercisePurpose = useMemo(() => {
-    if (stage === 'Warm-up') return 'warmup';
-    if (stage === 'Cool-down') return 'cooldown';
-    return 'main';
-  }, [stage]);
+  }, [isRunning, stage]);
   
   const isRepBasedWork = stage === 'Work' && currentExercise?.unit === 'reps';
-
-  const setInfo = useMemo(() => {
-    if (!currentExercise || !exercises || exerciseIndex < 0 || stage === 'Warm-up' || stage === 'Cool-down') {
-        return { currentSetNum: 0, totalSets: 0, show: false };
-    }
-    
-    // Find all occurrences of the current exercise by name
-    const allInstances = exercises.filter(ex => ex.exercise === currentExercise.exercise);
-    if (allInstances.length <= 1) {
-        // Not a multi-set exercise, don't show set info
-        return { currentSetNum: 0, totalSets: 0, show: false };
-    }
-
-    // Find the index of the current instance among all its occurrences
-    let count = 0;
-    for(let i = 0; i <= exerciseIndex; i++) {
-        if(exercises[i].exercise === currentExercise.exercise) {
-            count++;
-        }
-    }
-
-    return {
-        currentSetNum: count,
-        totalSets: allInstances.length,
-        show: true,
-    };
-  }, [currentExercise, exercises, exerciseIndex, stage]);
 
   if (!workout) {
     return <div className="flex items-center justify-center min-h-screen">Loading Session...</div>;
   }
 
-  const { currentStageDisplay, currentExerciseName, nextExerciseName, totalRounds, currentRoundNum, totalUniqueExercises, currentUniqueExerciseIndex } = displayInfo;
+  const { currentStageDisplay, currentExerciseName, nextExerciseName, totalRounds } = displayInfo;
 
   const renderTimerDisplay = () => {
     const minutes = Math.floor(timeRemaining / 60).toString().padStart(2, '0');
@@ -179,7 +143,6 @@ const LiveSession: React.FC = () => {
   if (stage === 'Finished' && summary) {
     return (
       <div className="fixed inset-0 bg-gray-900 flex flex-col items-center justify-center p-4 animate-fade-in">
-        {/* Achievement Toasts Container */}
         <div className="fixed top-5 right-5 z-[100] space-y-3">
             {unlockedAchievements.map((achievement, index) => (
                 <AchievementUnlockedToast
@@ -225,136 +188,134 @@ const LiveSession: React.FC = () => {
   }
 
   return (
-    <div className={`fixed inset-0 flex flex-col items-center justify-center transition-all duration-500 bg-gradient-to-br ${stageColors[stage] || 'from-gray-800 to-gray-900'}`}>
+    <div className={`fixed inset-0 flex transition-all duration-500 bg-gradient-to-br ${stageColors[stage] || 'from-gray-800 to-gray-900'}`}>
         {isReplaceModalOpen && <ExerciseModal
             isOpen={isReplaceModalOpen}
             onClose={() => setIsReplaceModalOpen(false)}
             onSelectExercise={handleExerciseReplaced}
             mode='replace'
             exerciseToEdit={currentExercise}
-            purposeFilter={exercisePurpose}
+            purposeFilter={undefined}
             originalPreferences={preferences}
         />}
-        <div className="absolute top-5 right-5 z-10">
+
+        {/* Vertical Timeline */}
+        <div className="w-48 md:w-64 flex-shrink-0 h-full overflow-hidden">
+            <VerticalTimeline items={sessionItems} currentIndex={currentIndex} />
+        </div>
+        
+      {/* Main content area */}
+      <div className="flex-1 flex flex-col items-center justify-between relative">
+         <div className="absolute top-5 right-5 z-10">
             <button onClick={() => setIsSoundOn(!isSoundOn)} className="p-3 bg-black/20 rounded-full text-white">
                 {isSoundOn ? <VolumeUpIcon className="w-6 h-6"/> : <VolumeOffIcon className="w-6 h-6"/>}
             </button>
         </div>
-      <div className="relative w-full max-w-lg p-4 text-center">
-        {/* Progress Rings */}
-        <div className="relative flex items-center justify-center w-72 h-72 sm:w-80 sm:h-80 mx-auto mb-4">
-          <svg className="absolute w-full h-full" viewBox="0 0 100 100">
-            {/* Background circle */}
-            <circle
-              className="text-black/20"
-              strokeWidth="5"
-              stroke="currentColor"
-              fill="transparent"
-              r="45"
-              cx="50"
-              cy="50"
-            />
-            {/* Progress circle for time-based */}
-            {!isRepBasedWork && (
-              <circle
-                className="text-white"
+
+        <div className="w-full max-w-lg p-4 text-center mt-auto">
+            <div className="relative flex items-center justify-center w-64 h-64 sm:w-80 sm:h-80 mx-auto">
+            <svg className="absolute w-full h-full" viewBox="0 0 100 100">
+                <circle
+                className="text-black/20"
                 strokeWidth="5"
-                strokeDasharray={2 * Math.PI * 45}
-                strokeDashoffset={(2 * Math.PI * 45) * (stageProgress)}
-                strokeLinecap="round"
                 stroke="currentColor"
                 fill="transparent"
                 r="45"
                 cx="50"
                 cy="50"
-                style={{ transform: 'rotate(-90deg)', transformOrigin: '50% 50%', transition: 'stroke-dashoffset 0.5s linear' }}
-              />
-            )}
-          </svg>
-          <div className="z-10">
-            <div className="flex items-center justify-center gap-2">
-                <p className="text-xl font-semibold uppercase tracking-widest text-white/80">{currentStageDisplay}</p>
-                {stage !== 'Finished' && <button onClick={skipStage} title="Skip to Next Stage" className="p-1 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-colors"><ChevronDoubleRightIcon className="w-5 h-5"/></button>}
+                />
+                {!isRepBasedWork && (
+                <circle
+                    className="text-white"
+                    strokeWidth="5"
+                    strokeDasharray={2 * Math.PI * 45}
+                    strokeDashoffset={(2 * Math.PI * 45) * (stageProgress)}
+                    strokeLinecap="round"
+                    stroke="currentColor"
+                    fill="transparent"
+                    r="45"
+                    cx="50"
+                    cy="50"
+                    style={{ transform: 'rotate(-90deg)', transformOrigin: '50% 50%', transition: 'stroke-dashoffset 0.5s linear' }}
+                />
+                )}
+            </svg>
+            <div className="z-10">
+                <div className="flex items-center justify-center gap-2">
+                    <p className="text-xl font-semibold uppercase tracking-widest text-white/80">{currentStageDisplay}</p>
+                    {stage !== 'Finished' && <button onClick={skipStage} title="Skip to Next Stage" className="p-1 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-colors"><ChevronDoubleRightIcon className="w-5 h-5"/></button>}
+                </div>
+                {isRepBasedWork ? (
+                    <p className="text-7xl font-bold tabular-nums text-white my-2">{currentExercise.reps} <span className="text-5xl">Reps</span></p>
+                ) : (
+                    <p className="text-7xl font-bold tabular-nums text-white my-2">{renderTimerDisplay()}</p>
+                )}
+                <div className="h-6"></div>
             </div>
-            {isRepBasedWork ? (
-                 <p className="text-7xl font-bold tabular-nums text-white my-2">{currentExercise.reps} <span className="text-5xl">Reps</span></p>
-            ) : (
-                <p className="text-7xl font-bold tabular-nums text-white my-2">{renderTimerDisplay()}</p>
-            )}
-
-            <div className="h-12">
-                {stage !== 'Finished' && (
-                    <>
-                        <p className="text-xl text-white/80 font-semibold">Exercise {currentUniqueExerciseIndex} / {totalUniqueExercises}</p>
-                        {setInfo.show && (
-                            <p className="text-lg text-white/80">Set {setInfo.currentSetNum} / {setInfo.totalSets}</p>
-                        )}
-                    </>
+            </div>
+            
+            <div className="h-24 mt-4">
+                <h2 className="text-4xl font-bold text-white capitalize transition-opacity duration-300">{currentExerciseName}</h2>
+                {nextExerciseName && (
+                    <p className="text-xl text-white/70 mt-2 animate-pulse">
+                        Next Up: {nextExerciseName}
+                    </p>
                 )}
             </div>
-          </div>
         </div>
-        
-        <div className="h-24">
-            <h2 className="text-4xl font-bold text-white capitalize transition-opacity duration-300">{currentExerciseName}</h2>
-            {nextExerciseName && (
-                 <p className="text-xl text-white/70 mt-2 animate-pulse">
-                    Next Up: {nextExerciseName}
-                 </p>
-            )}
-        </div>
-      </div>
 
-      <div className="absolute bottom-10 inset-x-0 px-4 z-10">
-        <div className="bg-black/20 p-2 rounded-full max-w-md mx-auto flex justify-around items-center backdrop-blur-sm">
-            <button
-                onClick={previousExercise}
-                className="p-3 text-white transition-transform transform hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={currentUniqueExerciseIndex <= 1}
-                title="Previous Exercise"
-            >
-                <SkipPreviousIcon className="w-6 h-6" />
-            </button>
-            {isRepBasedWork ? (
-              <button
-                onClick={completeSet}
-                className="p-5 bg-green-500 text-white rounded-full shadow-2xl transition-transform transform hover:scale-110"
-                title="Set Complete"
-              >
-                <CheckCircleIcon className="w-8 h-8" />
-              </button>
-            ) : (
-              <button
-                  onClick={togglePause}
-                  className="p-5 bg-white text-gray-900 rounded-full shadow-2xl transition-transform transform hover:scale-110"
-                  title={isRunning ? 'Pause' : 'Play'}
-              >
-                  {isRunning ? <PauseIcon className="w-8 h-8" /> : <PlayIcon className="w-8 h-8" />}
-              </button>
-            )}
-            <button
-                onClick={skipExercise}
-                className="p-3 text-white transition-transform transform hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
-                title="Skip Exercise"
-            >
-                <SkipNextIcon className="w-6 h-6" />
-            </button>
-             <div className="w-px h-8 bg-white/20 mx-2"></div>
-            <button
-                onClick={handleOpenReplaceModal}
-                disabled={stage === 'Finished'}
-                className="p-3 text-white transition-transform transform hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
-                title="Replace Exercise"
-            >
-                <ArrowPathIcon className="w-6 h-6" />
-            </button>
-            <button
-                onClick={handleStop}
-                className="p-3 text-red-400 transition-transform transform hover:scale-110"
-                title="Stop Workout"
-            >
-                <StopIcon className="w-6 h-6" />
-            </button>
+        {/* Controls Area */}
+        <div className="w-full mt-auto pb-6 px-4 z-10">
+            <div className="bg-black/20 p-2 rounded-full max-w-md mx-auto flex justify-around items-center backdrop-blur-sm">
+                <button
+                    onClick={previousExercise}
+                    className="p-3 text-white transition-transform transform hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={currentIndex <= 0}
+                    title="Previous Exercise"
+                >
+                    <SkipPreviousIcon className="w-6 h-6" />
+                </button>
+                {isRepBasedWork ? (
+                <button
+                    onClick={completeSet}
+                    className="p-5 bg-green-500 text-white rounded-full shadow-2xl transition-transform transform hover:scale-110"
+                    title="Set Complete"
+                >
+                    <CheckCircleIcon className="w-8 h-8" />
+                </button>
+                ) : (
+                <button
+                    onClick={togglePause}
+                    className="p-5 bg-white text-gray-900 rounded-full shadow-2xl transition-transform transform hover:scale-110"
+                    title={isRunning ? 'Pause' : 'Play'}
+                >
+                    {isRunning ? <PauseIcon className="w-8 h-8" /> : <PlayIcon className="w-8 h-8" />}
+                </button>
+                )}
+                <button
+                    onClick={skipExercise}
+                    className="p-3 text-white transition-transform transform hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Skip Exercise"
+                >
+                    <SkipNextIcon className="w-6 h-6" />
+                </button>
+                <div className="w-px h-8 bg-white/20 mx-2"></div>
+                <button
+                    onClick={handleOpenReplaceModal}
+                    disabled={stage === 'Finished' || stage === 'Rest'}
+                    className="p-3 text-white transition-transform transform hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Replace Exercise"
+                >
+                    <ArrowPathIcon className="w-6 h-6" />
+                </button>
+                <button
+                    onClick={handleStop}
+                    className="p-3 text-red-400 transition-transform transform hover:scale-110"
+                    title="Stop Workout"
+                >
+                    <StopIcon className="w-6 h-6" />
+                </button>
+            </div>
         </div>
       </div>
     </div>

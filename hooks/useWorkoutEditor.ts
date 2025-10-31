@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { WorkoutPlan, Exercise } from '../types';
 import { toastStore } from '../store/toastStore';
+import { getSingleSuggestedExercise } from '../services/exerciseService';
 
 type WorkoutSection = 'warmUp' | 'rounds' | 'coolDown';
 
@@ -16,6 +17,8 @@ type WorkoutEditor = {
   duplicateExercises: (ids: string[]) => void;
   updateExercises: (ids: string[], updates: Partial<Pick<Exercise, 'duration' | 'rest'>>) => void;
   setGlobalRest: (rest: number) => void;
+  addSection: (section: 'warmUp' | 'coolDown') => void;
+  removeSection: (section: 'warmUp' | 'coolDown') => void;
   undo: () => void;
   redo: () => void;
   reset: () => void;
@@ -156,18 +159,51 @@ export const useWorkoutEditor = (): WorkoutEditor => {
     // Deep copy to avoid mutation issues
     const newPlan = JSON.parse(JSON.stringify(plan));
     
-    const sourceSection = newPlan[source.section];
-    const [movedExercise] = sourceSection.splice(source.index, 1);
+    const sourceSectionArr = newPlan[source.section];
+    const [movedExercise] = sourceSectionArr.splice(source.index, 1);
+
+    // --- FIX: Logic to handle linking properties ---
+    // 1. Unlink the item that was before the moved item in the source list.
+    if (source.index > 0) {
+        const previousItem = sourceSectionArr[source.index - 1];
+        if (previousItem) {
+            previousItem.linkedToNext = false;
+        }
+    }
+    
+    // 2. Ensure the moved item itself is not linked to prevent accidental grouping.
+    movedExercise.linkedToNext = false;
+    // --- END FIX ---
 
     if (source.section === destination.section) {
-        sourceSection.splice(destination.index, 0, movedExercise);
+        sourceSectionArr.splice(destination.index, 0, movedExercise);
     } else {
-        const destinationSection = newPlan[destination.section];
-        destinationSection.splice(destination.index, 0, movedExercise);
+        const destinationSectionArr = newPlan[destination.section];
+        destinationSectionArr.splice(destination.index, 0, movedExercise);
     }
     
     updateStateAndHistory(newPlan);
     toastStore.addToast('Exercise moved');
+  }, [plan, updateStateAndHistory]);
+  
+  const addSection = useCallback((section: 'warmUp' | 'coolDown') => {
+    if (!plan) return;
+    const suggestedExercise = getSingleSuggestedExercise(section === 'warmUp' ? 'warmup' : 'cooldown');
+    if (!suggestedExercise) {
+      toastStore.addToast(`Could not find a suggested exercise for ${section}.`, 'error');
+      return;
+    }
+    const newExercise: Exercise = { ...suggestedExercise, id: crypto.randomUUID() };
+    const newPlan = { ...plan, [section]: [newExercise] };
+    updateStateAndHistory(newPlan);
+    toastStore.addToast(`${section === 'warmUp' ? 'Warm-up' : 'Cool-down'} section added.`);
+  }, [plan, updateStateAndHistory]);
+
+  const removeSection = useCallback((section: 'warmUp' | 'coolDown') => {
+    if (!plan) return;
+    const newPlan = { ...plan, [section]: [] };
+    updateStateAndHistory(newPlan);
+    toastStore.addToast(`${section === 'warmUp' ? 'Warm-up' : 'Cool-down'} section removed.`, 'error');
   }, [plan, updateStateAndHistory]);
 
   const canUndo = historyIndex > 0;
@@ -203,6 +239,8 @@ export const useWorkoutEditor = (): WorkoutEditor => {
     duplicateExercises,
     updateExercises,
     setGlobalRest,
+    addSection,
+    removeSection,
     undo,
     redo,
     reset,

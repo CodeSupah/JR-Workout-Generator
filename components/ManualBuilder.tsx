@@ -5,37 +5,13 @@ import { EXERCISE_DATABASE } from '../data/exerciseDatabase';
 import { Exercise, WorkoutPlan, ExerciseDetails, ExerciseDifficulty } from '../types';
 import { toastStore } from '../store/toastStore';
 import { saveCustomWorkout } from '../services/workoutService';
-import { getSuggestedMainExercise } from '../services/exerciseService';
+import { getSuggestedMainExercise, getSingleSuggestedExercise } from '../services/exerciseService';
 import { PlusIcon, SaveIcon, ZapIcon, ChevronDownIcon, FlameIcon, SparklesIcon, CogIcon } from './icons/Icons';
 import { flattenWorkoutForSession } from '../utils/workoutUtils';
 import ExerciseCard from './ExerciseCard';
 import ExerciseModal from './ExerciseModal';
 
 type WorkoutSectionType = 'warmUp' | 'rounds' | 'coolDown';
-
-const getSingleSuggestedExercise = (type: 'warmup' | 'cooldown'): Omit<Exercise, 'id'> | null => {
-    const suggestions = EXERCISE_DATABASE.filter(ex => ex.purpose === type);
-    if (suggestions.length === 0) return null;
-
-    const randomIndex = Math.floor(Math.random() * suggestions.length);
-    const selectedEx = suggestions[randomIndex];
-
-    if (selectedEx) {
-        const newExercise: Omit<Exercise, 'id'> = {
-            exercise: selectedEx.name,
-            duration: 60,
-            rest: 0,
-            difficulty: selectedEx.difficulty as ExerciseDifficulty,
-            equipment: selectedEx.equipment,
-            unit: 'seconds',
-            reps: 10,
-            sets: 1,
-        };
-        return newExercise;
-    }
-    return null;
-};
-
 
 const FilterButton: React.FC<{ label: string; isSelected: boolean; onClick: () => void; }> = ({ label, isSelected, onClick }) => (
     <button
@@ -321,14 +297,12 @@ const ManualBuilder: React.FC = () => {
     
         const totalExercises = (editor.plan.warmUp?.length || 0) + (editor.plan.rounds?.length || 0) + (editor.plan.coolDown?.length || 0);
     
-        // Use the session flattening logic to accurately calculate time including supersets and sets
-        const planForSession = flattenWorkoutForSession(editor.plan);
-        
-        const totalSeconds = 
-            (planForSession.warmUp?.reduce((acc, ex) => acc + ex.duration + ex.rest, 0) || 0) +
-            (planForSession.rounds?.reduce((acc, ex) => acc + ex.duration + ex.rest, 0) || 0) +
-            (planForSession.coolDown?.reduce((acc, ex) => acc + ex.duration + ex.rest, 0) || 0);
-    
+        // FIX: Correctly calculate total time from the flattened session items array.
+        // The flattenWorkoutForSession function returns a `sessionItems` array that includes
+        // all work and rest periods as individual items, so we just need to sum their durations.
+        const { sessionItems } = flattenWorkoutForSession(editor.plan);
+        const totalSeconds = sessionItems.reduce((acc, item) => acc + item.duration, 0);
+
         const totalMinutes = Math.floor(totalSeconds / 60);
     
         return { count: totalExercises, time: totalMinutes };
@@ -355,11 +329,15 @@ const ManualBuilder: React.FC = () => {
   const purpose = useMemo(() => {
     if (!modalState) return 'main';
 
-    if (modalState.section === 'warmUp' || modalState.section === 'coolDown') {
-        return modalState.section === 'warmUp' ? 'warmup' : 'cooldown';
+    if (modalState.mode === 'replace') {
+        return undefined; // Allow replacing with ANY exercise from the full library.
     }
+
+    // Determine purpose for adding an exercise (if this modal were used for it)
+    if (modalState.section === 'warmUp') return 'warmup';
+    if (modalState.section === 'coolDown') return 'cooldown';
     
-    return undefined; // Allow swapping any exercise in the main section
+    return 'main';
   }, [modalState]);
 
 
@@ -393,7 +371,20 @@ const ManualBuilder: React.FC = () => {
                 <div className="flex items-center gap-3">
                     {icon} {title}
                 </div>
-                <ChevronDownIcon className="w-6 h-6 transform transition-transform details-arrow" />
+                <div className="flex items-center gap-2">
+                    {section !== 'rounds' && (
+                        <button
+                            onClick={(e) => {
+                                e.preventDefault();
+                                editor.removeSection(section);
+                            }}
+                            className="text-xs font-semibold text-red-400 hover:bg-red-500/20 px-2 py-1 rounded-md"
+                        >
+                            Remove
+                        </button>
+                    )}
+                    <ChevronDownIcon className="w-6 h-6 transform transition-transform details-arrow" />
+                </div>
             </summary>
             <div className="p-4 pt-0 space-y-3">
                 {itemsToRender.map((item, groupIndex) => {
@@ -521,11 +512,41 @@ const ManualBuilder: React.FC = () => {
             </div>
         </div>
         
-        {renderGroupableSection('Warm-Up', <FlameIcon className="w-6 h-6 text-orange-400"/>, 'warmUp', editor.plan?.warmUp || [], () => handleAddSuggestedExercise('warmup'))}
+        {editor.plan?.warmUp && editor.plan.warmUp.length > 0 ? (
+            renderGroupableSection('Warm-Up', <FlameIcon className="w-6 h-6 text-orange-400"/>, 'warmUp', editor.plan.warmUp, () => handleAddSuggestedExercise('warmup'))
+        ) : (
+            <div className="bg-gray-800/30 rounded-xl p-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    <FlameIcon className="w-6 h-6 text-gray-500"/>
+                    <h3 className="text-xl font-bold text-gray-500">Warm-Up</h3>
+                </div>
+                <button
+                    onClick={() => editor.addSection('warmUp')}
+                    className="flex items-center gap-2 text-sm bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded-lg"
+                >
+                    <PlusIcon className="w-4 h-4" /> Add Warm-up
+                </button>
+            </div>
+        )}
         
         {renderGroupableSection('Main Workout', <ZapIcon className="w-6 h-6 text-yellow-400"/>, 'rounds', editor.plan?.rounds || [], handleAddSuggestedMainExercise)}
         
-        {renderGroupableSection('Cool-Down', <SparklesIcon className="w-6 h-6 text-blue-400"/>, 'coolDown', editor.plan?.coolDown || [], () => handleAddSuggestedExercise('cooldown'))}
+        {editor.plan?.coolDown && editor.plan.coolDown.length > 0 ? (
+            renderGroupableSection('Cool-Down', <SparklesIcon className="w-6 h-6 text-blue-400"/>, 'coolDown', editor.plan.coolDown, () => handleAddSuggestedExercise('cooldown'))
+        ) : (
+            <div className="bg-gray-800/30 rounded-xl p-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    <SparklesIcon className="w-6 h-6 text-gray-500"/>
+                    <h3 className="text-xl font-bold text-gray-500">Cool-Down</h3>
+                </div>
+                <button
+                    onClick={() => editor.addSection('coolDown')}
+                    className="flex items-center gap-2 text-sm bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded-lg"
+                >
+                    <PlusIcon className="w-4 h-4" /> Add Cool-down
+                </button>
+            </div>
+        )}
 
       </div>
 

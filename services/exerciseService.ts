@@ -77,3 +77,26 @@ export const getSuggestedMainExercise = (currentExercises: Exercise[]): Omit<Exe
 
     return newExercise;
 };
+
+export const getSingleSuggestedExercise = (type: 'warmup' | 'cooldown'): Omit<Exercise, 'id'> | null => {
+    const suggestions = EXERCISE_DATABASE.filter(ex => ex.purpose === type);
+    if (suggestions.length === 0) return null;
+
+    const randomIndex = Math.floor(Math.random() * suggestions.length);
+    const selectedEx = suggestions[randomIndex];
+
+    if (selectedEx) {
+        const newExercise: Omit<Exercise, 'id'> = {
+            exercise: selectedEx.name,
+            duration: 60,
+            rest: 0,
+            difficulty: selectedEx.difficulty as ExerciseDifficulty,
+            equipment: selectedEx.equipment,
+            unit: 'seconds',
+            reps: 10,
+            sets: 1,
+        };
+        return newExercise;
+    }
+    return null;
+};

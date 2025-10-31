@@ -164,7 +164,7 @@ export const generateWorkoutPlan = async (prefs: WorkoutPreferences): Promise<Wo
     - Include Jump Rope Intervals: ${prefs.includeJumpRopeIntervals}
     - Include Warm-up: ${prefs.includeWarmUp}
     - Include Cool-down: ${prefs.includeCoolDown}
-    - Default Rest Between Exercises: ${prefs.defaultRestDuration} seconds
+    - Rest Between Exercises: ${prefs.defaultRestDuration} seconds (This is the value you MUST use for the 'rest' field in the 'rounds' array)
     - Rest Between Rounds: ${prefs.restBetweenRounds} seconds (This is for user info; you do not need to include it in your calculation for the single circuit's duration)
 
     ---
@@ -235,8 +235,25 @@ export const generateWorkoutPlan = async (prefs: WorkoutPreferences): Promise<Wo
                 newEx.groupRounds = prefs.rounds;
                 newEx.restAfterGroup = prefs.restBetweenRounds;
             }
-        } else if (parsedPlan.rounds.length === 1) { // Single exercise repeated
+        } else if (parsedPlan.rounds.length === 1) { // Single exercise repeated for N rounds/sets
             newEx.sets = prefs.rounds;
+            
+            // BUG FIX: The AI was told to use defaultRestDuration. For a single exercise repeated as "rounds",
+            // the rest between sets should be the user's "rest between rounds" setting.
+            // We adjust the exercise duration to keep the total time of (work + rest) constant.
+            const geminiDuration = newEx.duration;
+            const geminiRest = newEx.rest; // This should be prefs.defaultRestDuration
+            const newRest = prefs.restBetweenRounds;
+            
+            let newDuration = geminiDuration + geminiRest - newRest;
+
+            // Ensure duration doesn't become negative or too short
+            if (newDuration < 5) {
+                newDuration = 5; // Cap at a minimum of 5 seconds
+            }
+            
+            newEx.duration = newDuration;
+            newEx.rest = newRest;
         }
 
         return newEx;

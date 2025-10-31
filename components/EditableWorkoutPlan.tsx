@@ -24,7 +24,7 @@ type WorkoutSection = 'warmUp' | 'rounds' | 'coolDown';
 
 const EditableWorkoutPlan: React.FC<EditableWorkoutPlanProps> = ({ editor, originalPreferences }) => {
   const navigate = useNavigate();
-  const { plan, undo, redo, canUndo, canRedo, updateExercise, removeExercise } = editor;
+  const { plan, undo, redo, canUndo, canRedo, updateExercise, removeExercise, addSection, removeSection } = editor;
 
   const [modalState, setModalState] = useState<{ mode: 'add' | 'replace'; section: WorkoutSection, exerciseToEdit?: Exercise, index?: number } | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<Exercise | null>(null);
@@ -40,21 +40,26 @@ const EditableWorkoutPlan: React.FC<EditableWorkoutPlanProps> = ({ editor, origi
   
   const totalTime = useMemo(() => {
     if (!plan) return 0;
-    const planForSession = flattenWorkoutForSession(plan);
-    const totalSeconds = (planForSession.warmUp?.reduce((acc, ex) => acc + ex.duration + ex.rest, 0) || 0) +
-        (planForSession.rounds?.reduce((acc, ex) => acc + ex.duration + ex.rest, 0) || 0) +
-        (planForSession.coolDown?.reduce((acc, ex) => acc + ex.duration + ex.rest, 0) || 0);
+    // FIX: Correctly calculate total time from the flattened session items array.
+    // The flattenWorkoutForSession function returns a `sessionItems` array that includes
+    // all work and rest periods as individual items, so we just need to sum their durations.
+    const { sessionItems } = flattenWorkoutForSession(plan);
+    const totalSeconds = sessionItems.reduce((acc, item) => acc + item.duration, 0);
     return Math.floor(totalSeconds / 60);
   }, [plan]);
 
   const purpose = useMemo(() => {
     if (!modalState) return 'main';
 
-    if (modalState.section === 'warmUp' || modalState.section === 'coolDown') {
-      return modalState.section === 'warmUp' ? 'warmup' : 'cooldown';
+    if (modalState.mode === 'replace') {
+        return undefined; // Allow replacing with any exercise type from the full library
     }
-    // For swapping or adding to the main workout, allow any exercise type.
-    return undefined; 
+
+    if (modalState.section === 'warmUp') return 'warmup';
+    if (modalState.section === 'coolDown') return 'cooldown';
+    
+    // For adding to the main workout
+    return 'main';
   }, [modalState]);
 
 
@@ -213,7 +218,20 @@ const EditableWorkoutPlan: React.FC<EditableWorkoutPlanProps> = ({ editor, origi
                 <div className="flex items-center gap-3">
                     {icon} {title}
                 </div>
-                <ChevronDownIcon className="w-6 h-6 transform transition-transform details-arrow" />
+                <div className="flex items-center gap-2">
+                    {section !== 'rounds' && (
+                        <button
+                            onClick={(e) => {
+                                e.preventDefault();
+                                removeSection(section);
+                            }}
+                            className="text-xs font-semibold text-red-400 hover:bg-red-500/20 px-2 py-1 rounded-md"
+                        >
+                            Remove
+                        </button>
+                    )}
+                    <ChevronDownIcon className="w-6 h-6 transform transition-transform details-arrow" />
+                </div>
             </summary>
             <div className="p-4 pt-0 space-y-3">
                 {itemsToRender.map((item, groupIndex) => {
@@ -316,11 +334,41 @@ const EditableWorkoutPlan: React.FC<EditableWorkoutPlanProps> = ({ editor, origi
         
         {selectedIds.length > 0 && <BulkActionToolbar editor={editor} selectedIds={selectedIds} clearSelection={() => setSelectedIds([])}/>}
         
-        {plan.warmUp && plan.warmUp.length > 0 && renderGroupableSection('Warm-up', <FlameIcon className="w-6 h-6 text-orange-400"/>, 'warmUp', plan.warmUp)}
+        {plan.warmUp && plan.warmUp.length > 0 ? (
+            renderGroupableSection('Warm-up', <FlameIcon className="w-6 h-6 text-orange-400"/>, 'warmUp', plan.warmUp)
+        ) : (
+            <div className="bg-gray-800/30 rounded-xl p-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    <FlameIcon className="w-6 h-6 text-gray-500"/>
+                    <h3 className="text-xl font-bold text-gray-500">Warm-Up</h3>
+                </div>
+                <button
+                    onClick={() => addSection('warmUp')}
+                    className="flex items-center gap-2 text-sm bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded-lg"
+                >
+                    <PlusIcon className="w-4 h-4" /> Add Warm-up
+                </button>
+            </div>
+        )}
 
         {renderGroupableSection('Main Workout', <ZapIcon className="w-6 h-6 text-yellow-400"/>, 'rounds', plan.rounds)}
 
-        {plan.coolDown && plan.coolDown.length > 0 && renderGroupableSection('Cool-down', <SparklesIcon className="w-6 h-6 text-blue-400"/>, 'coolDown', plan.coolDown)}
+        {plan.coolDown && plan.coolDown.length > 0 ? (
+            renderGroupableSection('Cool-down', <SparklesIcon className="w-6 h-6 text-blue-400"/>, 'coolDown', plan.coolDown)
+        ) : (
+            <div className="bg-gray-800/30 rounded-xl p-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    <SparklesIcon className="w-6 h-6 text-gray-500"/>
+                    <h3 className="text-xl font-bold text-gray-500">Cool-Down</h3>
+                </div>
+                <button
+                    onClick={() => addSection('coolDown')}
+                    className="flex items-center gap-2 text-sm bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded-lg"
+                >
+                    <PlusIcon className="w-4 h-4" /> Add Cool-down
+                </button>
+            </div>
+        )}
         
         {/* Modals and Panels */}
         {modalState && <ExerciseModal 
