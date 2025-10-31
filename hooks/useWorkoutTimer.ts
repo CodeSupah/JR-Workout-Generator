@@ -76,8 +76,8 @@ const getInitialState = (initialPlan: WorkoutPlan | undefined): { sessionState: 
             summary: null,
             completedIndices: new Set(),
         };
-        // FIX: Auto-start workout session.
-        const shouldRun = firstItem ? firstItem.unit !== 'reps' : false;
+        // Auto-start is disabled to ensure AudioContext is initialized by a user gesture, which is required on iOS.
+        const shouldRun = false;
         return { sessionState: initialState, isRunning: shouldRun };
     }
 
@@ -116,17 +116,6 @@ export const useWorkoutTimer = (initialWorkoutPlan: WorkoutPlan | undefined, isS
   }, [currentItem, summary]);
 
   const initialStageDuration = currentItem?.duration || 0;
-
-  useEffect(() => {
-    // Announce the first exercise on auto-start.
-    if (initialState.isRunning && currentIndex === 0) {
-        initAudioContext();
-        const firstItem = sessionItems[0];
-        if (firstItem) {
-            speak(`Starting with ${firstItem.exercise}`, isSoundOn);
-        }
-    }
-  }, [initialState.isRunning, currentIndex, sessionItems, isSoundOn]);
   
   const finalizeWorkout = useCallback((currentState: SessionState): SessionState => {
     if (!currentState.workoutPlan || currentState.summary) {
@@ -185,7 +174,6 @@ export const useWorkoutTimer = (initialWorkoutPlan: WorkoutPlan | undefined, isS
         return;
     }
     const nextItem = sessionItems[index];
-    // BUG FIX: Do not auto-pause on rest periods. Rest is an active countdown.
     // The timer should only stop running for rep-based sets or if the user pauses.
     const newIsRunning = andRun && nextItem.unit !== 'reps';
     
@@ -210,7 +198,6 @@ export const useWorkoutTimer = (initialWorkoutPlan: WorkoutPlan | undefined, isS
     if (!workoutPlan || !currentItem) return { currentStageDisplay: '', currentExerciseName: '', nextExerciseName: '', totalRounds: 0, currentRoundNum: 0, totalUniqueExercises: 0, currentUniqueExerciseIndex: 0 };
     
     const nextItem = sessionItems[currentIndex + 1];
-    // FIX: Explicitly type as string to allow for "Round X" display
     let currentStageDisplay: string = stage;
     if(stage === 'Work' && currentItem.purpose === 'main') {
         const roundNumber = Math.floor((currentItem.originalIndex || 0) / (workoutPlan.exercisesPerRound || 1)) + 1;
@@ -237,31 +224,34 @@ export const useWorkoutTimer = (initialWorkoutPlan: WorkoutPlan | undefined, isS
     
     intervalRef.current = window.setInterval(() => {
       setSessionState(prev => {
-        // FIX: Countdown beeps and next exercise announcement
+        const nextItem = prev.sessionItems[prev.currentIndex + 1];
+        
+        // Announce next exercise with enough time before the 4-second countdown begins.
+        if (prev.timeRemaining === 7 && nextItem) {
+            speak(nextItem.isRest ? 'Next up: Rest' : `Next up: ${nextItem.exercise}`, isSoundOn);
+        }
+
+        // 4-second countdown beeps. The final beep is a higher pitch.
         if (isSoundOn) {
-            if (prev.timeRemaining === 4) beep(750, 100, 50); // "3"
-            if (prev.timeRemaining === 3) beep(750, 100, 50); // "2"
-            if (prev.timeRemaining === 2) beep(880, 100, 50); // "1"
+            if (prev.timeRemaining === 5) beep(750, 100, 50); // 4s left
+            if (prev.timeRemaining === 4) beep(750, 100, 50); // 3s left
+            if (prev.timeRemaining === 3) beep(750, 100, 50); // 2s left
+            if (prev.timeRemaining === 2) beep(950, 120, 60); // 1s left - higher pitch for final cue
         }
 
         if (prev.timeRemaining <= 1) {
-          const nextItem = sessionItems[prev.currentIndex + 1];
           if (nextItem) {
               if (nextItem.isRest) {
                   speak('Rest', isSoundOn);
               } else {
                   speak(nextItem.exercise, isSoundOn);
               }
+              if (isSoundOn) {
+                  beep(1200, 150, 60, 'triangle'); // Distinct, high-pitched start tone
+              }
           }
           moveToItem(prev.currentIndex + 1, true);
           return prev; // Return previous state to avoid flicker; moveToItem will trigger a re-render
-        }
-
-        if (prev.timeRemaining === 6) {
-            const nextItem = sessionItems[prev.currentIndex + 1];
-            if (nextItem && !nextItem.isRest) {
-                speak(`Next up: ${nextItem.exercise}`, isSoundOn);
-            }
         }
         
         return {...prev, timeRemaining: prev.timeRemaining - 1};
@@ -271,14 +261,21 @@ export const useWorkoutTimer = (initialWorkoutPlan: WorkoutPlan | undefined, isS
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [isRunning, stage, moveToItem, isSoundOn, sessionItems]);
+  }, [isRunning, stage, moveToItem, isSoundOn]);
 
   const togglePause = useCallback(() => {
     initAudioContext();
     if (currentItem?.unit !== 'reps') {
+      // If this is the very first play action of the session, announce the start.
+      if (currentIndex === 0 && !isRunning && timeRemaining === (sessionItems[0]?.duration || 0)) {
+        const firstItem = sessionItems[0];
+        if (firstItem) {
+            speak(`Starting with ${firstItem.exercise}`, isSoundOn);
+        }
+      }
       setIsRunning(prev => !prev);
     }
-  }, [currentItem]);
+  }, [currentItem, currentIndex, isRunning, timeRemaining, sessionItems, isSoundOn]);
   
   const completeSet = useCallback(() => {
     initAudioContext();
@@ -289,7 +286,6 @@ export const useWorkoutTimer = (initialWorkoutPlan: WorkoutPlan | undefined, isS
 
   const skipExercise = () => {
       initAudioContext();
-      // BUG FIX: Skip to the very next logical item (exercise or rest), not just the next exercise.
       if (currentIndex < sessionItems.length - 1) {
           moveToItem(currentIndex + 1);
       } else {
@@ -311,7 +307,6 @@ export const useWorkoutTimer = (initialWorkoutPlan: WorkoutPlan | undefined, isS
 
   const skipStage = () => {
       initAudioContext();
-      // BUG FIX: If in a rest period, just skip to the next item.
       if (stage === 'Rest') {
           moveToItem(currentIndex + 1);
           return;

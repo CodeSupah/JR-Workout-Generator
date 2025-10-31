@@ -129,8 +129,8 @@ const Profile: React.FC = () => {
     
     // Unit conversion helpers for WEIGHT
     const displayWeight = profile?.preferences.units === 'Imperial'
-        ? (profile.weight * 2.20462).toFixed(1)
-        : profile?.weight.toString();
+        ? ((profile?.weight ?? 0) * 2.20462).toFixed(1)
+        : (profile?.weight ?? 0).toString();
         
     const handleWeightChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = parseFloat(e.target.value);
