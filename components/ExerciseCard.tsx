@@ -54,7 +54,7 @@ const ExerciseCard: React.FC<{
   if (isSimple) {
      return (
         <div className="bg-gray-800/50 p-3 rounded-xl flex items-center gap-2">
-             <div className="cursor-grab text-gray-500 p-2 touch-none">
+             <div className="cursor-grab text-gray-500 p-2 touch-none" data-drag-handle>
                 <DragHandleIcon className="w-5 h-5" />
             </div>
             <div className="flex-1">
@@ -109,7 +109,7 @@ const ExerciseCard: React.FC<{
       )}
 
       <div className="p-3 flex items-center gap-2 cursor-pointer" onClick={handleCardClick}>
-        <div className="cursor-grab text-gray-500 p-2 touch-none">
+        <div className="cursor-grab text-gray-500 p-2 touch-none" data-drag-handle>
           <DragHandleIcon className="w-5 h-5" />
         </div>
         <div className="flex-1">

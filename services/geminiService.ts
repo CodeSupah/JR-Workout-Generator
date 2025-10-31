@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type } from '@google/genai';
-import { WorkoutPreferences, WorkoutPlan, Exercise, WorkoutMode, Equipment } from '../types';
+import { WorkoutPreferences, WorkoutPlan, Exercise, WorkoutMode, Equipment, ExerciseDifficulty } from '../types';
 import { EXERCISE_DATABASE } from '../data/exerciseDatabase';
 
 const API_KEY = process.env.API_KEY;
@@ -209,47 +209,53 @@ export const generateWorkoutPlan = async (prefs: WorkoutPreferences): Promise<Wo
     });
     
     const jsonText = response.text.trim();
-    const parsedPlan = JSON.parse(jsonText) as Omit<WorkoutPlan, 'id' | 'mode' | 'warmUpDuration' | 'coolDownDuration' | 'exercisesPerRound' | 'numberOfRounds'>;
+    const parsedPlan = JSON.parse(jsonText) as Partial<Omit<WorkoutPlan, 'id' | 'mode' | 'warmUpDuration' | 'coolDownDuration' | 'exercisesPerRound' | 'numberOfRounds'>>;
     
-    parsedPlan.warmUp = parsedPlan.warmUp.map(ex => ({ ...ex, id: crypto.randomUUID(), unit: 'seconds' as const }));
-    parsedPlan.coolDown = parsedPlan.coolDown.map(ex => ({ ...ex, id: crypto.randomUUID(), unit: 'seconds' as const }));
+    // FIX: Ensure required arrays exist to prevent crashes on .map or .length.
+    parsedPlan.warmUp = parsedPlan.warmUp || [];
+    parsedPlan.rounds = parsedPlan.rounds || [];
+    parsedPlan.coolDown = parsedPlan.coolDown || [];
+
+    // FIX: Helper to safely capitalize difficulty and provide a default.
+    const safeCapitalize = (difficulty: string | undefined): ExerciseDifficulty => {
+        if (!difficulty) return 'Easy';
+        return (difficulty.charAt(0).toUpperCase() + difficulty.slice(1)) as ExerciseDifficulty;
+    };
+    
+    parsedPlan.warmUp = parsedPlan.warmUp.map(ex => ({ ...ex, id: crypto.randomUUID(), unit: 'seconds' as const, difficulty: safeCapitalize(ex.difficulty) }));
+    parsedPlan.coolDown = parsedPlan.coolDown.map(ex => ({ ...ex, id: crypto.randomUUID(), unit: 'seconds' as const, difficulty: safeCapitalize(ex.difficulty) }));
     
     const exercisesPerRound = parsedPlan.rounds.length;
 
-    // Convert the AI-generated circuit into a structure compatible with the manual builder's editor
-    // This allows for advanced editing like sets, reps, and supersets.
     let structuredRounds: Exercise[] = parsedPlan.rounds.map((ex, index) => {
-        const isLastInCircuit = index === parsedPlan.rounds.length - 1;
+        const isLastInCircuit = index === (parsedPlan.rounds || []).length - 1;
         const newEx: Exercise = {
             ...ex,
             id: crypto.randomUUID(),
             unit: 'seconds',
-            sets: 1, // Default sets for individual editing
-            reps: 10, // Default reps for editing
+            sets: 1,
+            reps: 10,
             linkedToNext: false,
+            difficulty: safeCapitalize(ex.difficulty),
         };
 
-        if (parsedPlan.rounds.length > 1) { // It's a circuit/superset
+        if ((parsedPlan.rounds || []).length > 1) { // It's a circuit/superset
             newEx.linkedToNext = !isLastInCircuit;
             if (isLastInCircuit) {
                 newEx.groupRounds = prefs.rounds;
                 newEx.restAfterGroup = prefs.restBetweenRounds;
             }
-        } else if (parsedPlan.rounds.length === 1) { // Single exercise repeated for N rounds/sets
+        } else if ((parsedPlan.rounds || []).length === 1) { // Single exercise repeated for N rounds/sets
             newEx.sets = prefs.rounds;
             
-            // BUG FIX: The AI was told to use defaultRestDuration. For a single exercise repeated as "rounds",
-            // the rest between sets should be the user's "rest between rounds" setting.
-            // We adjust the exercise duration to keep the total time of (work + rest) constant.
             const geminiDuration = newEx.duration;
-            const geminiRest = newEx.rest; // This should be prefs.defaultRestDuration
+            const geminiRest = newEx.rest;
             const newRest = prefs.restBetweenRounds;
             
             let newDuration = geminiDuration + geminiRest - newRest;
 
-            // Ensure duration doesn't become negative or too short
             if (newDuration < 5) {
-                newDuration = 5; // Cap at a minimum of 5 seconds
+                newDuration = 5;
             }
             
             newEx.duration = newDuration;
@@ -260,24 +266,23 @@ export const generateWorkoutPlan = async (prefs: WorkoutPreferences): Promise<Wo
     });
     
     const workoutPlan: WorkoutPlan = {
-      ...parsedPlan,
       id: crypto.randomUUID(),
       mode: prefs.mode,
+      warmUp: parsedPlan.warmUp,
+      rounds: structuredRounds,
+      coolDown: parsedPlan.coolDown,
+      estimatedCalories: parsedPlan.estimatedCalories ?? 0,
+      difficultyScore: parsedPlan.difficultyScore ?? 3,
+      motivationalQuote: parsedPlan.motivationalQuote ?? "Let's get moving!",
       warmUpDuration: prefs.includeWarmUp ? prefs.warmUpDuration : 0,
       coolDownDuration: prefs.includeCoolDown ? prefs.coolDownDuration : 0,
-      rounds: structuredRounds,
       exercisesPerRound: exercisesPerRound,
       numberOfRounds: prefs.rounds,
     };
 
-    if (!workoutPlan.rounds || workoutPlan.rounds.length === 0) {
-        // If there are no main rounds, but we have a warm-up or cool-down, that's still a valid workout.
-        if (workoutPlan.warmUp.length === 0 && workoutPlan.coolDown.length === 0) {
-            throw new Error("Generated plan has no exercises.");
-        }
+    if (workoutPlan.rounds.length === 0 && workoutPlan.warmUp.length === 0 && workoutPlan.coolDown.length === 0) {
+        throw new Error("Generated plan has no exercises.");
     }
-    
-    workoutPlan.rounds = workoutPlan.rounds.map(r => ({...r, difficulty: (r.difficulty.charAt(0).toUpperCase() + r.difficulty.slice(1)) as Exercise['difficulty']}))
 
     return workoutPlan;
 

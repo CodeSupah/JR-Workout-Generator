@@ -186,6 +186,10 @@ const ManualBuilder: React.FC = () => {
   const dragItem = useRef<{index: number, section: WorkoutSectionType} | null>(null);
   const [dragOverInfo, setDragOverInfo] = useState<{index: number; section: WorkoutSectionType} | null>(null);
 
+  // --- Refs for Touch Drag & Drop ---
+  const touchStartY = useRef(0);
+  const isDragging = useRef(false);
+
 
   useEffect(() => {
     // Only initialize if the plan is empty, to avoid resetting on re-renders
@@ -340,6 +344,53 @@ const ManualBuilder: React.FC = () => {
     return 'main';
   }, [modalState]);
 
+  // --- Touch Handlers ---
+  const handleTouchStart = useCallback((e: React.TouchEvent, index: number, section: WorkoutSectionType) => {
+    const handle = (e.target as HTMLElement).closest('[data-drag-handle]');
+    if (handle) {
+        isDragging.current = true;
+        dragItem.current = { index, section };
+        touchStartY.current = e.touches[0].clientY;
+    }
+  }, []);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!isDragging.current) return;
+
+    const currentY = e.touches[0].clientY;
+    // Only prevent scroll if user has moved more than a small threshold vertically
+    if (Math.abs(currentY - touchStartY.current) > 10) {
+        e.preventDefault();
+
+        const dropTarget = document.elementFromPoint(e.touches[0].clientX, e.touches[0].clientY);
+        if (dropTarget) {
+            const dropNodeContainer = dropTarget.closest('[data-draggable-item]') as HTMLElement;
+            if (dropNodeContainer) {
+                const dropIndex = parseInt(dropNodeContainer.dataset.index || '0', 10);
+                const dropSection = dropNodeContainer.dataset.section as WorkoutSectionType;
+                
+                const rect = dropNodeContainer.getBoundingClientRect();
+                const isAfter = (e.touches[0].clientY - rect.top) > (rect.height / 2);
+                const targetIndex = isAfter ? dropIndex + 1 : dropIndex;
+
+                if (dragOverInfo?.index !== targetIndex || dragOverInfo?.section !== dropSection) {
+                    setDragOverInfo({ index: targetIndex, section: dropSection });
+                }
+            }
+        }
+    }
+  }, [dragOverInfo]);
+
+  const handleTouchEnd = useCallback(() => {
+    if (isDragging.current && dragItem.current && dragOverInfo) {
+        editor.moveExercise(dragItem.current, dragOverInfo);
+    }
+    // Cleanup
+    isDragging.current = false;
+    dragItem.current = null;
+    setDragOverInfo(null);
+  }, [dragOverInfo, editor]);
+
 
   const renderGroupableSection = (title: string, icon: React.ReactNode, section: WorkoutSectionType, exercises: Exercise[], onAddSuggested?: () => void) => {
     const itemsToRender: (Exercise | { type: 'group'; exercises: Exercise[] })[] = [];
@@ -399,7 +450,7 @@ const ManualBuilder: React.FC = () => {
                                 {dragOverInfo?.section === section && dragOverInfo?.index === originalIndex && <div className="h-1.5 my-1 rounded-full bg-orange-500 animate-pulse" />}
                                 <div className="bg-gray-700/50 rounded-xl space-y-0 border-l-4 border-orange-500">
                                     {groupExercises.map((ex, exerciseIndex) => (
-                                        <div key={ex.id} draggable onDragStart={(e) => handleDragStart(e, originalIndex + exerciseIndex, section)} onDrop={(e) => handleDrop(e, originalIndex + exerciseIndex, section)} onDragEnter={() => setDragOverInfo({index: originalIndex + exerciseIndex, section: section})} onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverInfo({ index: originalIndex + exerciseIndex, section: section });}}>
+                                        <div key={ex.id} draggable onDragStart={(e) => handleDragStart(e, originalIndex + exerciseIndex, section)} onDrop={(e) => handleDrop(e, originalIndex + exerciseIndex, section)} onDragEnter={() => setDragOverInfo({index: originalIndex + exerciseIndex, section: section})} onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverInfo({ index: originalIndex + exerciseIndex, section: section });}} onTouchStart={(e) => handleTouchStart(e, originalIndex + exerciseIndex, section)} data-draggable-item data-index={originalIndex + exerciseIndex} data-section={section}>
                                             <ExerciseCard
                                                 exercise={ex}
                                                 onUpdate={editor.updateExercise}
@@ -428,7 +479,7 @@ const ManualBuilder: React.FC = () => {
                         return (
                             <div key={exercise.id}>
                                 {dragOverInfo?.section === section && dragOverInfo?.index === originalIndex && <div className="h-1.5 my-1 rounded-full bg-orange-500 animate-pulse" />}
-                                <div draggable onDragStart={(e) => handleDragStart(e, originalIndex, section)} onDrop={(e) => handleDrop(e, originalIndex, section)} onDragEnter={() => setDragOverInfo({ index: originalIndex, section: section })} onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverInfo({ index: originalIndex, section: section });}}>
+                                <div draggable onDragStart={(e) => handleDragStart(e, originalIndex, section)} onDrop={(e) => handleDrop(e, originalIndex, section)} onDragEnter={() => setDragOverInfo({ index: originalIndex, section: section })} onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverInfo({ index: originalIndex, section: section });}} onTouchStart={(e) => handleTouchStart(e, originalIndex, section)} data-draggable-item data-index={originalIndex} data-section={section}>
                                     <ExerciseCard
                                         exercise={exercise}
                                         onUpdate={editor.updateExercise}
@@ -477,7 +528,7 @@ const ManualBuilder: React.FC = () => {
             exerciseToEdit={modalState.exerciseToEdit}
             purposeFilter={purpose}
       />}
-      <div className="max-w-4xl mx-auto space-y-6 animate-fade-in pb-40">
+      <div className="max-w-4xl mx-auto space-y-6 animate-fade-in pb-40" onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}>
         <div>
           <Link to="/workout" className="text-sm text-orange-400 hover:underline mb-2 inline-block">
             &larr; Back to Workout Hub

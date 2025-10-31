@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo, useEffect } from 'react';
+import React, { useState, useRef, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useWorkoutEditor } from '../hooks/useWorkoutEditor';
 import { Exercise, WorkoutPlan, WorkoutPreferences } from '../types';
@@ -37,6 +37,10 @@ const EditableWorkoutPlan: React.FC<EditableWorkoutPlanProps> = ({ editor, origi
   
   const dragItem = useRef<{index: number, section: WorkoutSection} | null>(null);
   const [dragOverInfo, setDragOverInfo] = useState<{index: number; section: WorkoutSection} | null>(null);
+  
+  // --- Refs for Touch Drag & Drop ---
+  const touchStartY = useRef(0);
+  const isDragging = useRef(false);
   
   const totalTime = useMemo(() => {
     if (!plan) return 0;
@@ -177,6 +181,54 @@ const EditableWorkoutPlan: React.FC<EditableWorkoutPlanProps> = ({ editor, origi
     dragItem.current = null;
   };
 
+  // --- Touch Handlers ---
+  const handleTouchStart = useCallback((e: React.TouchEvent, index: number, section: WorkoutSection) => {
+    const handle = (e.target as HTMLElement).closest('[data-drag-handle]');
+    if (handle) {
+        isDragging.current = true;
+        dragItem.current = { index, section };
+        touchStartY.current = e.touches[0].clientY;
+    }
+  }, []);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!isDragging.current) return;
+
+    const currentY = e.touches[0].clientY;
+    // Only prevent scroll if user has moved more than a small threshold vertically
+    if (Math.abs(currentY - touchStartY.current) > 10) {
+        e.preventDefault();
+
+        const dropTarget = document.elementFromPoint(e.touches[0].clientX, e.touches[0].clientY);
+        if (dropTarget) {
+            const dropNodeContainer = dropTarget.closest('[data-draggable-item]') as HTMLElement;
+            if (dropNodeContainer) {
+                const dropIndex = parseInt(dropNodeContainer.dataset.index || '0', 10);
+                const dropSection = dropNodeContainer.dataset.section as WorkoutSection;
+                
+                const rect = dropNodeContainer.getBoundingClientRect();
+                const isAfter = (e.touches[0].clientY - rect.top) > (rect.height / 2);
+                const targetIndex = isAfter ? dropIndex + 1 : dropIndex;
+
+                if (dragOverInfo?.index !== targetIndex || dragOverInfo?.section !== dropSection) {
+                    setDragOverInfo({ index: targetIndex, section: dropSection });
+                }
+            }
+        }
+    }
+  }, [dragOverInfo]);
+
+  const handleTouchEnd = useCallback(() => {
+    if (isDragging.current && dragItem.current && dragOverInfo) {
+        editor.moveExercise(dragItem.current, dragOverInfo);
+    }
+    // Cleanup
+    isDragging.current = false;
+    dragItem.current = null;
+    setDragOverInfo(null);
+  }, [dragOverInfo, editor]);
+
+
   const handleAddSuggestedMainExercise = () => {
     const suggested = getSuggestedMainExercise(editor.plan?.rounds || []);
     if (suggested) {
@@ -246,7 +298,7 @@ const EditableWorkoutPlan: React.FC<EditableWorkoutPlanProps> = ({ editor, origi
                                 {dragOverInfo?.section === section && dragOverInfo?.index === originalIndex && <div className="h-1.5 my-1 rounded-full bg-orange-500 animate-pulse" />}
                                 <div className="bg-gray-700/50 rounded-xl space-y-0 border-l-4 border-orange-500">
                                     {groupExercises.map((ex, exerciseIndex) => (
-                                        <div key={ex.id} draggable onDragStart={(e) => handleDragStart(e, originalIndex + exerciseIndex, section)} onDrop={(e) => handleDrop(e, originalIndex + exerciseIndex, section)} onDragEnter={() => setDragOverInfo({index: originalIndex + exerciseIndex, section: section})} onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverInfo({ index: originalIndex + exerciseIndex, section: section });}}>
+                                        <div key={ex.id} draggable onDragStart={(e) => handleDragStart(e, originalIndex + exerciseIndex, section)} onDrop={(e) => handleDrop(e, originalIndex + exerciseIndex, section)} onDragEnter={() => setDragOverInfo({index: originalIndex + exerciseIndex, section: section})} onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverInfo({ index: originalIndex + exerciseIndex, section: section });}} onTouchStart={(e) => handleTouchStart(e, originalIndex + exerciseIndex, section)} data-draggable-item data-index={originalIndex + exerciseIndex} data-section={section}>
                                             <ExerciseCard
                                                 exercise={ex}
                                                 onUpdate={updateExercise}
@@ -275,7 +327,7 @@ const EditableWorkoutPlan: React.FC<EditableWorkoutPlanProps> = ({ editor, origi
                         return (
                             <div key={exercise.id}>
                                 {dragOverInfo?.section === section && dragOverInfo?.index === originalIndex && <div className="h-1.5 my-1 rounded-full bg-orange-500 animate-pulse" />}
-                                <div draggable onDragStart={(e) => handleDragStart(e, originalIndex, section)} onDrop={(e) => handleDrop(e, originalIndex, section)} onDragEnter={() => setDragOverInfo({ index: originalIndex, section: section })} onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverInfo({ index: originalIndex, section: section });}}>
+                                <div draggable onDragStart={(e) => handleDragStart(e, originalIndex, section)} onDrop={(e) => handleDrop(e, originalIndex, section)} onDragEnter={() => setDragOverInfo({ index: originalIndex, section: section })} onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverInfo({ index: originalIndex, section: section });}} onTouchStart={(e) => handleTouchStart(e, originalIndex, section)} data-draggable-item data-index={originalIndex} data-section={section}>
                                     <ExerciseCard
                                         exercise={exercise}
                                         onUpdate={updateExercise}
@@ -317,7 +369,7 @@ const EditableWorkoutPlan: React.FC<EditableWorkoutPlanProps> = ({ editor, origi
 
   return (
     <>
-      <div className="bg-gray-800/50 p-6 rounded-2xl shadow-lg animate-fade-in space-y-4">
+      <div className="bg-gray-800/50 p-6 rounded-2xl shadow-lg animate-fade-in space-y-4" onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}>
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4 border-b border-gray-700 pb-4">
           <div>

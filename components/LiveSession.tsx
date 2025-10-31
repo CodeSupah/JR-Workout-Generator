@@ -201,7 +201,10 @@ const LiveSession: React.FC = () => {
   }
 
   return (
-    <div className={`fixed inset-0 flex transition-all duration-500 bg-gradient-to-br ${stageColors[stage] || 'from-gray-800 to-gray-900'}`}>
+    <div
+      className={`fixed inset-x-0 top-0 flex w-full transition-all duration-500 bg-gradient-to-br ${stageColors[stage] || 'from-gray-800 to-gray-900'}`}
+      style={{ height: '100dvh' }}
+    >
         {isReplaceModalOpen && <ExerciseModal
             isOpen={isReplaceModalOpen}
             onClose={() => setIsReplaceModalOpen(false)}
@@ -218,7 +221,10 @@ const LiveSession: React.FC = () => {
         </div>
         
       {/* Main content area */}
-      <div className="flex-1 flex flex-col items-center justify-between relative">
+      <div
+        className="flex-1 flex flex-col items-center justify-between relative"
+        style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}
+      >
          <div className="absolute top-5 right-5 z-10">
             <button onClick={() => setIsSoundOn(!isSoundOn)} className="p-3 bg-black/20 rounded-full text-white">
                 {isSoundOn ? <VolumeUpIcon className="w-6 h-6"/> : <VolumeOffIcon className="w-6 h-6"/>}
@@ -283,7 +289,7 @@ const LiveSession: React.FC = () => {
         </div>
 
         {/* Controls Area */}
-        <div className="w-full mt-auto pb-6 px-4 z-10">
+        <div className="w-full pb-4 px-4 z-10">
             <div className="bg-black/20 p-2 rounded-full max-w-md mx-auto flex justify-around items-center backdrop-blur-sm">
                 <button
                     onClick={previousExercise}
