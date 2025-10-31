@@ -45,12 +45,21 @@ const beep = (freq = 750, duration = 100, vol = 50, type: OscillatorType = 'sine
   }
 };
 
-const speak = (text: string, isSoundOn: boolean) => {
+const speak = (text: string, isSoundOn: boolean, onEndCallback?: () => void) => {
   if ('speechSynthesis' in window && isSoundOn) {
-    window.speechSynthesis.cancel();
+    window.speechSynthesis.cancel(); // Cancel any ongoing speech
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.rate = 1.0;
+    
+    if (onEndCallback) {
+      utterance.onend = onEndCallback;
+    }
+    
     window.speechSynthesis.speak(utterance);
+  } else {
+    // If speech synthesis is not supported or sound is off,
+    // execute the callback immediately if it exists.
+    onEndCallback?.();
   }
 };
 
@@ -76,7 +85,7 @@ const getInitialState = (initialPlan: WorkoutPlan | undefined): { sessionState: 
             summary: null,
             completedIndices: new Set(),
         };
-        // Auto-start is disabled to ensure AudioContext is initialized by a user gesture, which is required on iOS.
+        // Auto-start is handled by the new preparation countdown logic
         const shouldRun = false;
         return { sessionState: initialState, isRunning: shouldRun };
     }
@@ -97,6 +106,8 @@ export const useWorkoutTimer = (initialWorkoutPlan: WorkoutPlan | undefined, isS
   const [initialState] = useState(() => getInitialState(initialWorkoutPlan));
   const [sessionState, setSessionState] = useState<SessionState>(initialState.sessionState);
   const [isRunning, setIsRunning] = useState(initialState.isRunning);
+  const [isPreparing, setIsPreparing] = useState(true);
+  const [preparationTime, setPreparationTime] = useState(3);
   
   const intervalRef = useRef<number | null>(null);
   
@@ -124,10 +135,13 @@ export const useWorkoutTimer = (initialWorkoutPlan: WorkoutPlan | undefined, isS
     const { workoutPlan, sessionItems, completedIndices } = currentState;
 
     const completedExercises = sessionItems.filter((item, index) => !item.isRest && completedIndices.has(index));
+    const totalWorkExercises = sessionItems.filter(item => !item.isRest).length;
     const totalTime = completedExercises.reduce((sum, item) => sum + item.duration, 0) +
                       sessionItems.filter((item, index) => item.isRest && completedIndices.has(index)).reduce((sum, item) => sum + item.duration, 0);
 
-    const planTotalWorkSeconds = workoutPlan.rounds.reduce((sum, r) => sum + r.duration, 0);
+    const planTotalWorkSeconds = sessionItems
+        .filter(item => !item.isRest)
+        .reduce((sum, item) => sum + item.duration, 0);
     const caloriesPerSecond = planTotalWorkSeconds > 0 ? (workoutPlan.estimatedCalories || 0) / planTotalWorkSeconds : 0;
     
     const actualWorkSeconds = completedExercises.reduce((sum, e) => sum + e.duration, 0);
@@ -137,8 +151,9 @@ export const useWorkoutTimer = (initialWorkoutPlan: WorkoutPlan | undefined, isS
         id: crypto.randomUUID(),
         date: new Date().toISOString(),
         workoutName: workoutPlan.name || 'Generated Workout',
-        totalTime: Math.round(totalTime / 60) * 60 + (totalTime % 60),
-        completedRounds: completedExercises.length,
+        totalTime: totalTime,
+        completedExercises: completedExercises.length,
+        totalExercises: totalWorkExercises,
         skippedRounds: 0, // This simplified model doesn't track skips easily, can be enhanced later
         totalCalories,
         planId: workoutPlan.id || '',
@@ -164,7 +179,7 @@ export const useWorkoutTimer = (initialWorkoutPlan: WorkoutPlan | undefined, isS
         intervalRef.current = null;
     }
     setIsRunning(false);
-    setSessionState(finalizeWorkout);
+    setSessionState(prev => finalizeWorkout(prev));
   }, [finalizeWorkout]);
 
 
@@ -195,7 +210,7 @@ export const useWorkoutTimer = (initialWorkoutPlan: WorkoutPlan | undefined, isS
   }, [sessionItems, finalizeWorkout]);
 
   const getDisplayInfo = useCallback(() => {
-    if (!workoutPlan || !currentItem) return { currentStageDisplay: '', currentExerciseName: '', nextExerciseName: '', totalRounds: 0, currentRoundNum: 0, totalUniqueExercises: 0, currentUniqueExerciseIndex: 0 };
+    if (!workoutPlan || !currentItem) return { currentStageDisplay: '', currentExerciseName: '', nextExerciseName: '', totalRounds: 0, currentRoundNum: 0 };
     
     const nextItem = sessionItems[currentIndex + 1];
     let currentStageDisplay: string = stage;
@@ -208,16 +223,58 @@ export const useWorkoutTimer = (initialWorkoutPlan: WorkoutPlan | undefined, isS
         currentStageDisplay,
         currentExerciseName: currentItem.exercise,
         nextExerciseName: nextItem?.exercise || 'Finished!',
-        totalRounds: workoutPlan.rounds.length,
-        currentRoundNum: (currentItem.originalIndex || 0) + 1,
-        totalUniqueExercises: workoutPlan.warmUp.length + workoutPlan.rounds.length + workoutPlan.coolDown.length,
-        currentUniqueExerciseIndex: (currentItem.originalIndex || 0) + 1,
     };
   }, [sessionItems, currentIndex, currentItem, stage, workoutPlan]);
 
+  // Effect for the initial 3-second countdown
+  useEffect(() => {
+    if (!isPreparing || !workoutPlan) return;
+
+    initAudioContext();
+    
+    const timers: number[] = [];
+    
+    const startCountdownSequence = () => {
+        // Countdown sequence using timeouts for precise pacing
+        timers.push(window.setTimeout(() => {
+            setPreparationTime(3);
+            speak("3", isSoundOn);
+        }, 0));
+        
+        timers.push(window.setTimeout(() => {
+            setPreparationTime(2);
+            speak("2", isSoundOn);
+        }, 1000));
+
+        timers.push(window.setTimeout(() => {
+            setPreparationTime(1);
+            speak("1", isSoundOn);
+        }, 2000));
+        
+        timers.push(window.setTimeout(() => {
+            setPreparationTime(0);
+            beep(1200, 150, 60, 'triangle'); // Final, high-pitched beep
+            
+            const firstItem = sessionItems[0];
+            if (firstItem && isSoundOn) {
+                 speak(`Starting with ${firstItem.exercise}`, isSoundOn);
+            }
+            
+            setIsPreparing(false);
+            setIsRunning(true);
+        }, 3000));
+    };
+
+    // 1. Announce the workout start, and once finished, trigger the countdown.
+    speak("Workout starts in...", isSoundOn, startCountdownSequence);
+
+    // Cleanup function to clear all scheduled timeouts if the component unmounts.
+    return () => timers.forEach(clearTimeout);
+  }, [isPreparing, isSoundOn, sessionItems, workoutPlan]);
+
 
   useEffect(() => {
-    if (!isRunning || stage === 'Finished') {
+    if (!isRunning || isPreparing || stage === 'Finished') {
       if (intervalRef.current) clearInterval(intervalRef.current);
       return;
     }
@@ -261,21 +318,14 @@ export const useWorkoutTimer = (initialWorkoutPlan: WorkoutPlan | undefined, isS
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [isRunning, stage, moveToItem, isSoundOn]);
+  }, [isRunning, isPreparing, stage, moveToItem, isSoundOn]);
 
   const togglePause = useCallback(() => {
     initAudioContext();
     if (currentItem?.unit !== 'reps') {
-      // If this is the very first play action of the session, announce the start.
-      if (currentIndex === 0 && !isRunning && timeRemaining === (sessionItems[0]?.duration || 0)) {
-        const firstItem = sessionItems[0];
-        if (firstItem) {
-            speak(`Starting with ${firstItem.exercise}`, isSoundOn);
-        }
-      }
       setIsRunning(prev => !prev);
     }
-  }, [currentItem, currentIndex, isRunning, timeRemaining, sessionItems, isSoundOn]);
+  }, [currentItem]);
   
   const completeSet = useCallback(() => {
     initAudioContext();
@@ -356,6 +406,8 @@ export const useWorkoutTimer = (initialWorkoutPlan: WorkoutPlan | undefined, isS
   
   
   return {
+    isPreparing,
+    preparationTime,
     workoutPlan,
     stage,
     timeRemaining,

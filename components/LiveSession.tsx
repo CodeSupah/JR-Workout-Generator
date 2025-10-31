@@ -10,6 +10,7 @@ import ExerciseModal from './ExerciseModal';
 import SaveRoutineModal from './SaveRoutineModal';
 import AchievementUnlockedToast from './AchievementUnlockedToast';
 import VerticalTimeline from './VerticalTimeline';
+import { flattenWorkoutForSession } from '../utils/workoutUtils';
 
 const LiveSession: React.FC = () => {
   const navigate = useNavigate();
@@ -25,12 +26,15 @@ const LiveSession: React.FC = () => {
   const { workoutPlan: workout } = timer;
   
   useEffect(() => {
-    if (!workout) {
+    // Redirect if there's no workout plan after the preparation phase is done.
+    if (!workout && !timer.isPreparing) {
       navigate('/');
     }
-  }, [workout, navigate]);
+  }, [workout, navigate, timer.isPreparing]);
 
   const {
+    isPreparing,
+    preparationTime,
     stage,
     timeRemaining,
     isRunning,
@@ -76,11 +80,20 @@ const LiveSession: React.FC = () => {
   
   const isRepBasedWork = stage === 'Work' && currentExercise?.unit === 'reps';
 
+  if (isPreparing) {
+    return (
+      <div className="fixed inset-0 bg-gray-900 flex flex-col items-center justify-center p-4 animate-fade-in text-white">
+        <h2 className="text-4xl font-bold mb-4 text-orange-400">GET READY!</h2>
+        <p className="text-9xl font-bold animate-pulse tabular-nums">{preparationTime}</p>
+      </div>
+    );
+  }
+
   if (!workout) {
     return <div className="flex items-center justify-center min-h-screen">Loading Session...</div>;
   }
 
-  const { currentStageDisplay, currentExerciseName, nextExerciseName, totalRounds } = displayInfo;
+  const { currentStageDisplay, currentExerciseName, nextExerciseName } = displayInfo;
 
   const renderTimerDisplay = () => {
     const minutes = Math.floor(timeRemaining / 60).toString().padStart(2, '0');
@@ -158,7 +171,7 @@ const LiveSession: React.FC = () => {
           <h2 className="text-4xl font-bold text-orange-400 mb-4">Workout Complete!</h2>
           <p className="text-gray-300 mb-6">Great job! Here's your summary:</p>
           <div className="my-6 space-y-3 text-left bg-gray-900/50 p-4 rounded-lg">
-              <p className="flex justify-between text-lg"><span className="text-gray-400">Completed:</span> <strong className="text-white">{summary.completedRounds} / {totalRounds} Exercises</strong></p>
+              <p className="flex justify-between text-lg"><span className="text-gray-400">Completed:</span> <strong className="text-white">{summary.completedExercises} / {summary.totalExercises} Exercises</strong></p>
               <p className="flex justify-between text-lg"><span className="text-gray-400">Time:</span> <strong className="text-white">{Math.floor(summary.totalTime / 60)}m {summary.totalTime % 60}s</strong></p>
               <p className="flex justify-between text-lg"><span className="text-gray-400">Calories Burned:</span><strong className="text-white">~{summary.totalCalories} kcal</strong></p>
           </div>

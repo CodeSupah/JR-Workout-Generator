@@ -147,6 +147,8 @@ const ExerciseList: React.FC = () => {
       }, [filteredExercises, viewMode, selectedMuscleGroup]);
     
     const hasActiveFilters = searchTerm || selectedDifficulties.length > 0 || selectedEquipment.length > 0 || selectedMuscleGroup !== 'All Muscles';
+    const results: [string, ExerciseDetails[]][] = Object.entries(groupedExercises);
+    const hasResults = results.length > 0;
 
     if (loading) {
         return <div className="text-center p-10">Loading exercises...</div>;
@@ -164,9 +166,6 @@ const ExerciseList: React.FC = () => {
             {label}
         </button>
     );
-    
-    const results = Object.entries(groupedExercises);
-    const hasResults = results.length > 0;
 
     return (
         <div className="space-y-8 animate-fade-in pb-24">

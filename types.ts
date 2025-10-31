@@ -90,7 +90,8 @@ export interface SessionSummary {
   date: string; // ISO string
   workoutName: string;
   totalTime: number; // actual time spent in seconds
-  completedRounds: number;
+  completedExercises: number;
+  totalExercises: number;
   skippedRounds: number;
   totalCalories: number;
   planId: string;
