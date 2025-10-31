@@ -12,6 +12,7 @@ const ExerciseList: React.FC = () => {
     const [selectedDifficulties, setSelectedDifficulties] = useState<string[]>([]);
     const [selectedEquipment, setSelectedEquipment] = useState<string[]>([]);
     const [selectedMuscleGroup, setSelectedMuscleGroup] = useState('All Muscles');
+    const [selectedWorkoutTypes, setSelectedWorkoutTypes] = useState<string[]>([]);
     const [viewMode, setViewMode] = useState<ViewMode | null>(null);
     const [loading, setLoading] = useState(true);
 
@@ -38,6 +39,8 @@ const ExerciseList: React.FC = () => {
         });
         return ['All Muscles', 'Stretches', ...Array.from(muscleSet).sort()];
     }, [exercises]);
+    
+    const availableWorkoutTypes = useMemo(() => ['Strength', 'Cardio', 'Agility', 'Flexibility & Mobility / Warm-up/Cool-down'], []);
 
     const handleToggleFilter = (setter: React.Dispatch<React.SetStateAction<string[]>>, value: string) => {
         setter(prev => 
@@ -55,6 +58,7 @@ const ExerciseList: React.FC = () => {
             setSelectedEquipment([]);
             setSelectedMuscleGroup('All Muscles');
             setSelectedDifficulties([]);
+            setSelectedWorkoutTypes([]);
         }
     }
 
@@ -74,6 +78,9 @@ const ExerciseList: React.FC = () => {
       
           const difficultyMatch = selectedDifficulties.length === 0 || selectedDifficulties.includes(ex.difficulty);
           if (!difficultyMatch) return false;
+
+          const workoutTypeMatch = selectedWorkoutTypes.length === 0 || selectedWorkoutTypes.includes(ex.workoutType);
+          if (!workoutTypeMatch) return false;
       
           if (viewMode === 'equipment') {
             return (
@@ -97,7 +104,7 @@ const ExerciseList: React.FC = () => {
           }
           return true;
         });
-      }, [exercises, searchTerm, selectedDifficulties, selectedEquipment, selectedMuscleGroup, viewMode]);
+      }, [exercises, searchTerm, selectedDifficulties, selectedEquipment, selectedMuscleGroup, viewMode, selectedWorkoutTypes]);
 
       const groupedExercises = useMemo(() => {
         const grouped: Record<string, ExerciseDetails[]> = {};
@@ -146,7 +153,7 @@ const ExerciseList: React.FC = () => {
         return sortedGrouped;
       }, [filteredExercises, viewMode, selectedMuscleGroup]);
     
-    const hasActiveFilters = searchTerm || selectedDifficulties.length > 0 || selectedEquipment.length > 0 || selectedMuscleGroup !== 'All Muscles';
+    const hasActiveFilters = searchTerm || selectedDifficulties.length > 0 || selectedEquipment.length > 0 || selectedMuscleGroup !== 'All Muscles' || selectedWorkoutTypes.length > 0;
     const results: [string, ExerciseDetails[]][] = Object.entries(groupedExercises);
     const hasResults = results.length > 0;
 
@@ -217,6 +224,20 @@ const ExerciseList: React.FC = () => {
                         </div>
                     </div>
                     
+                    <div>
+                        <h4 className="font-medium text-gray-400 mb-2 text-xs">Workout Type</h4>
+                        <div className="flex flex-wrap gap-2">
+                            {availableWorkoutTypes.map(type => (
+                                <FilterButton
+                                    key={type}
+                                    label={type}
+                                    isSelected={selectedWorkoutTypes.includes(type)}
+                                    onClick={() => handleToggleFilter(setSelectedWorkoutTypes, type)}
+                                />
+                            ))}
+                        </div>
+                    </div>
+
                     {viewMode === 'equipment' && (
                         <div>
                             <h4 className="font-medium text-gray-400 mb-2 text-xs">Equipment</h4>
@@ -256,6 +277,7 @@ const ExerciseList: React.FC = () => {
                                 setSelectedDifficulties([]);
                                 setSelectedEquipment([]);
                                 setSelectedMuscleGroup('All Muscles');
+                                setSelectedWorkoutTypes([]);
                             }}
                             className="text-xs text-orange-400 hover:text-orange-300 font-semibold pt-2"
                         >

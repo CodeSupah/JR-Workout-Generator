@@ -192,6 +192,8 @@ export interface UserProfile {
 }
 
 // --- Exercise Database Types ---
+export type WorkoutType = 'Strength' | 'Cardio' | 'Agility' | 'Flexibility & Mobility / Warm-up/Cool-down';
+
 export interface ExerciseDetails {
   id: string;
   name: string;
@@ -199,6 +201,7 @@ export interface ExerciseDetails {
   purpose: 'warmup' | 'cooldown' | 'main';
   difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
   equipment: ExerciseEquipment;
+  workoutType: WorkoutType;
   description: string;
   instructions: string[];
   muscleGroups: string[];

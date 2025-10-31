@@ -298,7 +298,7 @@ const ExerciseModal: React.FC<ExerciseModalProps> = ({ isOpen, onClose, onSelect
                 </div>
             )}
             
-            <div className="space-y-4 sticky top-0 bg-gray-800 py-4 -my-6 z-10">
+            <div className="space-y-4">
                 <input
                     type="text"
                     placeholder="Search by name..."
@@ -353,7 +353,7 @@ const ExerciseModal: React.FC<ExerciseModalProps> = ({ isOpen, onClose, onSelect
                 )}
             </div>
 
-            <div className="pt-6 space-y-4">
+            <div className="space-y-4">
                 {categorizedSuggestions.length > 0 ? (
                     categorizedSuggestions.map(([category, exercises]) => (
                         <div key={category}>
