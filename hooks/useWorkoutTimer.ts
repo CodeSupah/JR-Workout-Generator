@@ -189,8 +189,11 @@ export const useWorkoutTimer = (initialWorkoutPlan: WorkoutPlan | undefined, isS
         return;
     }
     const nextItem = sessionItems[index];
-    // The timer should only stop running for rep-based sets or if the user pauses.
     const newIsRunning = andRun && nextItem.unit !== 'reps';
+    
+    if (isSoundOn) {
+        speak(nextItem.isRest ? 'Rest' : nextItem.exercise, isSoundOn);
+    }
     
     setIsRunning(newIsRunning);
 
@@ -207,7 +210,7 @@ export const useWorkoutTimer = (initialWorkoutPlan: WorkoutPlan | undefined, isS
         }
     });
 
-  }, [sessionItems, finalizeWorkout]);
+  }, [sessionItems, finalizeWorkout, isSoundOn]);
 
   const getDisplayInfo = useCallback(() => {
     if (!workoutPlan || !currentItem) return { currentStageDisplay: '', currentExerciseName: '', nextExerciseName: '', totalRounds: 0, currentRoundNum: 0 };
@@ -261,7 +264,8 @@ export const useWorkoutTimer = (initialWorkoutPlan: WorkoutPlan | undefined, isS
             }
             
             setIsPreparing(false);
-            setIsRunning(true);
+            // Start the timer only if the first exercise is time-based
+            setIsRunning(firstItem?.unit !== 'reps');
         }, 3000));
     };
 
@@ -297,15 +301,8 @@ export const useWorkoutTimer = (initialWorkoutPlan: WorkoutPlan | undefined, isS
         }
 
         if (prev.timeRemaining <= 1) {
-          if (nextItem) {
-              if (nextItem.isRest) {
-                  speak('Rest', isSoundOn);
-              } else {
-                  speak(nextItem.exercise, isSoundOn);
-              }
-              if (isSoundOn) {
-                  beep(1200, 150, 60, 'triangle'); // Distinct, high-pitched start tone
-              }
+          if (isSoundOn) {
+              beep(1200, 150, 60, 'triangle'); // Distinct, high-pitched start tone
           }
           moveToItem(prev.currentIndex + 1, true);
           return prev; // Return previous state to avoid flicker; moveToItem will trigger a re-render
@@ -330,9 +327,12 @@ export const useWorkoutTimer = (initialWorkoutPlan: WorkoutPlan | undefined, isS
   const completeSet = useCallback(() => {
     initAudioContext();
     if (currentItem?.unit === 'reps') {
+        if (isSoundOn) {
+            beep(1200, 150, 60, 'triangle'); // Final cue for completing the set
+        }
         moveToItem(currentIndex + 1, true);
     }
-  }, [currentItem, currentIndex, moveToItem]);
+  }, [currentItem, currentIndex, moveToItem, isSoundOn]);
 
   const skipExercise = () => {
       initAudioContext();

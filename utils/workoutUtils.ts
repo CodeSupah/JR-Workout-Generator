@@ -39,66 +39,73 @@ const flattenSection = (exercises: Exercise[], purpose: SessionItem['purpose']):
         groups.push({ exercises: currentGroup, startIndex });
     }
 
+    const workDuration = (ex: Exercise) => ex.unit === 'seconds' ? ex.duration : 30; // 30s estimate for rep-based
+
     groups.forEach(groupData => {
         const { exercises: group, startIndex } = groupData;
-        const workDuration = (ex: Exercise) => ex.unit === 'seconds' ? ex.duration : 30; // 30s estimate for rep-based
-
         const lastExInGroup = group[group.length - 1];
-        const rounds = lastExInGroup.groupRounds || group[0].sets || 1;
-        const restAfterRound = lastExInGroup.restAfterGroup ?? 0;
+        const isSuperset = group.length > 1;
+        const totalSetsOrRounds = lastExInGroup.groupRounds || group[0].sets || 1;
+        
+        // Determine the rest between rounds/sets
+        let restBetweenRounds = 0;
+        if (isSuperset) {
+            restBetweenRounds = lastExInGroup.restAfterGroup ?? 0;
+        } else { // Single exercise
+            restBetweenRounds = group[0].rest;
+        }
 
-        for (let i = 0; i < rounds; i++) {
+        for (let i = 0; i < totalSetsOrRounds; i++) {
+            // Add all exercises in the group (the "work" part of the round)
             group.forEach((ex, exIndex) => {
-                const isLastInRound = exIndex === group.length - 1;
+                const isLastExerciseInGroup = exIndex === group.length - 1;
 
-                // 1. Add the work item itself
+                // 1. Add the work item
                 flattenedExercises.push({ 
                     ...ex, 
                     duration: workDuration(ex), 
                     purpose,
-                    originalIndex: startIndex + exIndex 
+                    originalIndex: startIndex + exIndex,
+                    currentSet: i + 1,
+                    totalSets: totalSetsOrRounds
                 });
-                
-                // 2. Add the exercise's individual rest, unless it's the last exercise of a round that has a specific round rest.
-                if (ex.rest > 0 && !(isLastInRound && restAfterRound > 0)) {
-                    flattenedExercises.push({
+
+                // 2. Add rest BETWEEN exercises in a superset
+                if (isSuperset && !isLastExerciseInGroup && ex.rest > 0) {
+                     flattenedExercises.push({
                         ...ex,
-                        id: `${ex.id}-rest-${i}-${exIndex}`,
+                        id: `${ex.id}-intra-rest-${i}-${exIndex}`,
                         exercise: 'Rest',
                         duration: ex.rest,
                         isRest: true,
                         purpose,
-                        originalIndex: startIndex + exIndex
+                        unit: 'seconds',
+                        originalIndex: startIndex + exIndex,
+                        currentSet: i + 1,
+                        totalSets: totalSetsOrRounds
                     });
                 }
             });
 
-            // 3. Add the rest between rounds/sets, if applicable
-            const isLastOverallRound = i === rounds - 1;
-            if (!isLastOverallRound && restAfterRound > 0) {
+            // 3. Add rest AFTER the entire round/set, if it's not the last one
+            const isLastOverallRound = i === totalSetsOrRounds - 1;
+            if (!isLastOverallRound && restBetweenRounds > 0) {
                 flattenedExercises.push({
                     ...lastExInGroup,
-                    id: `${lastExInGroup.id}-group-rest-${i}`,
-                    exercise: 'Rest Between Rounds',
-                    duration: restAfterRound,
+                    id: `${lastExInGroup.id}-inter-rest-${i}`,
+                    exercise: isSuperset ? 'Rest Between Rounds' : 'Rest',
+                    duration: restBetweenRounds,
                     isRest: true,
                     purpose,
-                    originalIndex: startIndex + group.length -1
-                });
-            } else if (!isLastOverallRound && group.length === 1 && group[0].rest > 0) {
-                // Handle rest for simple multi-set single exercises
-                 flattenedExercises.push({
-                    ...group[0],
-                    id: `${group[0].id}-set-rest-${i}`,
-                    exercise: 'Rest',
-                    duration: group[0].rest,
-                    isRest: true,
-                    purpose,
-                    originalIndex: startIndex
+                    unit: 'seconds',
+                    originalIndex: startIndex + group.length - 1,
+                    currentSet: i + 1,
+                    totalSets: totalSetsOrRounds
                 });
             }
         }
     });
+
 
     return flattenedExercises;
 };

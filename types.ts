@@ -60,6 +60,9 @@ export interface Exercise {
   linkedToNext?: boolean;
   groupRounds?: number;
   restAfterGroup?: number;
+  // --- Fields for Live Session ---
+  currentSet?: number;
+  totalSets?: number;
 }
 
 export interface WorkoutPlan {

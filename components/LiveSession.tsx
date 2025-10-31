@@ -259,7 +259,12 @@ const LiveSession: React.FC = () => {
                     {stage !== 'Finished' && <button onClick={skipStage} title="Skip to Next Stage" className="p-1 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-colors"><ChevronDoubleRightIcon className="w-5 h-5"/></button>}
                 </div>
                 {isRepBasedWork ? (
-                    <p className="text-7xl font-bold tabular-nums text-white my-2">{currentExercise.reps} <span className="text-5xl">Reps</span></p>
+                    <div>
+                        <p className="text-7xl font-bold tabular-nums text-white my-2">{currentExercise.reps} <span className="text-5xl">Reps</span></p>
+                        {currentExercise.totalSets && currentExercise.totalSets > 1 && (
+                            <p className="text-2xl text-white/80">Set {currentExercise.currentSet} of {currentExercise.totalSets}</p>
+                        )}
+                    </div>
                 ) : (
                     <p className="text-7xl font-bold tabular-nums text-white my-2">{renderTimerDisplay()}</p>
                 )}
