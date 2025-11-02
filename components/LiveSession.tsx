@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { WorkoutPlan, Exercise, UnlockedAchievementInfo, WorkoutPreferences } from '../types';
+import { WorkoutPlan, Exercise, UnlockedAchievementInfo, WorkoutPreferences, EditorWorkoutPreferences } from '../types';
 import { useWorkoutTimer } from '../hooks/useWorkoutTimer';
 import { PlayIcon, PauseIcon, StopIcon, VolumeUpIcon, VolumeOffIcon, SkipNextIcon, SkipPreviousIcon, TrophyIcon, ChevronDoubleRightIcon, SaveIcon, ArrowPathIcon, CheckCircleIcon } from './icons/Icons';
 import { saveCustomWorkout } from '../services/workoutService';
@@ -16,6 +16,8 @@ const LiveSession: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const preferences = location.state?.preferences as WorkoutPreferences | undefined;
+  const editorPreferences = location.state?.editorPreferences as EditorWorkoutPreferences | undefined;
+
 
   const [isSoundOn, setIsSoundOn] = useState(true);
   const [isReplaceModalOpen, setIsReplaceModalOpen] = useState(false);
@@ -25,6 +27,47 @@ const LiveSession: React.FC = () => {
   const timer = useWorkoutTimer(location.state?.workout as WorkoutPlan | undefined, isSoundOn);
   const { workoutPlan: workout } = timer;
   
+  useEffect(() => {
+    let wakeLock: WakeLockSentinel | null = null;
+
+    const requestWakeLock = async () => {
+      if ('wakeLock' in navigator) {
+        try {
+          wakeLock = await navigator.wakeLock.request('screen');
+          console.log('Screen Wake Lock is active.');
+        } catch (err: any) {
+          console.error(`${err.name}, ${err.message}`);
+        }
+      }
+    };
+
+    const releaseWakeLock = async () => {
+      if (wakeLock) {
+        await wakeLock.release();
+        wakeLock = null;
+        console.log('Screen Wake Lock released.');
+      }
+    };
+
+    if (editorPreferences?.keepScreenAwake) {
+      requestWakeLock();
+    }
+    
+    const handleVisibilityChange = () => {
+        if (wakeLock !== null && document.visibilityState === 'visible') {
+            requestWakeLock();
+        }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      releaseWakeLock();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [editorPreferences]);
+
+
   useEffect(() => {
     // Redirect if there's no workout plan after the preparation phase is done.
     if (!workout && !timer.isPreparing) {
@@ -216,13 +259,13 @@ const LiveSession: React.FC = () => {
         />}
 
         {/* Vertical Timeline */}
-        <div className="w-48 md:w-64 flex-shrink-0 h-full overflow-hidden">
+        <div className="w-32 md:w-48 lg:w-64 flex-shrink-0 h-full overflow-hidden">
             <VerticalTimeline items={sessionItems} currentIndex={currentIndex} />
         </div>
         
       {/* Main content area */}
       <div
-        className="flex-1 flex flex-col items-center justify-between relative"
+        className="flex-1 flex flex-col items-center justify-center relative p-4 gap-8"
         style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
          <div className="absolute top-5 right-5 z-10">
@@ -231,7 +274,7 @@ const LiveSession: React.FC = () => {
             </button>
         </div>
 
-        <div className="w-full max-w-lg p-4 text-center mt-auto">
+        <div className="w-full max-w-lg text-center">
             <div className="relative flex items-center justify-center w-64 h-64 sm:w-80 sm:h-80 mx-auto">
             <svg className="absolute w-full h-full" viewBox="0 0 100 100">
                 <circle
@@ -289,7 +332,7 @@ const LiveSession: React.FC = () => {
         </div>
 
         {/* Controls Area */}
-        <div className="w-full pb-4 px-4 z-10">
+        <div className="w-full z-10">
             <div className="bg-black/20 p-2 rounded-full max-w-md mx-auto flex justify-around items-center backdrop-blur-sm">
                 <button
                     onClick={previousExercise}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import WorkoutGenerator from './WorkoutGenerator';
 import SavedRoutineCard from './SavedRoutineCard';
 import { loadCustomWorkouts, deleteCustomWorkout } from '../services/workoutService';
@@ -21,9 +21,12 @@ const goalToTitleMap: Record<WorkoutGoal, string> = {
 const WorkoutHub: React.FC = () => {
     const [routines, setRoutines] = useState<WorkoutPlan[]>([]);
     const navigate = useNavigate();
+    const location = useLocation();
     
-    // State for view management and suggested workout
-    const [view, setView] = useState<'hub' | 'generator'>('hub');
+    // State for view management, now initialized based on navigation state
+    const [view, setView] = useState<'hub' | 'generator'>(
+        location.state?.autoShowGenerator ? 'generator' : 'hub'
+    );
     const [isGeneratingSuggested, setIsGeneratingSuggested] = useState(false);
     const [suggestedWorkout, setSuggestedWorkout] = useState({ title: '', preferences: {} as Partial<WorkoutPreferences> });
 
@@ -33,6 +36,14 @@ const WorkoutHub: React.FC = () => {
     const [secondaryGoalWorkout, setSecondaryGoalWorkout] = useState<{ title: string; preferences: Partial<WorkoutPreferences> } | null>(null);
     const [isGeneratingPrimary, setIsGeneratingPrimary] = useState(false);
     const [isGeneratingSecondary, setIsGeneratingSecondary] = useState(false);
+
+    useEffect(() => {
+        // If we were automatically shown the generator from another page,
+        // clear the location state so that a page refresh doesn't bring us back to the generator.
+        if (location.state?.autoShowGenerator) {
+            navigate(location.pathname, { replace: true, state: {} });
+        }
+    }, [location.state, location.pathname, navigate]);
 
     useEffect(() => {
         // This will run once to set up the random suggested workout title and preferences

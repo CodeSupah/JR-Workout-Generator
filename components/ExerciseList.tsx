@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { ExerciseDetails } from '../types';
+import { ExerciseDetails, WorkoutType } from '../types';
 import { getAllExercises } from '../services/exerciseService';
 import { BookOpenIcon, DumbbellIcon, RunIcon } from './icons/Icons';
 
@@ -40,7 +40,7 @@ const ExerciseList: React.FC = () => {
         return ['All Muscles', 'Stretches', ...Array.from(muscleSet).sort()];
     }, [exercises]);
     
-    const availableWorkoutTypes = useMemo(() => ['Strength', 'Cardio', 'Agility', 'Flexibility & Mobility / Warm-up/Cool-down'], []);
+    const availableWorkoutTypes = useMemo<WorkoutType[]>(() => ['Compound', 'Isolation', 'Cardio/HIIT', 'Mobility/Stretch', 'Core/Accessory'], []);
 
     const handleToggleFilter = (setter: React.Dispatch<React.SetStateAction<string[]>>, value: string) => {
         setter(prev => 

@@ -37,6 +37,13 @@ export interface WorkoutPreferences {
   restBetweenRounds: number;
 }
 
+export interface EditorWorkoutPreferences {
+  universalRestDuration: number;
+  defaultSetCount: number;
+  defaultRestAfterGroup: number;
+  keepScreenAwake: boolean;
+}
+
 export type ExerciseDifficulty = 'Easy' | 'Medium' | 'Hard';
 
 export type ExerciseEquipment = 'bodyweight' | 'rope' | 'weighted-rope' | 'dumbbell' | 'resistance-band' | 'kettlebell' | 'barbell' | 'cable-machine' | 'leg-press-machine';
@@ -192,7 +199,7 @@ export interface UserProfile {
 }
 
 // --- Exercise Database Types ---
-export type WorkoutType = 'Strength' | 'Cardio' | 'Agility' | 'Flexibility & Mobility / Warm-up/Cool-down';
+export type WorkoutType = 'Compound' | 'Isolation' | 'Cardio/HIIT' | 'Mobility/Stretch' | 'Core/Accessory';
 
 export interface ExerciseDetails {
   id: string;

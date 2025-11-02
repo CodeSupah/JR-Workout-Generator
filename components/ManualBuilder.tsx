@@ -6,10 +6,13 @@ import { Exercise, WorkoutPlan, ExerciseDetails, ExerciseDifficulty } from '../t
 import { toastStore } from '../store/toastStore';
 import { saveCustomWorkout } from '../services/workoutService';
 import { getSuggestedMainExercise, getSingleSuggestedExercise } from '../services/exerciseService';
-import { PlusIcon, SaveIcon, ZapIcon, ChevronDownIcon, FlameIcon, SparklesIcon, CogIcon } from './icons/Icons';
+import { PlusIcon, SaveIcon, ZapIcon, ChevronDownIcon, FlameIcon, SparklesIcon, CogIcon, LinkOffIcon } from './icons/Icons';
 import { flattenWorkoutForSession } from '../utils/workoutUtils';
 import ExerciseCard from './ExerciseCard';
 import ExerciseModal from './ExerciseModal';
+import StepperInput from './StepperInput';
+import WorkoutPreferencesModal from './WorkoutPreferencesModal';
+
 
 type WorkoutSectionType = 'warmUp' | 'rounds' | 'coolDown';
 
@@ -180,8 +183,9 @@ const ManualBuilder: React.FC = () => {
   const navigate = useNavigate();
   const [workoutName, setWorkoutName] = useState('My Custom Routine');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [modalState, setModalState] = useState<{ mode: 'replace'; section: WorkoutSectionType, exerciseToEdit: Exercise } | null>(null);
-  const [universalRest, setUniversalRest] = useState(60);
+  const [modalState, setModalState] = useState<{ mode: 'add' | 'replace'; section: WorkoutSectionType, exerciseToEdit?: Exercise, index?: number, intoGroup?: boolean } | null>(null);
+  const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
   
   const dragItem = useRef<{index: number, section: WorkoutSectionType} | null>(null);
   const [dragOverInfo, setDragOverInfo] = useState<{index: number; section: WorkoutSectionType} | null>(null);
@@ -218,15 +222,15 @@ const ManualBuilder: React.FC = () => {
     const exercise = getSingleSuggestedExercise(type);
     if (exercise) {
         const section = type === 'warmup' ? 'warmUp' : 'coolDown';
-        editor.addExercise(exercise, section);
+        editor.addExercise(exercise, section, { index: editor.plan?.[section]?.length });
     }
   };
 
   const handleAddSuggestedMainExercise = () => {
     const suggested = getSuggestedMainExercise(editor.plan?.rounds || []);
     if (suggested) {
-        const exerciseWithUniversalRest = { ...suggested, rest: universalRest };
-        editor.addExercise(exerciseWithUniversalRest, 'rounds');
+        const exerciseWithUniversalRest = { ...suggested, rest: editor.preferences.universalRestDuration };
+        editor.addExercise(exerciseWithUniversalRest, 'rounds', { index: editor.plan?.rounds.length });
         toastStore.addToast(`Added "${suggested.exercise}" to your workout!`);
     } else {
         toastStore.addToast("Couldn't find a unique exercise to suggest!", 'error');
@@ -241,20 +245,23 @@ const ManualBuilder: React.FC = () => {
       duration: 45,
       reps: 10,
       sets: 3,
-      rest: universalRest,
+      rest: editor.preferences.universalRestDuration,
       difficulty: (exerciseDetails.difficulty as ExerciseDifficulty) || 'Medium',
       equipment: exerciseDetails.equipment,
     };
-    editor.addExercise(newExercise, 'rounds');
+    editor.addExercise(newExercise, 'rounds', { index: editor.plan?.rounds.length });
     setIsSearchOpen(false);
-  }, [editor, universalRest]);
+  }, [editor]);
 
   const handleSwapRequest = (exerciseToSwap: Exercise, section: WorkoutSectionType) => {
     setModalState({ mode: 'replace', exerciseToEdit: exerciseToSwap, section });
   };
 
-  const handleExerciseReplaced = (exerciseData: Omit<Exercise, 'id' | 'status'>) => {
-    if (modalState?.exerciseToEdit) {
+  const handleExerciseSelect = (exerciseData: Omit<Exercise, 'id' | 'status'>) => {
+    if (!modalState) return;
+    if (modalState.mode === 'add') {
+      editor.addExercise(exerciseData, modalState.section, { index: modalState.index, intoGroup: modalState.intoGroup });
+    } else if (modalState.mode === 'replace' && modalState.exerciseToEdit) {
       // Preserve key settings from the original exercise during a swap
       const updatedData = {
           ...exerciseData,
@@ -271,15 +278,22 @@ const ManualBuilder: React.FC = () => {
   
   const handleDuplicateExercise = useCallback((exercise: Exercise, section: WorkoutSectionType, index: number) => {
     const { id, status, ...exerciseData } = exercise;
-    const newExercise = { ...exerciseData, rest: universalRest };
-    editor.addExercise(newExercise, section, index + 1);
-  }, [editor, universalRest]);
+    editor.addExercise(exerciseData, section, { index: index + 1 });
+  }, [editor]);
 
   const handleDragStart = (e: React.DragEvent, index: number, section: WorkoutSectionType) => {
     dragItem.current = { index, section };
+    if (editor.plan) {
+      setDraggingId(editor.plan[section][index].id);
+    }
     e.dataTransfer.effectAllowed = 'move';
   };
   
+  const handleDragEnd = () => {
+    setDraggingId(null);
+    dragItem.current = null;
+  }
+
   const handleDrop = (e: React.DragEvent, dropIndex: number, dropSection: WorkoutSectionType) => {
     e.preventDefault();
     e.stopPropagation();
@@ -301,9 +315,6 @@ const ManualBuilder: React.FC = () => {
     
         const totalExercises = (editor.plan.warmUp?.length || 0) + (editor.plan.rounds?.length || 0) + (editor.plan.coolDown?.length || 0);
     
-        // FIX: Correctly calculate total time from the flattened session items array.
-        // The flattenWorkoutForSession function returns a `sessionItems` array that includes
-        // all work and rest periods as individual items, so we just need to sum their durations.
         const { sessionItems } = flattenWorkoutForSession(editor.plan);
         const totalSeconds = sessionItems.reduce((acc, item) => acc + item.duration, 0);
 
@@ -317,7 +328,7 @@ const ManualBuilder: React.FC = () => {
         toastStore.addToast('Add some exercises to start a session!', 'error');
         return;
     }
-    navigate('/session', { state: { workout: { ...editor.plan, name: workoutName } } });
+    navigate('/session', { state: { workout: { ...editor.plan, name: workoutName }, editorPreferences: editor.preferences } });
   };
   
   const handleSave = async () => {
@@ -347,12 +358,13 @@ const ManualBuilder: React.FC = () => {
   // --- Touch Handlers ---
   const handleTouchStart = useCallback((e: React.TouchEvent, index: number, section: WorkoutSectionType) => {
     const handle = (e.target as HTMLElement).closest('[data-drag-handle]');
-    if (handle) {
+    if (handle && editor.plan) {
         isDragging.current = true;
         dragItem.current = { index, section };
+        setDraggingId(editor.plan[section][index].id);
         touchStartY.current = e.touches[0].clientY;
     }
-  }, []);
+  }, [editor.plan]);
 
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
     if (!isDragging.current) return;
@@ -389,6 +401,7 @@ const ManualBuilder: React.FC = () => {
     isDragging.current = false;
     dragItem.current = null;
     setDragOverInfo(null);
+    setDraggingId(null);
   }, [dragOverInfo, editor]);
 
 
@@ -448,28 +461,48 @@ const ManualBuilder: React.FC = () => {
                         return (
                             <div key={`group-${section}-${groupIndex}`}>
                                 {dragOverInfo?.section === section && dragOverInfo?.index === originalIndex && <div className="h-1.5 my-1 rounded-full bg-orange-500 animate-pulse" />}
-                                <div className="bg-gray-700/50 rounded-xl space-y-0 border-l-4 border-orange-500">
-                                    {groupExercises.map((ex, exerciseIndex) => (
-                                        <div key={ex.id} draggable onDragStart={(e) => handleDragStart(e, originalIndex + exerciseIndex, section)} onDrop={(e) => handleDrop(e, originalIndex + exerciseIndex, section)} onDragEnter={() => setDragOverInfo({index: originalIndex + exerciseIndex, section: section})} onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverInfo({ index: originalIndex + exerciseIndex, section: section });}} onTouchStart={(e) => handleTouchStart(e, originalIndex + exerciseIndex, section)} data-draggable-item data-index={originalIndex + exerciseIndex} data-section={section}>
+                                <div className="bg-gray-700/50 rounded-xl border border-gray-900/50">
+                                    <div className="p-3 border-b border-gray-900/50 flex flex-col sm:flex-row gap-4 items-center bg-gray-900/30 rounded-t-xl">
+                                        <h4 className="text-sm font-bold text-orange-400">SUPERSET</h4>
+                                        <div className="flex-1 w-full sm:w-auto form-group">
+                                            <label className="text-xs">ROUNDS</label>
+                                            <StepperInput
+                                            value={lastInGroup.groupRounds || 1}
+                                            onChange={(val) => editor.updateExercise(lastInGroup.id, { groupRounds: val })}
+                                            min={1}
+                                            aria-label="Number of rounds for this superset"
+                                            />
+                                        </div>
+                                        <div className="flex-1 w-full sm:w-auto form-group">
+                                            <label className="text-xs">REST AFTER</label>
+                                            <StepperInput
+                                                value={lastInGroup.restAfterGroup ?? 60}
+                                                onChange={(val) => editor.updateExercise(lastInGroup.id, { restAfterGroup: val })}
+                                                step={15}
+                                                min={0}
+                                                aria-label="Rest after round in seconds"
+                                            />
+                                        </div>
+                                    </div>
+                                    {groupExercises.map((ex, exerciseIndex) => {
+                                        const currentIndex = originalIndex + exerciseIndex;
+                                        return (
+                                        <div key={ex.id} draggable onDragStart={(e) => handleDragStart(e, currentIndex, section)} onDragEnd={handleDragEnd} onDrop={(e) => handleDrop(e, currentIndex, section)} onDragEnter={() => setDragOverInfo({index: currentIndex, section: section})} onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverInfo({ index: currentIndex, section: section });}} onTouchStart={(e) => handleTouchStart(e, currentIndex, section)} data-draggable-item data-index={currentIndex} data-section={section}>
                                             <ExerciseCard
                                                 exercise={ex}
                                                 onUpdate={editor.updateExercise}
                                                 onDelete={editor.removeExercise}
-                                                onDuplicate={() => handleDuplicateExercise(ex, section, originalIndex + exerciseIndex)}
+                                                onDuplicate={() => handleDuplicateExercise(ex, section, currentIndex)}
                                                 onSwapRequest={() => handleSwapRequest(ex, section)}
-                                                isLast={exerciseIndex === groupExercises.length - 1}
-                                                universalRest={universalRest}
+                                                onAddToGroup={() => setModalState({ mode: 'add', section, index: currentIndex + 1, intoGroup: true })}
+                                                onUnlink={() => editor.unlinkExercise(ex.id, section)}
+                                                isLastInGroup={exerciseIndex === groupExercises.length - 1}
                                                 allowLinking={true}
                                                 isInGroup={true}
-                                                isFirstInGroup={exerciseIndex === 0}
-                                                isLastInGroup={exerciseIndex === groupExercises.length - 1}
-                                                groupRounds={lastInGroup.groupRounds}
-                                                onUpdateGroupRounds={(val) => editor.updateExercise(lastInGroup.id, { groupRounds: val })}
-                                                groupRest={lastInGroup.restAfterGroup}
-                                                onUpdateGroupRest={(val) => editor.updateExercise(lastInGroup.id, { restAfterGroup: val })}
+                                                isDragging={draggingId === ex.id}
                                             />
                                         </div>
-                                    ))}
+                                    )})}
                                 </div>
                             </div>
                         );
@@ -479,17 +512,19 @@ const ManualBuilder: React.FC = () => {
                         return (
                             <div key={exercise.id}>
                                 {dragOverInfo?.section === section && dragOverInfo?.index === originalIndex && <div className="h-1.5 my-1 rounded-full bg-orange-500 animate-pulse" />}
-                                <div draggable onDragStart={(e) => handleDragStart(e, originalIndex, section)} onDrop={(e) => handleDrop(e, originalIndex, section)} onDragEnter={() => setDragOverInfo({ index: originalIndex, section: section })} onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverInfo({ index: originalIndex, section: section });}} onTouchStart={(e) => handleTouchStart(e, originalIndex, section)} data-draggable-item data-index={originalIndex} data-section={section}>
+                                <div draggable onDragStart={(e) => handleDragStart(e, originalIndex, section)} onDragEnd={handleDragEnd} onDrop={(e) => handleDrop(e, originalIndex, section)} onDragEnter={() => setDragOverInfo({ index: originalIndex, section: section })} onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverInfo({ index: originalIndex, section: section });}} onTouchStart={(e) => handleTouchStart(e, originalIndex, section)} data-draggable-item data-index={originalIndex} data-section={section}>
                                     <ExerciseCard
                                         exercise={exercise}
                                         onUpdate={editor.updateExercise}
                                         onDelete={editor.removeExercise}
                                         onDuplicate={() => handleDuplicateExercise(exercise, section, originalIndex)}
                                         onSwapRequest={() => handleSwapRequest(exercise, section)}
-                                        isLast={originalIndex === exercises.length - 1}
-                                        universalRest={universalRest}
+                                        onAddToGroup={() => setModalState({ mode: 'add', section, index: originalIndex + 1, intoGroup: true })}
+                                        onUnlink={() => editor.unlinkExercise(exercise.id, section)}
+                                        isLastInGroup={true}
                                         allowLinking={true}
-                                        isInGroup={false}
+                                        isInGroup={!!(exercise.sets && exercise.sets > 1)}
+                                        isDragging={draggingId === exercise.id}
                                     />
                                 </div>
                             </div>
@@ -523,45 +558,30 @@ const ManualBuilder: React.FC = () => {
       {modalState && <ExerciseModal 
             isOpen={!!modalState} 
             onClose={() => setModalState(null)} 
-            onSelectExercise={handleExerciseReplaced}
+            onSelectExercise={handleExerciseSelect}
             mode={modalState.mode}
             exerciseToEdit={modalState.exerciseToEdit}
             purposeFilter={purpose}
+            defaultRest={editor.preferences.universalRestDuration}
       />}
       <div className="max-w-4xl mx-auto space-y-6 animate-fade-in pb-40" onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}>
-        <div>
-          <Link to="/workout" className="text-sm text-orange-400 hover:underline mb-2 inline-block">
-            &larr; Back to Workout Hub
-          </Link>
-          <input
-            type="text"
-            value={workoutName}
-            onChange={e => setWorkoutName(e.target.value)}
-            className="text-3xl font-bold text-white bg-transparent border-none focus:ring-0 w-full p-0"
-            placeholder="My Custom Routine"
-          />
-        </div>
-
-        <div className="bg-gray-800/50 p-4 rounded-xl flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-                <CogIcon className="w-6 h-6 text-gray-400"/>
-                <div>
-                    <label htmlFor="universal-rest" className="font-semibold text-white">Universal Rest</label>
-                    <p className="text-xs text-gray-400">Default rest for new exercises.</p>
-                </div>
+        <div className="flex justify-between items-start">
+            <div>
+              <Link to="/workout" className="text-sm text-orange-400 hover:underline mb-2 inline-block">
+                &larr; Back to Workout Hub
+              </Link>
+              <input
+                type="text"
+                value={workoutName}
+                onChange={e => setWorkoutName(e.target.value)}
+                className="text-3xl font-bold text-white bg-transparent border-none focus:ring-0 w-full p-0"
+                placeholder="My Custom Routine"
+              />
             </div>
-            <div className="flex items-center gap-2">
-                <input 
-                    id="universal-rest"
-                    type="number" 
-                    value={universalRest} 
-                    onChange={e => setUniversalRest(parseInt(e.target.value) || 0)}
-                    className="w-20 bg-gray-900 text-center rounded-md p-2"
-                    aria-label="Universal rest duration"
-                />
-                <span className="text-gray-400">s</span>
-            </div>
+            <button onClick={() => setIsPreferencesOpen(true)} className="p-2 mt-8 bg-gray-700 hover:bg-gray-600 rounded-md"><CogIcon className="w-5 h-5"/></button>
         </div>
+        
+        <WorkoutPreferencesModal isOpen={isPreferencesOpen} onClose={() => setIsPreferencesOpen(false)} editor={editor} />
         
         {editor.plan?.warmUp && editor.plan.warmUp.length > 0 ? (
             renderGroupableSection('Warm-Up', <FlameIcon className="w-6 h-6 text-orange-400"/>, 'warmUp', editor.plan.warmUp, () => handleAddSuggestedExercise('warmup'))
@@ -632,6 +652,11 @@ const ManualBuilder: React.FC = () => {
           details[open] .details-arrow { transform: rotate(180deg); }
           .animate-fade-in-fast { animation: fadeIn 0.2s ease-in-out; }
           @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+          .form-group label { display: block; margin-bottom: 0.5rem; font-size: 0.75rem; font-weight: 500; color: #9CA3AF; }
+          .form-group input { width: 100%; background-color: #111827; color: white; border: 1px solid #4B5563; border-radius: 0.5rem; padding: 0.5rem; text-align: center; outline: none; }
+          .form-group input:focus { border-color: #F97316; box-shadow: 0 0 0 2px #F9731640; }
+          input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+          input[type=number] { -moz-appearance: textfield; }
       `}</style>
     </>
   );

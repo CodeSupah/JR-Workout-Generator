@@ -222,8 +222,8 @@ export const generateWorkoutPlan = async (prefs: WorkoutPreferences): Promise<Wo
         return (difficulty.charAt(0).toUpperCase() + difficulty.slice(1)) as ExerciseDifficulty;
     };
     
-    parsedPlan.warmUp = parsedPlan.warmUp.map(ex => ({ ...ex, id: crypto.randomUUID(), unit: 'seconds' as const, difficulty: safeCapitalize(ex.difficulty) }));
-    parsedPlan.coolDown = parsedPlan.coolDown.map(ex => ({ ...ex, id: crypto.randomUUID(), unit: 'seconds' as const, difficulty: safeCapitalize(ex.difficulty) }));
+    parsedPlan.warmUp = parsedPlan.warmUp.map(ex => ({ ...ex, rest: ex.rest ?? 0, id: crypto.randomUUID(), unit: 'seconds' as const, difficulty: safeCapitalize(ex.difficulty) }));
+    parsedPlan.coolDown = parsedPlan.coolDown.map(ex => ({ ...ex, rest: ex.rest ?? 0, id: crypto.randomUUID(), unit: 'seconds' as const, difficulty: safeCapitalize(ex.difficulty) }));
     
     const exercisesPerRound = parsedPlan.rounds.length;
 
@@ -231,6 +231,7 @@ export const generateWorkoutPlan = async (prefs: WorkoutPreferences): Promise<Wo
         const isLastInCircuit = index === (parsedPlan.rounds || []).length - 1;
         const newEx: Exercise = {
             ...ex,
+            rest: ex.rest ?? prefs.defaultRestDuration,
             id: crypto.randomUUID(),
             unit: 'seconds',
             sets: 1,
@@ -281,7 +282,7 @@ export const generateWorkoutPlan = async (prefs: WorkoutPreferences): Promise<Wo
     };
 
     if (workoutPlan.rounds.length === 0 && workoutPlan.warmUp.length === 0 && workoutPlan.coolDown.length === 0) {
-        throw new Error("Generated plan has no exercises.");
+        throw new Error("Generated plan has no exercises. Try relaxing your preferences.");
     }
 
     return workoutPlan;

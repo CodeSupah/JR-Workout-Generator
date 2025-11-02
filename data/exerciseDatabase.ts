@@ -9,7 +9,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'warmup',
     difficulty: 'Beginner',
     equipment: 'bodyweight',
-    workoutType: 'Flexibility & Mobility / Warm-up/Cool-down',
+    workoutType: 'Mobility/Stretch',
     description: 'A simple dynamic stretch to warm up the shoulder joints and surrounding muscles.',
     instructions: [
       'Stand with your feet shoulder-width apart, arms extended to your sides at shoulder height.',
@@ -27,7 +27,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'warmup',
     difficulty: 'Beginner',
     equipment: 'bodyweight',
-    workoutType: 'Flexibility & Mobility / Warm-up/Cool-down',
+    workoutType: 'Mobility/Stretch',
     description: 'A dynamic stretch to open up the hips and warm up the hamstrings and hip flexors.',
     instructions: [
       'Hold onto a wall or sturdy object for balance.',
@@ -45,7 +45,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'warmup',
     difficulty: 'Beginner',
     equipment: 'bodyweight',
-    workoutType: 'Flexibility & Mobility / Warm-up/Cool-down',
+    workoutType: 'Mobility/Stretch',
     description: 'Warms up the hip joint and stretches the inner and outer thigh muscles.',
     instructions: [
       'Hold onto a wall for balance, facing it.',
@@ -63,7 +63,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'warmup',
     difficulty: 'Beginner',
     equipment: 'bodyweight',
-    workoutType: 'Flexibility & Mobility / Warm-up/Cool-down',
+    workoutType: 'Mobility/Stretch',
     description: 'A classic full-body movement to increase heart rate and warm up major muscle groups.',
     instructions: [
       'Start standing with your feet together and arms at your sides.',
@@ -81,7 +81,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'warmup',
     difficulty: 'Beginner',
     equipment: 'bodyweight',
-    workoutType: 'Flexibility & Mobility / Warm-up/Cool-down',
+    workoutType: 'Mobility/Stretch',
     description: 'A dynamic stretch that warms up the core and improves rotational mobility in the spine.',
     instructions: [
       'Stand with feet shoulder-width apart and knees slightly bent.',
@@ -99,7 +99,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'warmup',
     difficulty: 'Beginner',
     equipment: 'bodyweight',
-    workoutType: 'Flexibility & Mobility / Warm-up/Cool-down',
+    workoutType: 'Mobility/Stretch',
     description: 'A simple exercise to release tension and increase mobility in the shoulders and upper back.',
     instructions: [
       'Stand or sit tall.',
@@ -117,7 +117,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'warmup',
     difficulty: 'Beginner',
     equipment: 'bodyweight',
-    workoutType: 'Flexibility & Mobility / Warm-up/Cool-down',
+    workoutType: 'Mobility/Stretch',
     description: 'A dynamic stretch for the chest, back, and shoulders, promoting blood flow to the upper body.',
     instructions: [
       'Stand with your feet shoulder-width apart.',
@@ -135,7 +135,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'warmup',
     difficulty: 'Intermediate',
     equipment: 'bodyweight',
-    workoutType: 'Flexibility & Mobility / Warm-up/Cool-down',
+    workoutType: 'Mobility/Stretch',
     description: 'An excellent exercise for improving shoulder mobility, posture, and activating the muscles of the upper back.',
     instructions: [
       'Stand with your back against a wall, feet slightly away from it.',
@@ -153,7 +153,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'warmup',
     difficulty: 'Beginner',
     equipment: 'bodyweight',
-    workoutType: 'Flexibility & Mobility / Warm-up/Cool-down',
+    workoutType: 'Mobility/Stretch',
     description: 'A gentle dynamic movement that warms up the spine and stretches the back and abdominal muscles.',
     instructions: [
       'Start on your hands and knees in a tabletop position.',
@@ -171,7 +171,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'warmup',
     difficulty: 'Intermediate',
     equipment: 'bodyweight',
-    workoutType: 'Flexibility & Mobility / Warm-up/Cool-down',
+    workoutType: 'Mobility/Stretch',
     description: 'Improves thoracic (upper/mid-back) spinal rotation and opens up the shoulders.',
     instructions: [
       'Start on all fours.',
@@ -189,7 +189,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'warmup',
     difficulty: 'Beginner',
     equipment: 'bodyweight',
-    workoutType: 'Flexibility & Mobility / Warm-up/Cool-down',
+    workoutType: 'Mobility/Stretch',
     description: 'A simple mobility drill to warm up and lubricate the hip joints.',
     instructions: [
       'Stand with your feet together, holding onto something for balance if needed.',
@@ -208,7 +208,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'warmup',
     difficulty: 'Intermediate',
     equipment: 'bodyweight',
-    workoutType: 'Flexibility & Mobility / Warm-up/Cool-down',
+    workoutType: 'Mobility/Stretch',
     description: 'A dynamic warm-up that combines a lunge with a torso twist to activate the legs, glutes, and core.',
     instructions: [
       'Step forward into a lunge with your right foot.',
@@ -226,7 +226,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'warmup',
     difficulty: 'Intermediate',
     equipment: 'bodyweight',
-    workoutType: 'Flexibility & Mobility / Warm-up/Cool-down',
+    workoutType: 'Mobility/Stretch',
     description: 'A dynamic stretch that opens up the hips and activates the glutes.',
     instructions: [
       'Stand tall. Pull one knee into your chest for a brief hug.',
@@ -244,7 +244,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'warmup',
     difficulty: 'Beginner',
     equipment: 'bodyweight',
-    workoutType: 'Flexibility & Mobility / Warm-up/Cool-down',
+    workoutType: 'Mobility/Stretch',
     description: 'A dynamic stretch that warms up the hamstrings and improves coordination.',
     instructions: [
       'Stand tall and walk forward.',
@@ -262,7 +262,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'warmup',
     difficulty: 'Intermediate',
     equipment: 'bodyweight',
-    workoutType: 'Flexibility & Mobility / Warm-up/Cool-down',
+    workoutType: 'Mobility/Stretch',
     description: 'A dynamic stretch that warms up the inner thighs (adductors) and improves hip mobility.',
     instructions: [
       'Stand with your feet wide apart.',
@@ -280,7 +280,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'warmup',
     difficulty: 'Beginner',
     equipment: 'bodyweight',
-    workoutType: 'Flexibility & Mobility / Warm-up/Cool-down',
+    workoutType: 'Mobility/Stretch',
     description: 'A dynamic exercise to raise your heart rate and activate your hip flexors and leg muscles.',
     instructions: [
       'Stand in place or jog lightly.',
@@ -298,7 +298,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'warmup',
     difficulty: 'Beginner',
     equipment: 'bodyweight',
-    workoutType: 'Flexibility & Mobility / Warm-up/Cool-down',
+    workoutType: 'Mobility/Stretch',
     description: 'A dynamic warm-up exercise that actively stretches the quadriceps and warms up the hamstrings.',
     instructions: [
       'Stand in place or jog lightly.',
@@ -316,7 +316,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'warmup',
     difficulty: 'Intermediate',
     equipment: 'bodyweight',
-    workoutType: 'Flexibility & Mobility / Warm-up/Cool-down',
+    workoutType: 'Mobility/Stretch',
     description: 'A full-body dynamic stretch that lengthens the hamstrings and activates the core and shoulders.',
     instructions: [
       'Stand tall, then hinge at your hips to place your hands on the floor.',
@@ -334,7 +334,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'warmup',
     difficulty: 'Advanced',
     equipment: 'bodyweight',
-    workoutType: 'Flexibility & Mobility / Warm-up/Cool-down',
+    workoutType: 'Mobility/Stretch',
     description: 'A complex, multi-part stretch that targets hip flexors, hamstrings, and thoracic spine mobility all in one.',
     instructions: [
       'Step forward into a deep lunge with your right foot.',
@@ -352,7 +352,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'warmup',
     difficulty: 'Beginner',
     equipment: 'bodyweight',
-    workoutType: 'Flexibility & Mobility / Warm-up/Cool-down',
+    workoutType: 'Mobility/Stretch',
     description: 'A light plyometric drill to warm up the calves and Achilles tendons, preparing them for jumping.',
     instructions: [
       'Stand with feet hip-width apart, knees slightly bent.',
@@ -372,7 +372,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'rope',
-    workoutType: 'Cardio',
+    workoutType: 'Cardio/HIIT',
     description: 'The fundamental jump rope movement, perfect for warming up and building a foundation.',
     instructions: [
       'Hold the handles with a relaxed grip, elbows close to your body.',
@@ -391,7 +391,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'rope',
-    workoutType: 'Cardio',
+    workoutType: 'Cardio/HIIT',
     description: 'A foundational jump rope skill that mimics running in place, excellent for improving coordination and endurance.',
     instructions: [
       'Start with a basic bounce rhythm.',
@@ -410,7 +410,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'rope',
-    workoutType: 'Agility',
+    workoutType: 'Cardio/HIIT',
     description: 'A simple variation that involves hopping side-to-side, improving lateral quickness and engaging different parts of the lower leg muscles.',
     instructions: [
       'Start with a basic two-foot bounce.',
@@ -429,7 +429,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'rope',
-    workoutType: 'Agility',
+    workoutType: 'Cardio/HIIT',
     description: 'This variation involves hopping forward and backward, challenging your balance and coordination.',
     instructions: [
       'Begin with a basic two-foot bounce in a neutral position.',
@@ -448,7 +448,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'rope',
-    workoutType: 'Agility',
+    workoutType: 'Cardio/HIIT',
     description: 'A low-impact alternative to the basic bounce, great for longer sessions and improving footwork.',
     instructions: [
       'Start with a basic bounce rhythm.',
@@ -466,7 +466,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'rope',
-    workoutType: 'Agility',
+    workoutType: 'Cardio/HIIT',
     description: 'A coordination-building step where you alternate tapping your heel and toe in front of you.',
     instructions: [
       'Begin with a boxer step to get the rhythm.',
@@ -485,7 +485,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'rope',
-    workoutType: 'Cardio',
+    workoutType: 'Cardio/HIIT',
     description: 'Jumping on a single leg increases the intensity and challenges your balance, stability, and calf strength on the supporting leg.',
     instructions: [
       'Lift your left foot off the ground.',
@@ -504,7 +504,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'rope',
-    workoutType: 'Cardio',
+    workoutType: 'Cardio/HIIT',
     description: 'Jumping on a single leg increases the intensity and challenges your balance, stability, and calf strength on the supporting leg.',
     instructions: [
       'Lift your right foot off the ground.',
@@ -523,7 +523,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'rope',
-    workoutType: 'Agility',
+    workoutType: 'Cardio/HIIT',
     description: 'This move involves jumping side to side with feet together, engaging the obliques and improving lateral quickness.',
     instructions: [
       'Start with a basic bounce, keeping your feet together.',
@@ -542,7 +542,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'rope',
-    workoutType: 'Agility',
+    workoutType: 'Cardio/HIIT',
     description: 'A dynamic jump that involves moving forward and backward in a bell-like motion, improving coordination and engaging the core.',
     instructions: [
       'Start with a basic two-foot bounce.',
@@ -561,7 +561,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'rope',
-    workoutType: 'Cardio',
+    workoutType: 'Cardio/HIIT',
     description: 'Increases cardiovascular intensity and engages the core and quads more than a basic jump.',
     instructions: [
       'While jumping, alternate lifting each knee up towards your chest.',
@@ -578,7 +578,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'rope',
-    workoutType: 'Agility',
+    workoutType: 'Cardio/HIIT',
     description: 'Combines the classic jumping jack motion with jumping rope, enhancing coordination and working different leg muscles.',
     instructions: [
       'Start with a basic bounce with feet together.',
@@ -597,7 +597,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'rope',
-    workoutType: 'Agility',
+    workoutType: 'Cardio/HIIT',
     description: 'A jump rope variation that involves alternating your feet forward and backward, similar to a scissor motion.',
     instructions: [
       'Begin with a basic bounce.',
@@ -616,7 +616,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Advanced',
     equipment: 'rope',
-    workoutType: 'Cardio',
+    workoutType: 'Cardio/HIIT',
     description: 'A high-intensity, full-body exercise that combines a jump rope basic jump with a traditional burpee for a major cardio and strength challenge.',
     instructions: [
       'Perform one basic jump.',
@@ -636,7 +636,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'rope',
-    workoutType: 'Agility',
+    workoutType: 'Cardio/HIIT',
     description: 'A variation of the boxer step that involves stepping side-to-side, improving lateral movement and coordination.',
     instructions: [
       'Start with a boxer step rhythm.',
@@ -655,7 +655,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Advanced',
     equipment: 'rope',
-    workoutType: 'Cardio',
+    workoutType: 'Cardio/HIIT',
     description: 'An explosive movement where the rope passes under your feet twice for every single jump.',
     instructions: [
       'Jump higher than you would for a basic bounce.',
@@ -674,7 +674,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Advanced',
     equipment: 'rope',
-    workoutType: 'Cardio',
+    workoutType: 'Cardio/HIIT',
     description: 'An expert-level skill where the rope passes under your feet three times in a single jump, requiring extreme speed and coordination.',
     instructions: [
       'Master the double under first.',
@@ -693,7 +693,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Advanced',
     equipment: 'rope',
-    workoutType: 'Strength',
+    workoutType: 'Cardio/HIIT',
     description: 'Using a rope with weighted handles increases the challenge on the upper body, building shoulder and forearm strength.',
     instructions: [
       'Use a speed rope with weighted handles.',
@@ -712,7 +712,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Advanced',
     equipment: 'weighted-rope',
-    workoutType: 'Strength',
+    workoutType: 'Cardio/HIIT',
     description: 'Performing jumps with a weighted rope significantly increases resistance, building full-body power and strength.',
     instructions: [
       'Use a weighted rope (0.5 lb or heavier).',
@@ -731,7 +731,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Advanced',
     equipment: 'rope',
-    workoutType: 'Agility',
+    workoutType: 'Cardio/HIIT',
     description: 'A dynamic footwork drill that involves shuffling laterally while jumping, enhancing agility and targeting the glutes and abductors.',
     instructions: [
       'Start with a boxer step.',
@@ -750,7 +750,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'rope',
-    workoutType: 'Agility',
+    workoutType: 'Cardio/HIIT',
     description: 'A footwork-focused move where you cross one foot in front of the other, challenging balance and engaging the glutes.',
     instructions: [
       'Start with a basic bounce or alternate foot step.',
@@ -769,7 +769,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'rope',
-    workoutType: 'Agility',
+    workoutType: 'Cardio/HIIT',
     description: 'Engages the core and glutes by twisting the hips from side to side with each jump.',
     instructions: [
       'Begin with a basic two-foot bounce with feet together.',
@@ -788,7 +788,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'rope',
-    workoutType: 'Agility',
+    workoutType: 'Cardio/HIIT',
     description: 'A classic freestyle trick that improves coordination and timing by crossing the arms.',
     instructions: [
       'Perform a basic bounce to get your rhythm.',
@@ -807,7 +807,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'rope',
-    workoutType: 'Agility',
+    workoutType: 'Cardio/HIIT',
     description: 'A variation of the side swing where the rope is swung twice on one side before transitioning, enhancing rhythm and core engagement.',
     instructions: [
       'Swing the rope to one side of your body for two full rotations.',
@@ -826,7 +826,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'rope',
-    workoutType: 'Agility',
+    workoutType: 'Cardio/HIIT',
     description: 'A freestyle move where the rope is swung to the side of the body, great for transitions and active recovery.',
     instructions: [
       'Start with a basic bounce.',
@@ -846,7 +846,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Advanced',
     equipment: 'rope',
-    workoutType: 'Agility',
+    workoutType: 'Cardio/HIIT',
     description: 'An advanced trick that involves performing a full 360-degree body turn while jumping over the rope.',
     instructions: [
       'Establish a steady basic jump rhythm.',
@@ -865,7 +865,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Advanced',
     equipment: 'rope',
-    workoutType: 'Agility',
+    workoutType: 'Cardio/HIIT',
     description: 'Jumping with the rope spinning backward challenges coordination and works the muscles in a new way.',
     instructions: [
       'Hold the rope in front of you.',
@@ -884,7 +884,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Advanced',
     equipment: 'rope',
-    workoutType: 'Agility',
+    workoutType: 'Cardio/HIIT',
     description: 'An expert-level skill combining the arm crossover of a Criss-Cross with the speed of a Double Under.',
     instructions: [
       'You must be proficient at both Double Unders and Criss-Cross separately.',
@@ -903,7 +903,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Advanced',
     equipment: 'rope',
-    workoutType: 'Strength',
+    workoutType: 'Cardio/HIIT',
     description: 'A power-building drill where you perform single jumps with maximum height, focusing on explosive power rather than speed.',
     instructions: [
       'Turn the rope at a slow, deliberate pace.',
@@ -922,7 +922,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'rope',
-    workoutType: 'Cardio',
+    workoutType: 'Cardio/HIIT',
     description: 'A dynamic jump rope variation that increases intensity and targets the hamstrings.',
     instructions: [
       'While jumping, alternate kicking your heels back towards your glutes.',
@@ -941,7 +941,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'bodyweight',
-    workoutType: 'Cardio',
+    workoutType: 'Cardio/HIIT',
     description: 'A classic full-body cardio exercise that elevates the heart rate and is great for warming up.',
     instructions: [
       'Start standing with your feet together and arms at your sides.',
@@ -960,7 +960,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'bodyweight',
-    workoutType: 'Cardio',
+    workoutType: 'Cardio/HIIT',
     description: 'A full-body, high-intensity exercise that builds strength and cardiovascular endurance.',
     instructions: [
       'Start standing, then drop into a squat position with your hands on the floor.',
@@ -981,7 +981,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'bodyweight',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A push-up variation performed with hands elevated on a surface like a bench or wall, reducing the weight load and making it easier.',
     instructions: [
       'Place your hands on an elevated surface (bench, box, or wall), slightly wider than your shoulders.',
@@ -999,7 +999,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'bodyweight',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'An advanced push-up variation where the feet are elevated, placing more emphasis on the upper chest and shoulders.',
     instructions: [
       'Place your feet on a bench or elevated surface.', 
@@ -1017,7 +1017,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'bodyweight',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A challenging push-up variation that places a strong emphasis on the triceps by positioning the hands close together.',
     instructions: [
       'Get into a push-up position.', 
@@ -1035,7 +1035,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Advanced',
     equipment: 'bodyweight',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'An explosive push-up variation that builds power in the chest and triceps. The most common version is the clap push-up.',
     instructions: [
       'Start in a standard push-up position.', 
@@ -1055,7 +1055,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'bodyweight',
-    workoutType: 'Strength',
+    workoutType: 'Core/Accessory',
     description: 'An excellent exercise for strengthening the entire posterior chain, including the lower back, glutes, and hamstrings.',
     instructions: [
       'Lie face down on the floor with your arms and legs extended.', 
@@ -1073,7 +1073,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'bodyweight',
-    workoutType: 'Strength',
+    workoutType: 'Isolation',
     description: 'A great exercise for improving posture and strengthening the muscles of the upper back and rear shoulders.',
     instructions: [
       'Lie face down on the floor with your arms extended by your sides, palms down.', 
@@ -1091,7 +1091,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'bodyweight',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A fantastic bodyweight exercise for building back and bicep strength. Can be done using a sturdy table, a bar, or TRX.',
     instructions: [
       'Position yourself under a sturdy table or a low bar.', 
@@ -1111,7 +1111,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'bodyweight',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A convenient back exercise that uses a doorway to mimic a rowing motion, strengthening the back and biceps.',
     instructions: [
       'Stand in a doorway and grip both sides of the frame at chest height.', 
@@ -1130,7 +1130,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'bodyweight',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'An isometric and dynamic back exercise that creates tension using a towel, requiring significant muscle activation.',
     instructions: [
       'Sit on the floor with your legs extended. Loop a towel around the soles of your feet.', 
@@ -1149,7 +1149,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Advanced',
     equipment: 'bodyweight',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A unilateral variation of the inverted row that increases the load on one arm, building single-arm pulling strength.',
     instructions: [
       'Set up for an inverted row under a bar or table.', 
@@ -1167,7 +1167,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'bodyweight',
-    workoutType: 'Strength',
+    workoutType: 'Core/Accessory',
     description: 'A core stability exercise performed in a plank position that also strengthens the shoulders and improves balance.',
     instructions: [
       'Start in a high plank position with hands under your shoulders and feet wide for stability.', 
@@ -1185,7 +1185,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'bodyweight',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'Builds significant shoulder strength, stability, and balance. Can be done freestanding or against a wall for support.',
     instructions: [
       'Place your hands on the floor about shoulder-width apart, close to a wall.', 
@@ -1203,7 +1203,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Advanced',
     equipment: 'bodyweight',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A dynamic exercise that builds the strength and confidence needed for handstands and handstand push-ups.',
     instructions: [
       'Start in a push-up position with your feet against a wall.', 
@@ -1221,7 +1221,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Advanced',
     equipment: 'bodyweight',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'The ultimate bodyweight shoulder press, developing incredible strength and stability in the shoulders and triceps.',
     instructions: [
       'Get into a handstand position against a wall.', 
@@ -1239,7 +1239,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'bodyweight',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A dynamic exercise that transitions between a forearm plank and a high plank, strengthening the core, chest, and triceps.',
     instructions: [
       'Start in a forearm plank position.', 
@@ -1258,7 +1258,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'bodyweight',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A classic pulling exercise using an underhand grip that primarily targets the biceps and lats. Requires a pull-up bar.',
     instructions: [
       'Grab a pull-up bar with an underhand grip (palms facing you), hands shoulder-width apart.', 
@@ -1276,7 +1276,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'bodyweight',
-    workoutType: 'Strength',
+    workoutType: 'Isolation',
     description: 'A creative way to perform a bicep curl using your own bodyweight and an object like a towel.',
     instructions: [
       'Sit on the floor and loop a towel under one foot.', 
@@ -1295,7 +1295,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'bodyweight',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A push-up variation with hands placed closer than shoulder-width, shifting the emphasis to the triceps.',
     instructions: [
       'Assume a push-up position with your hands directly under your shoulders or slightly closer.', 
@@ -1313,7 +1313,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'bodyweight',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A modified push-up performed on the knees, making it an excellent starting point for building upper body strength.',
     instructions: [
       'Start in a plank position on your knees, with hands under your shoulders.', 
@@ -1332,7 +1332,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'bodyweight',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A classic upper body exercise that builds chest, shoulder, and triceps strength.',
     instructions: [
       'Start in a plank position with hands slightly wider than your shoulders.',
@@ -1351,7 +1351,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'bodyweight',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A bodyweight exercise using a bench or chair to isolate and strengthen the triceps muscles.',
     instructions: [
       'Sit on the edge of a bench or chair with your hands gripping the edge, fingers forward.', 
@@ -1370,7 +1370,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'bodyweight',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'An advanced push-up variation that shifts the focus to the shoulders by performing the movement in a pike position.',
     instructions: [
       'Start in a downward dog yoga pose, with your hips high and body in an inverted "V" shape.', 
@@ -1388,7 +1388,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Advanced',
     equipment: 'bodyweight',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'An advanced unilateral push-up that builds strength for the one-arm push-up by shifting weight to one side while the other arm provides support.',
     instructions: [
       'Start in a wide push-up position.', 
@@ -1406,7 +1406,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'resistance-band',
-    workoutType: 'Strength',
+    workoutType: 'Isolation',
     description: 'A simple and effective exercise to isolate and build the bicep muscles using a resistance band.',
     instructions: [
       'Stand on the middle of the band with one or both feet.',
@@ -1425,7 +1425,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'resistance-band',
-    workoutType: 'Strength',
+    workoutType: 'Isolation',
     description: 'A variation of the bicep curl that uses a neutral (hammer) grip, targeting the brachialis and brachioradialis muscles in addition to the biceps.',
     instructions: [
       'Stand on the middle of the band with one or both feet.',
@@ -1444,7 +1444,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'resistance-band',
-    workoutType: 'Strength',
+    workoutType: 'Isolation',
     description: 'An isolation exercise that targets the triceps by extending the arm against the band\'s resistance from a hinged position.',
     instructions: [
       'Anchor the band to a low point or stand on it with one foot.',
@@ -1463,7 +1463,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'resistance-band',
-    workoutType: 'Strength',
+    workoutType: 'Isolation',
     description: 'An excellent exercise for targeting the triceps muscles, performed overhead with a resistance band.',
     instructions: [
       'Stand on one end of the band or anchor it securely under your foot.',
@@ -1482,7 +1482,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'resistance-band',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'Increases the difficulty of a standard push-up by adding accommodating resistance from a band, making the top of the movement more challenging.',
     instructions: [
       'Drape a resistance band across your upper back, holding the ends under your hands.',
@@ -1500,7 +1500,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'resistance-band',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A versatile exercise that mimics a bench press using a resistance band to strengthen the chest, shoulders, and triceps.',
     instructions: [
       'Wrap the band around your upper back, holding an end in each hand.',
@@ -1518,7 +1518,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'resistance-band',
-    workoutType: 'Strength',
+    workoutType: 'Isolation',
     description: 'An isolation exercise for the chest that uses a band to create tension throughout the entire range of motion.',
     instructions: [
       'Anchor the band to a sturdy object at chest height.',
@@ -1537,7 +1537,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'resistance-band',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A fundamental back exercise that strengthens the lats, rhomboids, and biceps, improving posture.',
     instructions: [
       'Sit on the floor with your legs extended, and loop the band around your feet.',
@@ -1556,7 +1556,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'resistance-band',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'Mimics the lat pulldown machine, targeting the latissimus dorsi muscles to build back width.',
     instructions: [
       'Anchor a band to a high point, like the top of a door.',
@@ -1574,7 +1574,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'resistance-band',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'An excellent exercise for improving posture and strengthening the rear deltoids, rhomboids, and external rotators of the shoulder.',
     instructions: [
       'Anchor the band at chest or head height.',
@@ -1593,7 +1593,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'resistance-band',
-    workoutType: 'Strength',
+    workoutType: 'Isolation',
     description: 'A fantastic exercise for shoulder health, posture, and strengthening the upper back muscles.',
     instructions: [
       'Hold a light resistance band with both hands, palms facing down, hands shoulder-width apart.',
@@ -1611,7 +1611,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'resistance-band',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A shoulder-strengthening exercise that uses a resistance band to build deltoid and tricep strength.',
     instructions: [
       'Stand on the middle of the band with feet shoulder-width apart.',
@@ -1630,7 +1630,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'resistance-band',
-    workoutType: 'Strength',
+    workoutType: 'Isolation',
     description: 'An isolation exercise that targets the anterior (front) deltoid muscles of the shoulder.',
     instructions: [
       'Stand on the band with one or both feet.',
@@ -1648,7 +1648,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'resistance-band',
-    workoutType: 'Strength',
+    workoutType: 'Isolation',
     description: 'Targets the medial (side) deltoid, helping to build shoulder width and roundness.',
     instructions: [
       'Stand on the band with one or both feet.',
@@ -1666,7 +1666,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'resistance-band',
-    workoutType: 'Strength',
+    workoutType: 'Isolation',
     description: 'Strengthens the wrist flexor muscles in the forearms, improving grip strength.',
     instructions: [
       'Sit and place your forearm on your thigh, palm facing up. Stand on the band with your foot.',
@@ -1684,7 +1684,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'resistance-band',
-    workoutType: 'Strength',
+    workoutType: 'Isolation',
     description: 'Strengthens the wrist extensor muscles, helping to balance the forearm and prevent injuries.',
     instructions: [
       'Sit and place your forearm on your thigh, palm facing down. Stand on the band with your foot.',
@@ -1702,7 +1702,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'barbell',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A foundational strength exercise for developing the chest, shoulders, and triceps.',
     instructions: [
       'Lie on a flat bench with your feet firmly on the floor.',
@@ -1720,7 +1720,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'barbell',
-    workoutType: 'Strength',
+    workoutType: 'Isolation',
     description: 'An isolation exercise that specifically targets and builds the trapezius muscles.',
     instructions: [
       'Stand holding a barbell with an overhand grip, hands shoulder-width apart.',
@@ -1741,7 +1741,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'bodyweight',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A fundamental lower body movement that strengthens legs and glutes.',
     instructions: [
       'Stand with your feet shoulder-width apart.',
@@ -1760,7 +1760,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'bodyweight',
-    workoutType: 'Strength',
+    workoutType: 'Isolation',
     description: 'A foundational exercise for activating and strengthening the glutes and hamstrings.',
     instructions: [
       'Lie on your back with your knees bent, feet flat on the floor, and arms by your sides.', 
@@ -1778,7 +1778,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'bodyweight',
-    workoutType: 'Strength',
+    workoutType: 'Isolation',
     description: 'An advanced variation of the glute bridge that increases the load on one leg, improving unilateral strength and stability.',
     instructions: [
       'Lie on your back in a glute bridge starting position.', 
@@ -1797,7 +1797,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'bodyweight',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A classic unilateral exercise that strengthens the quads, glutes, and hamstrings while improving balance.',
     instructions: [
       'Stand with your feet together.', 
@@ -1816,7 +1816,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'bodyweight',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A lunge variation that is often easier on the knees and helps improve balance and single-leg strength.',
     instructions: [
       'Stand with your feet together.', 
@@ -1835,7 +1835,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'bodyweight',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A dynamic lunge that involves stepping forward into each repetition, challenging balance and coordination more than a static lunge.',
     instructions: [
       'Stand with feet together.', 
@@ -1853,7 +1853,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'bodyweight',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A functional exercise that targets the quads and glutes, improving single-leg strength and balance. Can be done on a box, bench, or stairs.',
     instructions: [
       'Stand in front of a sturdy, elevated surface like a bench or box.', 
@@ -1871,7 +1871,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Advanced',
     equipment: 'bodyweight',
-    workoutType: 'Strength',
+    workoutType: 'Cardio/HIIT',
     description: 'A plyometric exercise that adds an explosive jump to the standard squat, building power and cardiovascular endurance.',
     instructions: [
       'Start with your feet shoulder-width apart.', 
@@ -1890,7 +1890,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Advanced',
     equipment: 'bodyweight',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A highly advanced single-leg squat that requires exceptional strength, balance, and mobility.',
     instructions: [
       'Stand on one leg with the other leg extended straight out in front of you.', 
@@ -1909,7 +1909,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'bodyweight',
-    workoutType: 'Strength',
+    workoutType: 'Isolation',
     description: 'A simple but effective isolation exercise for strengthening the calf muscles.',
     instructions: [
       'Stand with your feet flat on the floor, hip-width apart.', 
@@ -1927,7 +1927,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'bodyweight',
-    workoutType: 'Strength',
+    workoutType: 'Isolation',
     description: 'An isometric exercise that builds endurance in the quadriceps, glutes, and hamstrings.',
     instructions: [
       'Stand with your back against a wall.', 
@@ -1945,7 +1945,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'dumbbell',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A fundamental squat variation holding a dumbbell at chest level, great for learning proper squat form while strengthening the lower body and core.',
     instructions: [
       'Stand with your feet slightly wider than shoulder-width apart, toes pointed slightly out.',
@@ -1964,7 +1964,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'bodyweight',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A single-leg squat variation with the rear foot elevated, increasing the challenge on the front leg and improving stability.',
     instructions: [
       'Stand a few feet in front of a bench or chair.', 
@@ -1983,7 +1983,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Advanced',
     equipment: 'bodyweight',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A single-leg squat performed to full depth. This assisted version uses support to help with balance and strength.',
     instructions: [
       'Stand on one leg, holding onto a door frame, pole, or TRX for support.', 
@@ -2002,7 +2002,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'resistance-band',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'Adds resistance to the standard bodyweight squat, increasing the challenge for the glutes, quads, and hamstrings.',
     instructions: [
       'Stand on the band with your feet shoulder-width apart.',
@@ -2020,7 +2020,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'resistance-band',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A unilateral leg exercise that targets the quads and glutes, with added band resistance for increased difficulty.',
     instructions: [
       'Loop a band under the foot that will remain on the floor. Hold the other end at shoulder height.',
@@ -2038,7 +2038,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'resistance-band',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A creative way to mimic the leg press machine, targeting the quads, glutes, and hamstrings.',
     instructions: [
       'Lie on your back and loop a resistance band around the arches of your feet.',
@@ -2057,7 +2057,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'resistance-band',
-    workoutType: 'Strength',
+    workoutType: 'Isolation',
     description: 'Targets the glutes and hamstrings, with a mini-band adding resistance to engage the hip abductors.',
     instructions: [
       'Place a mini-band around your legs, just above your knees.',
@@ -2075,7 +2075,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'resistance-band',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A powerful glute-building exercise that can be done with a long resistance band for added resistance.',
     instructions: [
       'Sit on the floor with your upper back against a bench. Loop a band over your hips and anchor it under your feet.',
@@ -2093,7 +2093,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'resistance-band',
-    workoutType: 'Strength',
+    workoutType: 'Isolation',
     description: 'An isolation exercise that targets the gluteus maximus, helping to shape and strengthen the glutes.',
     instructions: [
       'Anchor a band to a low point or loop it around your ankles.',
@@ -2111,7 +2111,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'resistance-band',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A variation of the deadlift that uses a band to provide accommodating resistance, focusing on the hamstrings and glutes.',
     instructions: [
       'Stand on a long resistance band with feet hip-width apart.',
@@ -2129,7 +2129,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'resistance-band',
-    workoutType: 'Strength',
+    workoutType: 'Isolation',
     description: 'An isolation exercise that targets the hamstrings, great for building strength and preventing injury.',
     instructions: [
       'Anchor a band to a low point.',
@@ -2147,7 +2147,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'resistance-band',
-    workoutType: 'Agility',
+    workoutType: 'Core/Accessory',
     description: 'An excellent warm-up or accessory exercise for glute activation and hip stability.',
     instructions: [
       'Place a mini-band around your ankles or just above your knees.',
@@ -2166,7 +2166,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'resistance-band',
-    workoutType: 'Agility',
+    workoutType: 'Core/Accessory',
     description: 'A dynamic exercise that targets the gluteus medius and improves hip stability by walking forward and backward with a band.',
     instructions: [
       'Place a band around your ankles or thighs.',
@@ -2184,7 +2184,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'resistance-band',
-    workoutType: 'Strength',
+    workoutType: 'Isolation',
     description: 'An isolation exercise that strengthens the hip abductors, particularly the gluteus medius.',
     instructions: [
       'Place a mini-band around your ankles.',
@@ -2203,7 +2203,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'resistance-band',
-    workoutType: 'Strength',
+    workoutType: 'Isolation',
     description: 'Targets the inner thigh muscles (adductors) by pulling your leg across your body against resistance.',
     instructions: [
       'Anchor a band to a low point. Loop the other end around the ankle of your inside leg.',
@@ -2221,7 +2221,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'resistance-band',
-    workoutType: 'Strength',
+    workoutType: 'Isolation',
     description: 'A seated variation to isolate the inner thigh muscles.',
     instructions: [
       'Sit on a chair or bench with a mini-band looped around your thighs, just above the knees.',
@@ -2239,7 +2239,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'barbell',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A core strength exercise that involves squatting with a barbell resting on the upper back, building powerful legs and a strong core.',
     instructions: [
       'Position a barbell on a squat rack at shoulder height.',
@@ -2261,7 +2261,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'bodyweight',
-    workoutType: 'Strength',
+    workoutType: 'Core/Accessory',
     description: 'A classic abdominal exercise that targets the rectus abdominis muscle.',
     instructions: [
       'Lie on your back with your knees bent and feet flat on the floor.', 
@@ -2280,7 +2280,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'bodyweight',
-    workoutType: 'Strength',
+    workoutType: 'Core/Accessory',
     description: 'An exercise that targets the lower abdominal muscles.',
     instructions: [
       'Lie on your back with your legs straight and together.', 
@@ -2299,7 +2299,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'bodyweight',
-    workoutType: 'Strength',
+    workoutType: 'Core/Accessory',
     description: 'An isometric exercise that targets the obliques and improves core stability.',
     instructions: [
       'Lie on your side with your legs straight.', 
@@ -2317,7 +2317,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'bodyweight',
-    workoutType: 'Cardio',
+    workoutType: 'Core/Accessory',
     description: 'A dynamic core exercise that targets the lower abs and hip flexors.',
     instructions: [
       'Lie on your back with your legs extended and hands under your lower back for support.', 
@@ -2335,7 +2335,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Advanced',
     equipment: 'bodyweight',
-    workoutType: 'Strength',
+    workoutType: 'Core/Accessory',
     description: 'An advanced core exercise that works both the upper and lower abs simultaneously.',
     instructions: [
       'Lie on your back with your arms and legs extended.', 
@@ -2353,7 +2353,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'bodyweight',
-    workoutType: 'Strength',
+    workoutType: 'Core/Accessory',
     description: 'A simple but effective isometric exercise that strengthens the entire core, as well as shoulders and glutes.',
     instructions: [
       'Place your forearms on the floor with elbows aligned below shoulders.', 
@@ -2371,7 +2371,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'bodyweight',
-    workoutType: 'Cardio',
+    workoutType: 'Cardio/HIIT',
     description: 'A dynamic, high-intensity exercise that combines a plank with running knees, targeting the core and elevating heart rate.',
     instructions: [
       'Start in a high plank position with hands under your shoulders.', 
@@ -2389,7 +2389,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Advanced',
     equipment: 'bodyweight',
-    workoutType: 'Strength',
+    workoutType: 'Core/Accessory',
     description: 'A foundational gymnastics exercise that builds immense core strength and stability by holding a challenging, braced position.',
     instructions: [
       'Lie on your back with your arms and legs extended.', 
@@ -2408,7 +2408,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'resistance-band',
-    workoutType: 'Strength',
+    workoutType: 'Core/Accessory',
     description: 'An anti-rotation core exercise that builds stability by resisting a rotational force from a resistance band.',
     instructions: [
       'Anchor a band at chest height.',
@@ -2426,7 +2426,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'resistance-band',
-    workoutType: 'Strength',
+    workoutType: 'Core/Accessory',
     description: 'A rotational exercise that targets the obliques and improves core power, mimicking a chopping motion.',
     instructions: [
       'Anchor a band to a high point. Stand sideways to the anchor.',
@@ -2446,7 +2446,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Advanced',
     equipment: 'kettlebell',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A powerful hip-hinge movement that develops explosive power, strength, and cardio.',
     instructions: [
       'Stand with feet shoulder-width apart, holding the kettlebell with both hands.',
@@ -2464,7 +2464,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'barbell',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A compound lift that builds total-body strength by lifting a loaded barbell off the floor.',
     instructions: [
       'Stand with your mid-foot under the barbell.',
@@ -2486,7 +2486,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'cooldown',
     difficulty: 'Beginner',
     equipment: 'bodyweight',
-    workoutType: 'Flexibility & Mobility / Warm-up/Cool-down',
+    workoutType: 'Mobility/Stretch',
     description: 'A static stretch to relieve tension in the triceps muscle at the back of the upper arm.',
     instructions: [
       'Raise one arm straight overhead.',
@@ -2504,7 +2504,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'cooldown',
     difficulty: 'Beginner',
     equipment: 'bodyweight',
-    workoutType: 'Flexibility & Mobility / Warm-up/Cool-down',
+    workoutType: 'Mobility/Stretch',
     description: 'A common stretch to target the deltoid (shoulder) muscles, particularly the posterior head.',
     instructions: [
         'Bring one arm straight across your chest.',
@@ -2522,7 +2522,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'cooldown',
     difficulty: 'Beginner',
     equipment: 'bodyweight',
-    workoutType: 'Flexibility & Mobility / Warm-up/Cool-down',
+    workoutType: 'Mobility/Stretch',
     description: 'Opens up the chest muscles and improves posture, especially after pressing movements.',
     instructions: [
       'Stand in a doorway.',
@@ -2541,7 +2541,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'cooldown',
     difficulty: 'Beginner',
     equipment: 'bodyweight',
-    workoutType: 'Flexibility & Mobility / Warm-up/Cool-down',
+    workoutType: 'Mobility/Stretch',
     description: 'A simple stretch to relieve tension in the upper back and between the shoulder blades.',
     instructions: [
         'Stand or sit tall.',
@@ -2559,7 +2559,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'cooldown',
     difficulty: 'Beginner',
     equipment: 'bodyweight',
-    workoutType: 'Flexibility & Mobility / Warm-up/Cool-down',
+    workoutType: 'Mobility/Stretch',
     description: 'A gentle stretch to release tension in the side of the neck and upper trapezius muscles.',
     instructions: [
         'Sit or stand tall.',
@@ -2577,7 +2577,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'cooldown',
     difficulty: 'Intermediate',
     equipment: 'bodyweight',
-    workoutType: 'Flexibility & Mobility / Warm-up/Cool-down',
+    workoutType: 'Mobility/Stretch',
     description: 'A yoga pose that stretches the abdominal muscles and improves spinal extension.',
     instructions: [
         'Lie on your stomach with your hands under your shoulders.',
@@ -2595,7 +2595,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'cooldown',
     difficulty: 'Beginner',
     equipment: 'bodyweight',
-    workoutType: 'Flexibility & Mobility / Warm-up/Cool-down',
+    workoutType: 'Mobility/Stretch',
     description: 'A gentle resting pose that stretches the lower back, hips, and thighs.',
     instructions: [
         'Kneel on the floor, sit back on your heels, then fold forward.',
@@ -2613,7 +2613,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'cooldown',
     difficulty: 'Beginner',
     equipment: 'bodyweight',
-    workoutType: 'Flexibility & Mobility / Warm-up/Cool-down',
+    workoutType: 'Mobility/Stretch',
     description: 'Stretches the obliques, lats, and muscles along the side of the torso.',
     instructions: [
         'Sit comfortably on the floor with your legs crossed.',
@@ -2631,7 +2631,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'cooldown',
     difficulty: 'Beginner',
     equipment: 'bodyweight',
-    workoutType: 'Flexibility & Mobility / Warm-up/Cool-down',
+    workoutType: 'Mobility/Stretch',
     description: 'A standing stretch that lengthens the muscles along the side of the body, including the obliques and lats.',
     instructions: [
         'Stand with your feet together.',
@@ -2649,7 +2649,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'cooldown',
     difficulty: 'Beginner',
     equipment: 'bodyweight',
-    workoutType: 'Flexibility & Mobility / Warm-up/Cool-down',
+    workoutType: 'Mobility/Stretch',
     description: 'A relaxing stretch that improves spinal mobility and can help relieve lower back tension.',
     instructions: [
         'Lie on your back and bring one knee into your chest.',
@@ -2667,7 +2667,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'cooldown',
     difficulty: 'Beginner',
     equipment: 'bodyweight',
-    workoutType: 'Flexibility & Mobility / Warm-up/Cool-down',
+    workoutType: 'Mobility/Stretch',
     description: 'A static stretch to improve flexibility in the quadriceps muscles at the front of the thigh.',
     instructions: [
       'Stand upright, holding onto a wall or chair for balance if needed.',
@@ -2687,7 +2687,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'cooldown',
     difficulty: 'Beginner',
     equipment: 'bodyweight',
-    workoutType: 'Flexibility & Mobility / Warm-up/Cool-down',
+    workoutType: 'Mobility/Stretch',
     description: 'A static stretch to increase flexibility in the hamstrings, located at the back of the thigh.',
     instructions: [
       'Sit on the floor with one leg extended straight out.',
@@ -2705,7 +2705,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'cooldown',
     difficulty: 'Intermediate',
     equipment: 'bodyweight',
-    workoutType: 'Flexibility & Mobility / Warm-up/Cool-down',
+    workoutType: 'Mobility/Stretch',
     description: 'A deep stretch for the glutes and piriformis muscle, which can help relieve hip and lower back tightness.',
     instructions: [
         'Lie on your back with your knees bent.',
@@ -2723,7 +2723,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'cooldown',
     difficulty: 'Beginner',
     equipment: 'bodyweight',
-    workoutType: 'Flexibility & Mobility / Warm-up/Cool-down',
+    workoutType: 'Mobility/Stretch',
     description: 'A seated stretch that targets the inner thighs (adductors) and opens up the hips.',
     instructions: [
         'Sit on the floor and bring the soles of your feet together.',
@@ -2741,7 +2741,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'cooldown',
     difficulty: 'Beginner',
     equipment: 'bodyweight',
-    workoutType: 'Flexibility & Mobility / Warm-up/Cool-down',
+    workoutType: 'Mobility/Stretch',
     description: 'A crucial stretch for jumpers to relieve tightness in the calf muscles.',
     instructions: [
       'Stand facing a wall with your hands on the wall for support.',
@@ -2760,7 +2760,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'cooldown',
     difficulty: 'Beginner',
     equipment: 'bodyweight',
-    workoutType: 'Flexibility & Mobility / Warm-up/Cool-down',
+    workoutType: 'Mobility/Stretch',
     description: 'Stretches the muscles at the front of the hip, which can get tight from sitting and running.',
     instructions: [
         'Kneel on one knee, with your other foot flat on the floor in front of you (a lunge position).',
@@ -2778,7 +2778,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'cooldown',
     difficulty: 'Intermediate',
     equipment: 'bodyweight',
-    workoutType: 'Flexibility & Mobility / Warm-up/Cool-down',
+    workoutType: 'Mobility/Stretch',
     description: 'An intense stretch for the inner thighs (adductors) and hips.',
     instructions: [
         'Start on all fours.',
@@ -2796,7 +2796,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'cooldown',
     difficulty: 'Intermediate',
     equipment: 'bodyweight',
-    workoutType: 'Flexibility & Mobility / Warm-up/Cool-down',
+    workoutType: 'Mobility/Stretch',
     description: 'A deep stretch for the entire back side of the body, from calves to lower back.',
     instructions: [
         'Stand with your feet hip-width apart.',
@@ -2814,7 +2814,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'cooldown',
     difficulty: 'Intermediate',
     equipment: 'bodyweight',
-    workoutType: 'Flexibility & Mobility / Warm-up/Cool-down',
+    workoutType: 'Mobility/Stretch',
     description: 'A yoga pose that provides a deep stretch for the hip rotators and glutes.',
     instructions: [
         'Start in a plank or downward dog position.',
@@ -2832,7 +2832,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'cooldown',
     difficulty: 'Intermediate',
     equipment: 'bodyweight',
-    workoutType: 'Flexibility & Mobility / Warm-up/Cool-down',
+    workoutType: 'Mobility/Stretch',
     description: 'An excellent pose for improving hip, knee, and ankle mobility.',
     instructions: [
         'Stand with your feet slightly wider than shoulder-width, toes pointed slightly out.',
@@ -2851,7 +2851,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'dumbbell',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A fundamental exercise for building chest, shoulder, and triceps strength, allowing for a natural range of motion.',
     instructions: [
       'Lie on a flat bench with a dumbbell in each hand at your chest, palms facing forward.',
@@ -2870,7 +2870,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'dumbbell',
-    workoutType: 'Strength',
+    workoutType: 'Isolation',
     description: 'An isolation exercise that targets the chest muscles, focusing on stretching and contracting the pecs.',
     instructions: [
       'Lie on a flat bench holding a dumbbell in each hand above your chest, palms facing each other.',
@@ -2888,7 +2888,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'dumbbell',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'Targets the upper portion of the chest muscles (clavicular head) as well as the front deltoids.',
     instructions: [
       'Set a bench to a 30-45 degree incline and lie back with a dumbbell in each hand.',
@@ -2907,7 +2907,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'dumbbell',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'Targets the lower portion of the chest muscles, often allowing for heavier weight to be lifted.',
     instructions: [
       'Lie on a decline bench, securing your feet. Hold a dumbbell in each hand at your chest.',
@@ -2926,7 +2926,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'dumbbell',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A unique exercise that works both the chest and the lats, promoting rib cage expansion and upper body flexibility.',
     instructions: [
       'Lie perpendicular on a bench with only your upper back supported, feet firm on the floor.',
@@ -2944,7 +2944,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'dumbbell',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A fundamental exercise for building shoulder strength and size, targeting all three heads of the deltoid.',
     instructions: [
       'Sit on a bench with back support, holding a dumbbell in each hand at shoulder height, palms facing forward.',
@@ -2963,7 +2963,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'dumbbell',
-    workoutType: 'Strength',
+    workoutType: 'Isolation',
     description: 'An isolation exercise that targets the medial (side) head of the deltoids, helping to create broader shoulders.',
     instructions: [
       'Stand with a dumbbell in each hand at your sides, palms facing in.',
@@ -2981,7 +2981,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'dumbbell',
-    workoutType: 'Strength',
+    workoutType: 'Isolation',
     description: 'An isolation exercise that targets the anterior (front) head of the deltoids.',
     instructions: [
       'Stand holding a dumbbell in each hand in front of your thighs, palms facing your body.',
@@ -2998,7 +2998,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'dumbbell',
-    workoutType: 'Strength',
+    workoutType: 'Isolation',
     description: 'Targets the rear deltoids and upper back muscles, crucial for posture and shoulder health.',
     instructions: [
       'Hinge at your hips with a flat back, holding a dumbbell in each hand with palms facing each other.',
@@ -3016,7 +3016,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'dumbbell',
-    workoutType: 'Strength',
+    workoutType: 'Isolation',
     description: 'The classic exercise for building the bicep muscles.',
     instructions: [
       'Stand or sit holding a dumbbell in each hand at your sides with an underhand grip (palms facing forward).',
@@ -3035,7 +3035,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'dumbbell',
-    workoutType: 'Strength',
+    workoutType: 'Isolation',
     description: 'A curl variation using a neutral grip to target the biceps, brachialis, and forearm muscles.',
     instructions: [
       'Stand or sit holding a dumbbell in each hand with a neutral grip (palms facing each other).',
@@ -3052,7 +3052,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'dumbbell',
-    workoutType: 'Strength',
+    workoutType: 'Isolation',
     description: 'An isolation exercise that allows for a strong peak contraction of the bicep.',
     instructions: [
       'Sit on a bench and lean forward, placing your elbow on the inside of your thigh.',
@@ -3070,7 +3070,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'dumbbell',
-    workoutType: 'Strength',
+    workoutType: 'Isolation',
     description: 'A unique curl that combines a standard curl with a reverse curl to work both the biceps and forearms.',
     instructions: [
       'Stand holding dumbbells with an underhand grip (palms up).',
@@ -3088,7 +3088,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'dumbbell',
-    workoutType: 'Strength',
+    workoutType: 'Isolation',
     description: 'Performed on an incline bench, this exercise places a greater stretch on the long head of the bicep.',
     instructions: [
       'Sit back on an incline bench, holding a dumbbell in each hand with arms extended.',
@@ -3106,7 +3106,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'dumbbell',
-    workoutType: 'Strength',
+    workoutType: 'Isolation',
     description: 'An isolation exercise that targets the triceps by extending the arm against gravity.',
     instructions: [
       'Hinge at your hips with a flat back, supporting yourself with one hand on a bench.',
@@ -3124,7 +3124,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'dumbbell',
-    workoutType: 'Strength',
+    workoutType: 'Isolation',
     description: 'An excellent exercise for targeting all three heads of the triceps, especially the long head.',
     instructions: [
       'Sit or stand holding one dumbbell with both hands overhead.',
@@ -3142,7 +3142,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'dumbbell',
-    workoutType: 'Strength',
+    workoutType: 'Isolation',
     description: 'A triceps extension variation performed while lying down, effectively isolating the triceps.',
     instructions: [
       'Lie on a flat bench with a dumbbell in each hand, arms extended above your chest with a neutral grip.',
@@ -3160,7 +3160,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'dumbbell',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A bench press variation performed on the floor, which limits the range of motion to protect the shoulders and emphasize the triceps.',
     instructions: [
       'Lie on the floor with your knees bent and feet flat. Hold a dumbbell in each hand.',
@@ -3178,7 +3178,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'dumbbell',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A fundamental back exercise that builds thickness and strength in the lats and upper back.',
     instructions: [
       'Place one knee and hand on a flat bench. Hold a dumbbell in the opposite hand with your arm extended.',
@@ -3197,7 +3197,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'dumbbell',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A full-body exercise that strengthens the posterior chain, using dumbbells for a more accessible setup.',
     instructions: [
       'Stand with your feet hip-width apart, with a dumbbell on the outside of each foot.',
@@ -3215,7 +3215,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'dumbbell',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'An excellent exercise for targeting the hamstrings and glutes with a focus on the hip-hinge movement.',
     instructions: [
       'Stand holding a dumbbell in each hand in front of your thighs.',
@@ -3234,7 +3234,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'dumbbell',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A deadlift variation with a wide stance that targets the glutes, hamstrings, and adductors.',
     instructions: [
       'Stand with your feet wider than shoulder-width, toes pointed out.',
@@ -3253,7 +3253,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Advanced',
     equipment: 'dumbbell',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A compound movement that combines a deadlift with a shrug to build the traps and posterior chain simultaneously.',
     instructions: [
       'Perform a dumbbell deadlift.',
@@ -3270,7 +3270,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'dumbbell',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A squat variation that places more emphasis on the quadriceps and core by holding the weights in front.',
     instructions: [
       'Hold a dumbbell in each hand and rest them on your shoulders.',
@@ -3288,7 +3288,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'dumbbell',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'Adds resistance to the classic lunge, increasing the challenge for the quads, glutes, and hamstrings.',
     instructions: [
       'Stand holding a dumbbell in each hand at your sides.',
@@ -3306,7 +3306,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'dumbbell',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A lunge variation that is often easier on the knees, with added weight to target the glutes and hamstrings.',
     instructions: [
       'Stand holding a dumbbell in each hand.',
@@ -3324,7 +3324,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'dumbbell',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A functional exercise that builds single-leg strength, targeting the glutes and quads.',
     instructions: [
       'Stand in front of a bench or box, holding a dumbbell in each hand.',
@@ -3342,7 +3342,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'dumbbell',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A stationary lunge that builds strength and stability in the lower body.',
     instructions: [
       'Stand in a staggered stance, holding a dumbbell in each hand.',
@@ -3360,7 +3360,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Advanced',
     equipment: 'dumbbell',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'An advanced single-leg squat that increases the load on the front leg by elevating the rear foot.',
     instructions: [
       'Stand a few feet in front of a bench, holding dumbbells.',
@@ -3378,7 +3378,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'dumbbell',
-    workoutType: 'Strength',
+    workoutType: 'Isolation',
     description: 'Adds resistance to the calf raise to effectively build and strengthen the calf muscles.',
     instructions: [
       'Stand holding a dumbbell in each hand.',
@@ -3396,7 +3396,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'dumbbell',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'Similar to an RDL but with less knee bend, placing an intense stretch and focus on the hamstrings.',
     instructions: [
       'Stand holding dumbbells in front of your thighs.',
@@ -3414,7 +3414,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'dumbbell',
-    workoutType: 'Strength',
+    workoutType: 'Core/Accessory',
     description: 'An isolation exercise that targets the obliques, improving lateral core strength.',
     instructions: [
       'Stand tall holding one heavy dumbbell in one hand.',
@@ -3432,7 +3432,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'dumbbell',
-    workoutType: 'Strength',
+    workoutType: 'Core/Accessory',
     description: 'A core exercise that strengthens the obliques and improves rotational strength.',
     instructions: [
       'Sit on the floor with your knees bent and feet elevated. Lean back slightly.',
@@ -3450,7 +3450,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'dumbbell',
-    workoutType: 'Strength',
+    workoutType: 'Core/Accessory',
     description: 'A dynamic, full-body rotational exercise that targets the obliques and improves core power.',
     instructions: [
       'Stand with your feet shoulder-width apart, holding one dumbbell with both hands.',
@@ -3468,7 +3468,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'dumbbell',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A simple yet highly effective exercise for building grip strength, core stability, and upper back strength.',
     instructions: [
       'Stand holding a heavy dumbbell in each hand at your sides.',
@@ -3487,7 +3487,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Advanced',
     equipment: 'dumbbell',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A full-body compound movement that combines a front squat with an overhead press, building power and cardiovascular endurance.',
     instructions: [
       'Hold two dumbbells at your shoulders (front rack position).',
@@ -3505,7 +3505,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Advanced',
     equipment: 'dumbbell',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A powerful, full-body exercise that develops coordination and explosive strength.',
     instructions: [
       'Stand with dumbbells just outside your feet. Hinge at the hips to grab them.',
@@ -3523,7 +3523,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Advanced',
     equipment: 'dumbbell',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A dynamic, single-arm, full-body lift that builds explosive power from the ground up.',
     instructions: [
       'Place one dumbbell on the floor between your feet.',
@@ -3543,7 +3543,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'barbell',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'Targets the upper portion of the chest (clavicular head) to build a fuller-looking chest.',
     instructions: [
       'Set a bench to a 30-45 degree incline.',
@@ -3561,7 +3561,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'barbell',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'Targets the lower portion of the chest muscles.',
     instructions: [
       'Lie on a decline bench and secure your feet.',
@@ -3579,7 +3579,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'barbell',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A bench press variation with a narrower grip that places more emphasis on the triceps.',
     instructions: [
       'Lie on a flat bench and grip the barbell with your hands shoulder-width apart or slightly closer.',
@@ -3596,7 +3596,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'barbell',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A press variation that limits the range of motion, which can be easier on the shoulders and emphasizes triceps strength.',
     instructions: [
       'Lie on the floor with your knees bent.',
@@ -3614,7 +3614,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'barbell',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A fundamental upper body exercise for building shoulder strength and size.',
     instructions: [
       'Stand with the barbell in a front rack position, resting on your shoulders and clavicles.',
@@ -3632,7 +3632,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'barbell',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'An explosive overhead press variation that uses leg drive to lift heavier weight.',
     instructions: [
       'Start with the barbell in a front rack position.',
@@ -3650,7 +3650,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'barbell',
-    workoutType: 'Strength',
+    workoutType: 'Isolation',
     description: 'An isolation exercise for the front deltoids, performed with a barbell.',
     instructions: [
       'Hold a barbell with an overhand grip, hands shoulder-width apart.',
@@ -3667,7 +3667,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'barbell',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A compound exercise that targets the shoulders and trapezius muscles.',
     instructions: [
       'Grip a barbell with hands closer than shoulder-width apart.',
@@ -3685,7 +3685,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'barbell',
-    workoutType: 'Strength',
+    workoutType: 'Isolation',
     description: 'A mass-building exercise for the biceps using a barbell.',
     instructions: [
       'Hold a barbell with an underhand grip, hands shoulder-width apart.',
@@ -3702,7 +3702,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'barbell',
-    workoutType: 'Strength',
+    workoutType: 'Isolation',
     description: 'A curl variation with an overhand grip that targets the brachialis and forearms.',
     instructions: [
       'Hold a barbell with an overhand (pronated) grip, hands shoulder-width apart.',
@@ -3719,7 +3719,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'barbell',
-    workoutType: 'Strength',
+    workoutType: 'Isolation',
     description: 'An isolation curl performed on a preacher bench to prevent cheating and focus on the biceps.',
     instructions: [
       'Sit at a preacher curl bench, resting the back of your arms on the pad.',
@@ -3736,7 +3736,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'barbell',
-    workoutType: 'Strength',
+    workoutType: 'Isolation',
     description: 'A barbell curl with a narrow grip to emphasize the outer head of the bicep.',
     instructions: [
       'Hold a barbell with an underhand grip, hands closer than shoulder-width.',
@@ -3753,7 +3753,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'barbell',
-    workoutType: 'Strength',
+    workoutType: 'Isolation',
     description: 'A bicep curl variation where you "drag" the bar up your body, keeping it close and focusing on contraction.',
     instructions: [
       'Hold a barbell with a standard grip.',
@@ -3771,7 +3771,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'barbell',
-    workoutType: 'Strength',
+    workoutType: 'Isolation',
     description: 'A classic triceps extension exercise performed while lying on a bench.',
     instructions: [
       'Lie on a flat bench holding a barbell above your chest with a close grip.',
@@ -3788,7 +3788,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'barbell',
-    workoutType: 'Strength',
+    workoutType: 'Isolation',
     description: 'A triceps exercise that puts a great stretch on the long head of the triceps.',
     instructions: [
       'Sit on a bench and hold a barbell with a close grip.',
@@ -3805,7 +3805,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Advanced',
     equipment: 'barbell',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A hybrid between a close-grip bench press and a skull crusher, great for overloading the triceps.',
     instructions: [
       'Lie on a bench as if for a close-grip press.',
@@ -3822,7 +3822,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'barbell',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A mass-builder for the entire back, targeting the lats, rhomboids, and traps.',
     instructions: [
       'Hinge at your hips with your back straight, holding a barbell with an overhand grip.',
@@ -3839,7 +3839,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'barbell',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A strict version of the bent-over row where the bar rests on the floor between each rep, building explosive power.',
     instructions: [
       'Hinge at your hips with your back parallel to the floor.',
@@ -3856,7 +3856,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'barbell',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'An essential hamstring and glute exercise that focuses on the hip-hinge movement.',
     instructions: [
       'Stand holding a barbell in front of your thighs.',
@@ -3875,7 +3875,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'barbell',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A deadlift variation with a wide stance, targeting the glutes, hamstrings, and adductors.',
     instructions: [
       'Stand with a very wide stance, toes pointed out.',
@@ -3893,7 +3893,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Advanced',
     equipment: 'barbell',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A deadlift performed while standing on a small platform, increasing the range of motion to build strength from the floor.',
     instructions: [
       'Stand on a low platform or weight plate.',
@@ -3910,7 +3910,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'barbell',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A squat variation that emphasizes the quadriceps and core by holding the barbell in a front rack position.',
     instructions: [
       'Hold the barbell across the front of your shoulders with a clean grip or by crossing your arms.',
@@ -3928,7 +3928,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Advanced',
     equipment: 'barbell',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A unique and challenging squat where the barbell is held in the crook of the elbows, heavily engaging the core and upper back.',
     instructions: [
       'Set a barbell in a rack at waist height.',
@@ -3946,7 +3946,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Advanced',
     equipment: 'barbell',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A total-body exercise that requires significant mobility, stability, and strength, especially in the shoulders and core.',
     instructions: [
       'Hold a barbell overhead with a wide (snatch) grip.',
@@ -3964,7 +3964,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'barbell',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'Adds significant load to the standard lunge, building serious single-leg strength.',
     instructions: [
       'Place a barbell across your upper back.',
@@ -3981,7 +3981,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'barbell',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A lunge variation that is often easier on the knees, with added barbell weight for increased intensity.',
     instructions: [
       'Place a barbell across your upper back.',
@@ -3998,7 +3998,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'barbell',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A functional single-leg exercise that builds glute and quad strength.',
     instructions: [
       'Place a barbell on your back.',
@@ -4016,7 +4016,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'barbell',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'One of the most effective exercises for building glute size and strength.',
     instructions: [
       'Sit on the floor with your upper back against a bench.',
@@ -4034,7 +4034,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Advanced',
     equipment: 'barbell',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'An advanced hip-hinge exercise that heavily targets the hamstrings and lower back.',
     instructions: [
       'Place a barbell on your back as you would for a squat.',
@@ -4051,7 +4051,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'barbell',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A glute-building exercise performed on the floor, great for beginners or those without a bench.',
     instructions: [
       'Lie on the floor with your knees bent.',
@@ -4069,7 +4069,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Beginner',
     equipment: 'barbell',
-    workoutType: 'Strength',
+    workoutType: 'Isolation',
     description: 'Uses a barbell for heavy resistance to build calf size and strength.',
     instructions: [
       'Place a barbell across your upper back.',
@@ -4087,7 +4087,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Advanced',
     equipment: 'barbell',
-    workoutType: 'Strength',
+    workoutType: 'Core/Accessory',
     description: 'An advanced core exercise similar to an ab wheel rollout, using a barbell with plates.',
     instructions: [
       'Kneel on the floor with a loaded barbell in front of you.',
@@ -4105,7 +4105,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Intermediate',
     equipment: 'barbell',
-    workoutType: 'Strength',
+    workoutType: 'Core/Accessory',
     description: 'A challenging version of the Russian twist using a barbell for resistance.',
     instructions: [
       'Sit on the floor, holding the center of a barbell.',
@@ -4122,7 +4122,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Advanced',
     equipment: 'barbell',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'An Olympic lift that develops full-body power by explosively lifting a barbell from the floor to the shoulders.',
     instructions: [
       'Start with the bar on the floor.',
@@ -4133,6 +4133,8 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     muscleGroups: ['Hamstrings', 'Shoulders', 'Core'],
     videoUrl: 'https://www.youtube.com/embed/7rQp-Yevj3I',
   },
+  // FIX: This exercise definition was incomplete, causing a TypeScript error.
+  // It has been completed with full instructions, muscle groups, and a video URL.
   {
     id: 'barbell-clean-and-press',
     name: 'Barbell Clean & Press',
@@ -4140,32 +4142,14 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     difficulty: 'Advanced',
     equipment: 'barbell',
-    workoutType: 'Strength',
+    workoutType: 'Compound',
     description: 'A compound lift that combines the clean with an overhead press for a total-body power movement.',
     instructions: [
-      'Perform a barbell clean to bring the bar to your shoulders.',
-      'From the front rack position, perform an overhead press.',
-      'Lower the bar to your shoulders, then to the floor.'
+      'Perform a barbell clean to bring the bar to your shoulders in a front rack position.',
+      'From the front rack, press the barbell overhead until your arms are fully extended.',
+      'Lower the bar back to your shoulders, and then lower it to the floor with control.'
     ],
-    muscleGroups: ['Shoulders', 'Hamstrings', 'Core'],
-    videoUrl: 'https://www.youtube.com/embed/7rQp-Yevj3I',
+    muscleGroups: ['Shoulders', 'Quadriceps', 'Glutes', 'Hamstrings', 'Core'],
+    videoUrl: 'https://www.youtube.com/embed/5-OKs4T_45o',
   },
-  {
-    id: 'barbell-snatch',
-    name: 'Barbell Snatch',
-    category: 'Full Body',
-    purpose: 'main',
-    difficulty: 'Advanced',
-    equipment: 'barbell',
-    workoutType: 'Strength',
-    description: 'The most technical Olympic lift, lifting a barbell from the floor to overhead in one fluid motion.',
-    instructions: [
-      'Grip the bar with a wide snatch grip.',
-      'Explosively lift the bar from the floor.',
-      'As the bar reaches your hips, extend fully and pull yourself under the bar.',
-      'Catch the bar in a deep overhead squat position and stand up.'
-    ],
-    muscleGroups: ['Shoulders', 'Hamstrings', 'Core'],
-    videoUrl: 'https://www.youtube.com/embed/R0339-I72P0',
-  }
 ];

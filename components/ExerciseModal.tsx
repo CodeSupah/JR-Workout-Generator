@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Exercise, ExerciseDetails, WorkoutPreferences, SkillLevel, Equipment } from '../types';
+import { Exercise, ExerciseDetails, WorkoutPreferences, SkillLevel, Equipment, WorkoutType } from '../types';
 import { EXERCISE_DATABASE } from '../data/exerciseDatabase';
 import { SparklesIcon, DumbbellIcon, RunIcon } from './icons/Icons';
 
@@ -11,17 +11,20 @@ type ExerciseModalProps = {
   exerciseToEdit?: Exercise;
   purposeFilter?: 'warmup' | 'cooldown' | 'main';
   originalPreferences?: WorkoutPreferences | null;
+  defaultRest?: number;
 };
 
-const ExerciseModal: React.FC<ExerciseModalProps> = ({ isOpen, onClose, onSelectExercise, mode, exerciseToEdit, purposeFilter, originalPreferences }) => {
+const ExerciseModal: React.FC<ExerciseModalProps> = ({ isOpen, onClose, onSelectExercise, mode, exerciseToEdit, purposeFilter, originalPreferences, defaultRest = 15 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDifficulties, setSelectedDifficulties] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<'equipment' | 'muscleGroup' | null>(null);
   const [selectedEquipment, setSelectedEquipment] = useState<string[]>([]);
   const [selectedMuscleGroup, setSelectedMuscleGroup] = useState('All Muscles');
+  const [selectedWorkoutTypes, setSelectedWorkoutTypes] = useState<string[]>([]);
 
 
   const availableDifficulties = useMemo(() => ['Beginner', 'Intermediate', 'Advanced'], []);
+  const availableWorkoutTypes = useMemo<WorkoutType[]>(() => ['Compound', 'Isolation', 'Cardio/HIIT', 'Mobility/Stretch', 'Core/Accessory'], []);
   
   const availableEquipment = useMemo(() => {
     const equipmentSet = new Set(
@@ -125,6 +128,7 @@ const ExerciseModal: React.FC<ExerciseModalProps> = ({ isOpen, onClose, onSelect
           setSelectedEquipment([]);
           setSelectedMuscleGroup('All Muscles');
           setSelectedDifficulties([]);
+          setSelectedWorkoutTypes([]);
       }
   };
 
@@ -144,6 +148,9 @@ const ExerciseModal: React.FC<ExerciseModalProps> = ({ isOpen, onClose, onSelect
   
       const difficultyMatch = selectedDifficulties.length === 0 || selectedDifficulties.includes(ex.difficulty);
       if (!difficultyMatch) return false;
+
+      const workoutTypeMatch = selectedWorkoutTypes.length === 0 || selectedWorkoutTypes.includes(ex.workoutType);
+      if (!workoutTypeMatch) return false;
   
       if (viewMode === 'equipment') {
         return (
@@ -167,7 +174,7 @@ const ExerciseModal: React.FC<ExerciseModalProps> = ({ isOpen, onClose, onSelect
       }
       return true;
     });
-  }, [purposeFilter, searchTerm, selectedDifficulties, selectedEquipment, selectedMuscleGroup, viewMode]);
+  }, [purposeFilter, searchTerm, selectedDifficulties, selectedEquipment, selectedMuscleGroup, viewMode, selectedWorkoutTypes]);
 
   const categorizedSuggestions = useMemo(() => {
     const grouped: { [key: string]: ExerciseDetails[] } = {};
@@ -234,7 +241,7 @@ const ExerciseModal: React.FC<ExerciseModalProps> = ({ isOpen, onClose, onSelect
     const fullExerciseData: Omit<Exercise, 'id' | 'status'> = {
         exercise: selectedExercise.name,
         duration: 45, // Default for new exercises
-        rest: 15, // Default for new exercises
+        rest: defaultRest, // Default for new exercises
         equipment: selectedExercise.equipment,
         difficulty: difficultyMap[selectedExercise.difficulty],
     };
@@ -326,6 +333,14 @@ const ExerciseModal: React.FC<ExerciseModalProps> = ({ isOpen, onClose, onSelect
                             <div className="flex flex-wrap gap-2">
                                 {availableDifficulties.map(diff => (
                                     <FilterButton key={diff} label={diff} isSelected={selectedDifficulties.includes(diff)} onClick={() => handleToggleFilter(setSelectedDifficulties, diff)} />
+                                ))}
+                            </div>
+                        </div>
+                        <div>
+                            <h4 className="font-semibold text-gray-400 mb-2 text-xs">Workout Type</h4>
+                            <div className="flex flex-wrap gap-2">
+                                {availableWorkoutTypes.map(type => (
+                                    <FilterButton key={type} label={type} isSelected={selectedWorkoutTypes.includes(type)} onClick={() => handleToggleFilter(setSelectedWorkoutTypes, type)} />
                                 ))}
                             </div>
                         </div>
