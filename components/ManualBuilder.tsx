@@ -12,9 +12,15 @@ import ExerciseCard from './ExerciseCard';
 import ExerciseModal from './ExerciseModal';
 import StepperInput from './StepperInput';
 import WorkoutPreferencesModal from './WorkoutPreferencesModal';
+import ExerciseDetailModal from './ExerciseDetailModal';
 
 
 type WorkoutSectionType = 'warmUp' | 'rounds' | 'coolDown';
+
+const exerciseIdMap = new Map<string, string>();
+EXERCISE_DATABASE.forEach(ex => {
+  exerciseIdMap.set(ex.name, ex.id);
+});
 
 const FilterButton: React.FC<{ label: string; isSelected: boolean; onClick: () => void; }> = ({ label, isSelected, onClick }) => (
     <button
@@ -186,17 +192,19 @@ const ManualBuilder: React.FC = () => {
   const [modalState, setModalState] = useState<{ mode: 'add' | 'replace'; section: WorkoutSectionType, exerciseToEdit?: Exercise, index?: number, intoGroup?: boolean } | null>(null);
   const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
   const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [detailModalExerciseId, setDetailModalExerciseId] = useState<string | null>(null);
+  const [expandedExerciseId, setExpandedExerciseId] = useState<string | null>(null);
+  const [dragOverGroupId, setDragOverGroupId] = useState<string | null>(null);
+
   
   const dragItem = useRef<{index: number, section: WorkoutSectionType} | null>(null);
   const [dragOverInfo, setDragOverInfo] = useState<{index: number; section: WorkoutSectionType} | null>(null);
 
-  // --- Refs for Touch Drag & Drop ---
   const touchStartY = useRef(0);
   const isDragging = useRef(false);
 
 
   useEffect(() => {
-    // Only initialize if the plan is empty, to avoid resetting on re-renders
     if (!editor.plan) {
         editor.setExercises({
           id: crypto.randomUUID(),
@@ -217,6 +225,19 @@ const ManualBuilder: React.FC = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if ((event.target as HTMLElement).closest('[data-exercise-card]')) return;
+      setExpandedExerciseId(null);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleToggleExpand = (id: string) => {
+    setExpandedExerciseId(currentId => (currentId === id ? null : id));
+  };
 
   const handleAddSuggestedExercise = (type: 'warmup' | 'cooldown') => {
     const exercise = getSingleSuggestedExercise(type);
@@ -262,7 +283,6 @@ const ManualBuilder: React.FC = () => {
     if (modalState.mode === 'add') {
       editor.addExercise(exerciseData, modalState.section, { index: modalState.index, intoGroup: modalState.intoGroup });
     } else if (modalState.mode === 'replace' && modalState.exerciseToEdit) {
-      // Preserve key settings from the original exercise during a swap
       const updatedData = {
           ...exerciseData,
           sets: modalState.exerciseToEdit.sets,
@@ -292,6 +312,7 @@ const ManualBuilder: React.FC = () => {
   const handleDragEnd = () => {
     setDraggingId(null);
     dragItem.current = null;
+    setDragOverGroupId(null);
   }
 
   const handleDrop = (e: React.DragEvent, dropIndex: number, dropSection: WorkoutSectionType) => {
@@ -300,7 +321,6 @@ const ManualBuilder: React.FC = () => {
     setDragOverInfo(null);
     if (!dragItem.current) return;
     
-    // Prevent dropping on itself
     if (dragItem.current.section === dropSection && dragItem.current.index === dropIndex) {
         dragItem.current = null;
         return;
@@ -345,17 +365,15 @@ const ManualBuilder: React.FC = () => {
     if (!modalState) return 'main';
 
     if (modalState.mode === 'replace') {
-        return undefined; // Allow replacing with ANY exercise from the full library.
+        return undefined;
     }
 
-    // Determine purpose for adding an exercise (if this modal were used for it)
     if (modalState.section === 'warmUp') return 'warmup';
     if (modalState.section === 'coolDown') return 'cooldown';
     
     return 'main';
   }, [modalState]);
 
-  // --- Touch Handlers ---
   const handleTouchStart = useCallback((e: React.TouchEvent, index: number, section: WorkoutSectionType) => {
     const handle = (e.target as HTMLElement).closest('[data-drag-handle]');
     if (handle && editor.plan) {
@@ -370,7 +388,6 @@ const ManualBuilder: React.FC = () => {
     if (!isDragging.current) return;
 
     const currentY = e.touches[0].clientY;
-    // Only prevent scroll if user has moved more than a small threshold vertically
     if (Math.abs(currentY - touchStartY.current) > 10) {
         e.preventDefault();
 
@@ -397,7 +414,6 @@ const ManualBuilder: React.FC = () => {
     if (isDragging.current && dragItem.current && dragOverInfo) {
         editor.moveExercise(dragItem.current, dragOverInfo);
     }
-    // Cleanup
     isDragging.current = false;
     dragItem.current = null;
     setDragOverInfo(null);
@@ -457,11 +473,34 @@ const ManualBuilder: React.FC = () => {
                         const lastInGroup = groupExercises[groupExercises.length - 1];
                         const firstInGroup = groupExercises[0];
                         const originalIndex = exercises.indexOf(firstInGroup);
+                        const groupId = firstInGroup.id;
+                        const isDropZone = dragOverGroupId === groupId;
+                        const isDraggedItemInThisGroup = dragItem.current && groupExercises.some(ex => ex.id === editor.plan![dragItem.current!.section][dragItem.current!.index].id);
+
+                        const handleGroupDrop = (e: React.DragEvent) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setDragOverGroupId(null);
+                            if (!dragItem.current) return;
+                            const lastExerciseInGroupIndex = exercises.indexOf(lastInGroup);
+                            editor.moveExercise(dragItem.current, { index: lastExerciseInGroupIndex + 1, section: section });
+                        }
                         
                         return (
                             <div key={`group-${section}-${groupIndex}`}>
                                 {dragOverInfo?.section === section && dragOverInfo?.index === originalIndex && <div className="h-1.5 my-1 rounded-full bg-orange-500 animate-pulse" />}
-                                <div className="bg-gray-700/50 rounded-xl border border-gray-900/50">
+                                <div 
+                                    className={`relative bg-gray-700/50 rounded-xl border transition-all ${isDropZone ? 'border-2 border-blue-500' : 'border-gray-900/50'}`}
+                                    onDragEnter={(e) => { e.stopPropagation(); if (!isDraggedItemInThisGroup) setDragOverGroupId(groupId); }}
+                                    onDragLeave={(e) => { e.stopPropagation(); setDragOverGroupId(null); }}
+                                    onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                                    onDrop={handleGroupDrop}
+                                >
+                                     {isDropZone && (
+                                        <div className="absolute inset-0 flex items-center justify-center bg-blue-500/10 rounded-xl pointer-events-none z-10">
+                                            <p className="text-blue-300 font-bold">Drop to add to Superset</p>
+                                        </div>
+                                     )}
                                     <div className="p-3 border-b border-gray-900/50 flex flex-col sm:flex-row gap-4 items-center bg-gray-900/30 rounded-t-xl">
                                         <h4 className="text-sm font-bold text-orange-400">SUPERSET</h4>
                                         <div className="flex-1 w-full sm:w-auto form-group">
@@ -490,6 +529,8 @@ const ManualBuilder: React.FC = () => {
                                         <div key={ex.id} draggable onDragStart={(e) => handleDragStart(e, currentIndex, section)} onDragEnd={handleDragEnd} onDrop={(e) => handleDrop(e, currentIndex, section)} onDragEnter={() => setDragOverInfo({index: currentIndex, section: section})} onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverInfo({ index: currentIndex, section: section });}} onTouchStart={(e) => handleTouchStart(e, currentIndex, section)} data-draggable-item data-index={currentIndex} data-section={section}>
                                             <ExerciseCard
                                                 exercise={ex}
+                                                exerciseDbId={exerciseIdMap.get(ex.exercise)}
+                                                onShowDetails={setDetailModalExerciseId}
                                                 onUpdate={editor.updateExercise}
                                                 onDelete={editor.removeExercise}
                                                 onDuplicate={() => handleDuplicateExercise(ex, section, currentIndex)}
@@ -500,6 +541,8 @@ const ManualBuilder: React.FC = () => {
                                                 allowLinking={true}
                                                 isInGroup={true}
                                                 isDragging={draggingId === ex.id}
+                                                isExpanded={ex.id === expandedExerciseId}
+                                                onToggleExpand={handleToggleExpand}
                                             />
                                         </div>
                                     )})}
@@ -515,6 +558,8 @@ const ManualBuilder: React.FC = () => {
                                 <div draggable onDragStart={(e) => handleDragStart(e, originalIndex, section)} onDragEnd={handleDragEnd} onDrop={(e) => handleDrop(e, originalIndex, section)} onDragEnter={() => setDragOverInfo({ index: originalIndex, section: section })} onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverInfo({ index: originalIndex, section: section });}} onTouchStart={(e) => handleTouchStart(e, originalIndex, section)} data-draggable-item data-index={originalIndex} data-section={section}>
                                     <ExerciseCard
                                         exercise={exercise}
+                                        exerciseDbId={exerciseIdMap.get(exercise.exercise)}
+                                        onShowDetails={setDetailModalExerciseId}
                                         onUpdate={editor.updateExercise}
                                         onDelete={editor.removeExercise}
                                         onDuplicate={() => handleDuplicateExercise(exercise, section, originalIndex)}
@@ -525,6 +570,8 @@ const ManualBuilder: React.FC = () => {
                                         allowLinking={true}
                                         isInGroup={!!(exercise.sets && exercise.sets > 1)}
                                         isDragging={draggingId === exercise.id}
+                                        isExpanded={exercise.id === expandedExerciseId}
+                                        onToggleExpand={handleToggleExpand}
                                     />
                                 </div>
                             </div>
@@ -564,6 +611,7 @@ const ManualBuilder: React.FC = () => {
             purposeFilter={purpose}
             defaultRest={editor.preferences.universalRestDuration}
       />}
+      <ExerciseDetailModal isOpen={!!detailModalExerciseId} exerciseId={detailModalExerciseId} onClose={() => setDetailModalExerciseId(null)} />
       <div className="max-w-4xl mx-auto space-y-6 animate-fade-in pb-40" onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}>
         <div className="flex justify-between items-start">
             <div>

@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type } from '@google/genai';
-import { WorkoutPreferences, WorkoutPlan, Exercise, WorkoutMode, Equipment, ExerciseDifficulty } from '../types';
+import { WorkoutPreferences, WorkoutPlan, Exercise, WorkoutEnvironment, ExerciseDifficulty, WorkoutGoal } from '../types';
 import { EXERCISE_DATABASE } from '../data/exerciseDatabase';
 
 const API_KEY = process.env.API_KEY;
@@ -55,25 +55,18 @@ const workoutSchema = {
   required: ['warmUp', 'rounds', 'coolDown', 'estimatedCalories', 'difficultyScore', 'motivationalQuote'],
 };
 
-const getModeInstructions = (prefs: WorkoutPreferences): string => {
+const getEnvironmentInstructions = (prefs: WorkoutPreferences): string => {
     let baseInstruction = '';
-    switch (prefs.mode) {
-        case 'jump-rope':
-            baseInstruction = `Focus exclusively on jump rope exercises using the user's available ropes: '${prefs.equipment.join(', ')}'. Vary the types of jumps based on the skill level. If multiple ropes are available, create a mix of exercises using them. The 'equipment' for all exercises must be 'rope' or 'weighted-rope'.`;
+    switch (prefs.environment) {
+        case WorkoutEnvironment.Gym:
+            baseInstruction = `The user is at a 'Full Gym / Weights' environment. Create a varied workout using common gym equipment like barbells, dumbbells, kettlebells, cable machines, leg press, etc. The 'equipment' for these exercises must be one of the valid equipment types. Bodyweight exercises are also acceptable.`;
             break;
-        case 'equipment':
-             if (prefs.availableEquipment.includes('gym')) {
-                baseInstruction = `The user has access to a full gym. Create a varied workout using common gym equipment like barbells, dumbbells, kettlebells, cable machines, leg press, etc. The 'equipment' for these exercises must be one of the valid equipment types.`;
-             } else {
-                baseInstruction = `Create a workout using ONLY the following equipment: ${prefs.availableEquipment.join(', ')}. The 'equipment' for these exercises should be one of the user's available items.`;
-             }
+        case WorkoutEnvironment.HomeLimited:
+             baseInstruction = `The user is at home with limited equipment. You MUST create a workout using ONLY the following items: ${prefs.homeEquipment.join(', ')}. Bodyweight exercises are also allowed. The 'equipment' for each exercise must be 'bodyweight' or one of the user's available items. If 'Jump Rope' is available, you can include jump rope exercises as cardio intervals or main exercises.`;
             break;
-        case 'no-equipment':
-            baseInstruction = "Design a workout using only bodyweight exercises. The 'equipment' for all exercises must be 'bodyweight'.";
+        case WorkoutEnvironment.HomeBodyweight:
+            baseInstruction = "The user is at 'Home Bodyweight Only'. Design a workout using exclusively bodyweight exercises. The 'equipment' for all exercises MUST be 'bodyweight'.";
             break;
-    }
-    if (prefs.includeJumpRopeIntervals && (prefs.mode === 'equipment' || prefs.mode === 'no-equipment')) {
-        baseInstruction += " **Crucial Instruction:** Intersperse short (30-60 second) jump rope exercises (using 'rope' as equipment) between every 1-2 main exercises. These act as cardio bursts."
     }
     return baseInstruction;
 }
@@ -98,46 +91,28 @@ export const generateWorkoutPlan = async (prefs: WorkoutPreferences): Promise<Wo
     .join(', ');
 
   let mainExercises: string[];
+  const userHomeEquipment = prefs.homeEquipment.map(e => e.toLowerCase().replace(/ /g, '-'));
 
-  const ropeTypeToEquipmentMap: { [key in Equipment]: 'rope' | 'weighted-rope' } = {
-      [Equipment.Regular]: 'rope',
-      [Equipment.Speed]: 'rope',
-      [Equipment.Weighted]: 'weighted-rope',
-  };
-  const availableRopeEquipment = [...new Set(prefs.equipment.map(r => ropeTypeToEquipmentMap[r]))];
-  const userEquipmentLower = prefs.availableEquipment.map(e => e.toLowerCase().replace(/ /g, '-'));
-
-  switch (prefs.mode) {
-      case 'jump-rope':
+  switch (prefs.environment) {
+      case WorkoutEnvironment.Gym:
+          const gymEquipmentTypes = ['dumbbell', 'resistance-band', 'kettlebell', 'barbell', 'cable-machine', 'leg-press-machine', 'pull-up-bar'];
           mainExercises = EXERCISE_DATABASE
-              .filter(ex => ex.purpose === 'main' && availableRopeEquipment.includes(ex.equipment as any))
+              .filter(ex => ex.purpose === 'main' && (gymEquipmentTypes.includes(ex.equipment) || ex.equipment === 'bodyweight' || ['rope', 'weighted-rope'].includes(ex.equipment)))
               .map(ex => ex.name);
           break;
-      case 'equipment':
-          const gymEquipmentTypes = ['dumbbell', 'resistance-band', 'kettlebell', 'barbell', 'cable-machine', 'leg-press-machine'];
-          if (userEquipmentLower.includes('gym')) {
-              mainExercises = EXERCISE_DATABASE
-                  .filter(ex => ex.purpose === 'main' && (gymEquipmentTypes.includes(ex.equipment) || ex.equipment === 'bodyweight'))
-                  .map(ex => ex.name);
-          } else {
-              mainExercises = EXERCISE_DATABASE
-                  .filter(ex => ex.purpose === 'main' && (userEquipmentLower.includes(ex.equipment) || ex.equipment === 'bodyweight'))
-                  .map(ex => ex.name);
-          }
+      case WorkoutEnvironment.HomeLimited:
+          const equipmentMap = { 'jump-rope': 'rope' };
+          const mappedHomeEquipment = userHomeEquipment.map(e => equipmentMap[e as keyof typeof equipmentMap] || e);
+          mainExercises = EXERCISE_DATABASE
+              .filter(ex => ex.purpose === 'main' && (mappedHomeEquipment.includes(ex.equipment) || ex.equipment === 'bodyweight'))
+              .map(ex => ex.name);
           break;
-      case 'no-equipment':
+      case WorkoutEnvironment.HomeBodyweight:
       default:
           mainExercises = EXERCISE_DATABASE
               .filter(ex => ex.purpose === 'main' && ex.equipment === 'bodyweight')
               .map(ex => ex.name);
           break;
-  }
-  
-  if (prefs.includeJumpRopeIntervals && (prefs.mode === 'equipment' || prefs.mode === 'no-equipment')) {
-      const ropeIntervalExercises = EXERCISE_DATABASE
-          .filter(ex => ex.purpose === 'main' && ex.equipment === 'rope')
-          .map(ex => ex.name);
-      mainExercises.push(...ropeIntervalExercises);
   }
 
   const availableMainExercises = [...new Set(mainExercises)].map(name => `'${name}'`).join(', ');
@@ -158,10 +133,8 @@ export const generateWorkoutPlan = async (prefs: WorkoutPreferences): Promise<Wo
     *Now, considering the strict time and rest constraints above, apply these user preferences:*
     - Skill Level: ${prefs.skillLevel}
     - Goal: ${prefs.goal}
-    - Workout Mode: ${prefs.mode}
-    - User's Jump Rope(s): ${prefs.equipment.join(', ')}
-    - User's Available Equipment: ${prefs.availableEquipment.join(', ')}
-    - Include Jump Rope Intervals: ${prefs.includeJumpRopeIntervals}
+    - Workout Environment: ${prefs.environment}
+    - User's Available Home Equipment: ${prefs.environment === WorkoutEnvironment.HomeLimited ? prefs.homeEquipment.join(', ') : 'N/A'}
     - Include Warm-up: ${prefs.includeWarmUp}
     - Include Cool-down: ${prefs.includeCoolDown}
     - Rest Between Exercises: ${prefs.defaultRestDuration} seconds (This is the value you MUST use for the 'rest' field in the 'rounds' array)
@@ -170,21 +143,30 @@ export const generateWorkoutPlan = async (prefs: WorkoutPreferences): Promise<Wo
     ---
 
     **RULE 2: WARM-UP & COOL-DOWN**
-    - If 'Include Warm-up' is 'true', provide a list of dynamic stretch exercises for the 'warmUp' array. The sum of the 'duration' property for all exercises in this array MUST EXACTLY equal ${warmUpMinutes * 60} seconds. The 'rest' property for all warm-up exercises MUST be 0. The 'warmUp' array MUST be empty if 'false'.
-    - If 'Include Cool-down' is 'true', provide a list of static stretch exercises for the 'coolDown' array. The sum of the 'duration' property for all exercises in this array MUST EXACTLY equal ${coolDownMinutes * 60} seconds. The 'rest' property for all cool-down exercises MUST be 0. The 'coolDown' array MUST be empty if 'false'.
+    - If 'Include Warm-up' is 'true', create a list of dynamic stretch exercises for the 'warmUp' array.
+        - The total duration (sum of all 'duration' fields) MUST EXACTLY equal ${warmUpMinutes * 60} seconds.
+        - Each individual exercise should have a 'duration' of approximately 60 seconds. This means you should generate ${warmUpMinutes} distinct exercises.
+        - The 'rest' property for all warm-up exercises MUST be 0.
+        - The 'warmUp' array MUST be empty if 'includeWarmUp' is false.
+    - If 'Include Cool-down' is 'true', create a list of static stretch exercises for the 'coolDown' array.
+        - The total duration (sum of all 'duration' fields) MUST EXACTLY equal ${coolDownMinutes * 60} seconds.
+        - Each individual exercise should have a 'duration' of approximately 60 seconds. This means you should generate ${coolDownMinutes} distinct exercises.
+        - The 'rest' property for all cool-down exercises MUST be 0.
+        - The 'coolDown' array MUST be empty if 'includeCoolDown' is false.
 
     **RULE 3: EXERCISE SELECTION & STRUCTURE**
-    - **Mode Logic:** ${getModeInstructions(prefs)}
+    - **Exercise Variety:** For the main 'rounds' circuit, include a good variety of exercises related to the user's goal, aiming for 4-6 different exercises. This makes the workout more engaging. You MUST still adhere to the strict total circuit time by adjusting the 'duration' of each exercise.
+    - **Environment Logic:** ${getEnvironmentInstructions(prefs)}
     - **Goal-Specific Exercises:**
-        - **Full Body:** Create a balanced, varied workout targeting all major muscle groups. This is the default, well-rounded option.
-        - **Cardio Endurance:** Prioritize High-Intensity Interval Training (HIIT). Emphasize longer work periods with shorter rest to build cardiovascular endurance and maximize calorie burn.
-        - **Power:** Focus on explosive movements. For jump rope, this means Double Unders or high-intensity bursts. For equipment/bodyweight, include exercises like Kettlebell Swings or Burpees.
-        - **Core Strength:** Integrate jump rope variations that engage the core (e.g., high knees, twists) and add core-focused bodyweight exercises like planks or leg raises.
-        - **Freestyle (for Jump Rope mode):** Provide a creative mix of skills, including Criss-Cross, Side Swings, and other tricks to encourage creativity and rhythm.
+        - **${WorkoutGoal.MuscleGain}:** Focus on exercises that allow for good mind-muscle connection. Structure the circuit to target complementary muscle groups.
+        - **${WorkoutGoal.StrengthPower}:** Prioritize compound movements and explosive exercises like jumps, swings, or fast concentric phases on lifts.
+        - **${WorkoutGoal.FatLoss}:** Emphasize high-intensity, full-body movements. Can use supersets or shorter rest within the circuit to keep heart rate up.
+        - **${WorkoutGoal.GeneralFitness}:** Create a balanced, varied workout targeting all major muscle groups for overall fitness.
+        - **${WorkoutGoal.RecoveryMobility}:** Focus on light, dynamic movements, and mobility drills. All exercises must be 'Easy' difficulty. Avoid high-impact or heavily-loaded exercises.
     - **Skill Level Adherence:**
         - **Beginner:** All exercises must be 'Easy'.
         - **Intermediate:** Exercises can be 'Easy' or 'Medium'.
-        - **Advanced:** Exercises can be 'Easy', 'Medium', or 'Hard'. Can include complex movements like Double Unders.
+        - **Advanced:** Exercises can be 'Easy', 'Medium', or 'Hard'. Can include complex movements.
     - **Prevent Repetition:** Do not use the exact same exercise back-to-back within the generated circuit.
 
     **RULE 4: AVAILABLE EXERCISES (MANDATORY)**
@@ -211,12 +193,10 @@ export const generateWorkoutPlan = async (prefs: WorkoutPreferences): Promise<Wo
     const jsonText = response.text.trim();
     const parsedPlan = JSON.parse(jsonText) as Partial<Omit<WorkoutPlan, 'id' | 'mode' | 'warmUpDuration' | 'coolDownDuration' | 'exercisesPerRound' | 'numberOfRounds'>>;
     
-    // FIX: Ensure required arrays exist to prevent crashes on .map or .length.
     parsedPlan.warmUp = parsedPlan.warmUp || [];
     parsedPlan.rounds = parsedPlan.rounds || [];
     parsedPlan.coolDown = parsedPlan.coolDown || [];
 
-    // FIX: Helper to safely capitalize difficulty and provide a default.
     const safeCapitalize = (difficulty: string | undefined): ExerciseDifficulty => {
         if (!difficulty) return 'Easy';
         return (difficulty.charAt(0).toUpperCase() + difficulty.slice(1)) as ExerciseDifficulty;
@@ -268,7 +248,7 @@ export const generateWorkoutPlan = async (prefs: WorkoutPreferences): Promise<Wo
     
     const workoutPlan: WorkoutPlan = {
       id: crypto.randomUUID(),
-      mode: prefs.mode,
+      mode: 'equipment', // Deprecated, but kept for compatibility
       warmUp: parsedPlan.warmUp,
       rounds: structuredRounds,
       coolDown: parsedPlan.coolDown,

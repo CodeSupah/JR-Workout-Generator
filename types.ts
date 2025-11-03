@@ -6,29 +6,29 @@ export enum SkillLevel {
   Advanced = 'Advanced',
 }
 
-export enum WorkoutGoal {
-  FullBody = 'Full Body',
-  CardioEndurance = 'Cardio Endurance',
-  Power = 'Power',
-  CoreStrength = 'Core Strength',
-  Freestyle = 'Freestyle',
+export enum WorkoutEnvironment {
+  Gym = 'Full Gym / Weights',
+  HomeBodyweight = 'Home Bodyweight Only',
+  HomeLimited = 'Home Limited Equipment',
 }
 
-export enum Equipment {
-  Regular = 'Regular Rope',
-  Weighted = 'Weighted Rope',
-  Speed = 'Speed Rope',
+export enum WorkoutGoal {
+    MuscleGain = 'Muscle Gain / Hypertrophy',
+    StrengthPower = 'Strength / Power',
+    FatLoss = 'Fat Loss / Conditioning',
+    GeneralFitness = 'General Fitness / Maintenance',
+    RecoveryMobility = 'Recovery / Mobility',
 }
+
+export type WorkoutMode = 'jump-rope' | 'equipment' | 'no-equipment';
 
 export interface WorkoutPreferences {
   duration: number;
   skillLevel: SkillLevel;
   goal: WorkoutGoal;
-  equipment: Equipment[]; // Can select multiple ropes
-  mode: WorkoutMode;
-  includeJumpRopeIntervals: boolean;
+  environment: WorkoutEnvironment;
+  homeEquipment: string[];
   rounds: number;
-  availableEquipment: string[];
   includeWarmUp: boolean;
   warmUpDuration: number;
   includeCoolDown: boolean;
@@ -39,16 +39,13 @@ export interface WorkoutPreferences {
 
 export interface EditorWorkoutPreferences {
   universalRestDuration: number;
-  defaultSetCount: number;
-  defaultRestAfterGroup: number;
   keepScreenAwake: boolean;
+  defaultSupersetRounds: number;
 }
 
 export type ExerciseDifficulty = 'Easy' | 'Medium' | 'Hard';
 
-export type ExerciseEquipment = 'bodyweight' | 'rope' | 'weighted-rope' | 'dumbbell' | 'resistance-band' | 'kettlebell' | 'barbell' | 'cable-machine' | 'leg-press-machine';
-
-export type WorkoutMode = 'jump-rope' | 'equipment' | 'no-equipment';
+export type ExerciseEquipment = 'bodyweight' | 'rope' | 'weighted-rope' | 'dumbbell' | 'resistance-band' | 'kettlebell' | 'barbell' | 'cable-machine' | 'leg-press-machine' | 'pull-up-bar';
 
 
 export interface Exercise {
@@ -75,7 +72,7 @@ export interface Exercise {
 export interface WorkoutPlan {
   id: string;
   name?: string;
-  mode: WorkoutMode;
+  mode: WorkoutMode; // Retained for compatibility with old saved workouts
   warmUp: Exercise[];
   warmUpDuration: number;
   rounds: Exercise[]; // For AI generator and flattened manual plans
@@ -165,6 +162,13 @@ export interface UserAchievementProgress {
 // Used for notifications when a new achievement is unlocked
 export type UnlockedAchievementInfo = AchievementTier & {
     icon: FC<{className?: string}>;
+};
+
+// Used for the dashboard achievement preview
+export type UnlockedAchievementInfoWithId = UnlockedAchievementInfo & {
+    id: string; // a unique id for react keys, e.g., `${achievementId}-${tier}`
+    unlockedAt: string; // ISO date string from UserAchievement
+    achievementTitle: string; // The title of the parent achievement, e.g., 'Workout Volume'
 };
 
 // --- User Profile Types ---

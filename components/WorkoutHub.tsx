@@ -6,16 +6,16 @@ import { loadCustomWorkouts, deleteCustomWorkout } from '../services/workoutServ
 import { generateWorkoutPlan } from '../services/geminiService';
 import { toastStore } from '../store/toastStore';
 import { profileStore } from '../store/profileStore';
-import { WorkoutPlan, WorkoutPreferences, SkillLevel, WorkoutGoal, Equipment, UserProfile } from '../types';
+import { WorkoutPlan, WorkoutPreferences, SkillLevel, WorkoutGoal, UserProfile, WorkoutEnvironment } from '../types';
 import { PROGRAM_CATEGORIES } from '../data/programs';
 import { PlusIcon, FolderOpenIcon, CogIcon, SparklesIcon } from './icons/Icons';
 
 const goalToTitleMap: Record<WorkoutGoal, string> = {
-    [WorkoutGoal.FullBody]: "Full Body Strength Builder",
-    [WorkoutGoal.CardioEndurance]: "Fat Burner HIIT Blast",
-    [WorkoutGoal.Power]: "Explosive Power Session",
-    [WorkoutGoal.CoreStrength]: "Quick Core & Cardio",
-    [WorkoutGoal.Freestyle]: "Freestyle Skills Flow",
+    [WorkoutGoal.MuscleGain]: "Muscle Gain Focus",
+    [WorkoutGoal.StrengthPower]: "Strength & Power",
+    [WorkoutGoal.FatLoss]: "Fat Loss & Conditioning",
+    [WorkoutGoal.GeneralFitness]: "General Fitness",
+    [WorkoutGoal.RecoveryMobility]: "Recovery & Mobility",
 };
 
 const WorkoutHub: React.FC = () => {
@@ -23,14 +23,12 @@ const WorkoutHub: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
     
-    // State for view management, now initialized based on navigation state
     const [view, setView] = useState<'hub' | 'generator'>(
         location.state?.autoShowGenerator ? 'generator' : 'hub'
     );
     const [isGeneratingSuggested, setIsGeneratingSuggested] = useState(false);
     const [suggestedWorkout, setSuggestedWorkout] = useState({ title: '', preferences: {} as Partial<WorkoutPreferences> });
 
-    // State for user profile and goal-based workouts
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [primaryGoalWorkout, setPrimaryGoalWorkout] = useState<{ title: string; preferences: Partial<WorkoutPreferences> } | null>(null);
     const [secondaryGoalWorkout, setSecondaryGoalWorkout] = useState<{ title: string; preferences: Partial<WorkoutPreferences> } | null>(null);
@@ -38,51 +36,48 @@ const WorkoutHub: React.FC = () => {
     const [isGeneratingSecondary, setIsGeneratingSecondary] = useState(false);
 
     useEffect(() => {
-        // If we were automatically shown the generator from another page,
-        // clear the location state so that a page refresh doesn't bring us back to the generator.
         if (location.state?.autoShowGenerator) {
             navigate(location.pathname, { replace: true, state: {} });
         }
     }, [location.state, location.pathname, navigate]);
 
     useEffect(() => {
-        // This will run once to set up the random suggested workout title and preferences
         const goals = Object.values(WorkoutGoal);
         const randomGoal = goals[Math.floor(Math.random() * goals.length)];
         const duration = [15, 20, 25][Math.floor(Math.random() * 3)];
         setSuggestedWorkout({
-            title: `Your Daily ${randomGoal} Jump`,
+            title: `Your Daily ${randomGoal} Focus`,
             preferences: {
                 duration,
                 skillLevel: SkillLevel.Intermediate,
                 goal: randomGoal,
-                equipment: [Equipment.Regular],
-                mode: 'jump-rope',
-                includeJumpRopeIntervals: false,
+                environment: WorkoutEnvironment.HomeLimited,
+                homeEquipment: ['Dumbbells', 'Jump Rope'],
                 rounds: 3,
-                availableEquipment: [],
                 includeWarmUp: true,
                 warmUpDuration: 3,
                 includeCoolDown: true,
                 coolDownDuration: 2,
+                // FIX: Added missing properties to conform to WorkoutPreferences type
+                defaultRestDuration: 60,
+                restBetweenRounds: 120,
             }
         });
     }, []);
 
     useEffect(() => {
-        // Subscribe to profile changes
         const unsubscribe = profileStore.subscribe(setProfile);
         return () => unsubscribe();
     }, []);
 
 
     const getComplementaryGoal = (primary: WorkoutGoal): WorkoutGoal => {
-        const map: Record<WorkoutGoal, WorkoutGoal> = {
-            [WorkoutGoal.FullBody]: WorkoutGoal.CardioEndurance,
-            [WorkoutGoal.CardioEndurance]: WorkoutGoal.CoreStrength,
-            [WorkoutGoal.Power]: WorkoutGoal.FullBody,
-            [WorkoutGoal.CoreStrength]: WorkoutGoal.CardioEndurance,
-            [WorkoutGoal.Freestyle]: WorkoutGoal.FullBody,
+        const map: Record<string, WorkoutGoal> = {
+            [WorkoutGoal.MuscleGain]: WorkoutGoal.FatLoss,
+            [WorkoutGoal.StrengthPower]: WorkoutGoal.GeneralFitness,
+            [WorkoutGoal.FatLoss]: WorkoutGoal.MuscleGain,
+            [WorkoutGoal.GeneralFitness]: WorkoutGoal.RecoveryMobility,
+            [WorkoutGoal.RecoveryMobility]: WorkoutGoal.GeneralFitness,
         };
         return map[primary];
     };
@@ -98,15 +93,16 @@ const WorkoutHub: React.FC = () => {
                     duration: 20,
                     skillLevel: SkillLevel.Intermediate,
                     goal: primaryGoal,
-                    equipment: [Equipment.Regular],
-                    mode: primaryGoal === WorkoutGoal.FullBody || primaryGoal === WorkoutGoal.Power ? 'equipment' : 'jump-rope',
-                    includeJumpRopeIntervals: true,
+                    environment: WorkoutEnvironment.Gym,
+                    homeEquipment: [],
                     rounds: 3,
-                    availableEquipment: ['Dumbbell'],
                     includeWarmUp: true,
                     warmUpDuration: 3,
                     includeCoolDown: true,
                     coolDownDuration: 2,
+                    // FIX: Added missing properties to conform to WorkoutPreferences type
+                    defaultRestDuration: 60,
+                    restBetweenRounds: 120,
                 }
             });
 
@@ -119,15 +115,16 @@ const WorkoutHub: React.FC = () => {
                     duration: 20,
                     skillLevel: SkillLevel.Intermediate,
                     goal: secondaryGoal,
-                    equipment: [Equipment.Regular],
-                    mode: 'no-equipment',
-                    includeJumpRopeIntervals: true,
+                    environment: WorkoutEnvironment.HomeBodyweight,
+                    homeEquipment: [],
                     rounds: 4,
-                    availableEquipment: [],
                     includeWarmUp: true,
                     warmUpDuration: 3,
                     includeCoolDown: true,
                     coolDownDuration: 2,
+                    // FIX: Added missing properties to conform to WorkoutPreferences type
+                    defaultRestDuration: 60,
+                    restBetweenRounds: 120,
                 }
             });
         }
@@ -140,7 +137,6 @@ const WorkoutHub: React.FC = () => {
     };
 
     useEffect(() => {
-        // Fetch routines when in hub view
         if (view === 'hub') {
             fetchRoutines();
         }
@@ -179,11 +175,6 @@ const WorkoutHub: React.FC = () => {
         }
     };
     
-    // Placeholder function
-    const handleCreateFolder = () => {
-        alert("Folder creation coming soon!");
-    };
-    
     const SuggestedWorkoutButton: React.FC<{
         onClick: () => void;
         disabled: boolean;
@@ -211,6 +202,12 @@ const WorkoutHub: React.FC = () => {
             )}
         </button>
     );
+
+    const placeholderRoutines: Partial<WorkoutPlan>[] = [
+        { id: 'p1', name: 'Full-Body Strength', rounds: Array(8).fill({ duration: 45, rest: 15 }) },
+        { id: 'p2', name: 'Morning Cardio', rounds: Array(10).fill({ duration: 50, rest: 10 }) },
+        { id: 'p3', name: 'Jump Rope HIIT', rounds: Array(12).fill({ duration: 30, rest: 30 }) },
+    ];
     
     if (view === 'generator') {
         return (
@@ -262,34 +259,37 @@ const WorkoutHub: React.FC = () => {
                 </div>
             </section>
             
-            <div className="relative my-12">
-                <div className="absolute inset-0 flex items-center" aria-hidden="true"><div className="w-full border-t border-gray-700" /></div>
-                <div className="relative flex justify-center"><span className="bg-gray-900 px-4 text-lg font-medium text-gray-400">Or</span></div>
-            </div>
-
-            {/* Section 2: Manual Builder */}
+            {/* Section 2: Workout Builder */}
             <section>
-                <h2 className="text-3xl font-bold mb-4">Manual Builder</h2>
-                <div className="bg-gray-800/50 p-6 rounded-2xl shadow-lg">
-                    <Link to="/manual-builder" className="block bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-6 rounded-lg text-lg text-center transition-transform transform hover:scale-105">
-                        Manual Workout Builder
+                <h2 className="text-3xl font-bold mb-4">Workout Builder</h2>
+                <div className="bg-gray-800/50 p-6 rounded-2xl shadow-lg flex flex-col sm:flex-row justify-between items-center gap-4">
+                    <p className="text-gray-400 text-sm max-w-md text-center sm:text-left">Build a workout from scratch, exercise by exercise, with full control over sets, reps, and supersets.</p>
+                    <Link to="/manual-builder" className="flex-shrink-0 w-full sm:w-auto flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg text-md transition-transform transform hover:scale-105">
+                        <PlusIcon className="w-5 h-5"/> Build Custom Workout
                     </Link>
-                    <p className="text-center text-gray-400 mt-3 text-sm">Build a workout from scratch, exercise by exercise.</p>
                 </div>
             </section>
-            
-            {/* Section 3: My Routines */}
+
+             {/* Section 3: Discover Workout Plans */}
+            <section>
+                <h2 className="text-3xl font-bold mb-4">Discover Workout Plans</h2>
+                <div className="flex overflow-x-auto space-x-3 py-2 -mx-6 px-6 scrollbar-hide">
+                    {PROGRAM_CATEGORIES.map(category => (
+                         <div key={category.name} className="flex-shrink-0 bg-gray-800 p-3 rounded-full shadow-lg flex items-center gap-2 hover:bg-gray-700/80 cursor-pointer transition-colors">
+                            <category.icon className={`w-5 h-5 ${category.color}`} />
+                            <span className="font-semibold text-white text-sm whitespace-nowrap">{category.name}</span>
+                        </div>
+                    ))}
+                </div>
+            </section>
+
+            {/* Section 4: My Routines */}
             <section>
                 <div className="flex justify-between items-center mb-4">
                     <h2 className="text-3xl font-bold">My Routines</h2>
-                    <div className="flex gap-2">
-                        <button onClick={handleCreateFolder} className="flex items-center gap-2 text-sm bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded-lg">
-                            <FolderOpenIcon className="w-4 h-4" /> Create Folder
-                        </button>
-                         <Link to="/manual-builder" className="flex items-center gap-2 text-sm bg-orange-500 hover:bg-orange-600 px-3 py-2 rounded-lg">
-                            <PlusIcon className="w-4 h-4" /> New Routine
-                        </Link>
-                    </div>
+                    <Link to="/manual-builder" className="flex items-center gap-2 text-sm bg-orange-500 hover:bg-orange-600 px-4 py-2 rounded-lg font-semibold text-white transition-colors transform hover:scale-105">
+                        <PlusIcon className="w-5 h-5" /> Build Custom Workout
+                    </Link>
                 </div>
                  <div className="bg-gray-800/50 p-6 rounded-2xl shadow-lg">
                     {routines.length > 0 ? (
@@ -304,26 +304,27 @@ const WorkoutHub: React.FC = () => {
                             ))}
                         </div>
                     ) : (
-                        <div className="text-center p-6">
-                            <p className="text-gray-400">You haven't saved any routines yet.</p>
-                            <p className="text-gray-400 mt-1">Generate a workout, customize it, and save it to find it here!</p>
-                        </div>
+                        <>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {placeholderRoutines.map(routine => (
+                                    <SavedRoutineCard
+                                        key={routine.id}
+                                        routine={routine}
+                                        onStart={() => {}}
+                                        onDelete={() => {}}
+                                        isPlaceholder={true}
+                                    />
+                                ))}
+                            </div>
+                             <div className="text-center p-6 mt-4">
+                                <p className="text-gray-400">Your library is empty! Generate a workout, perfect it, and save it here to build your personalized collection.</p>
+                            </div>
+                        </>
                     )}
                  </div>
             </section>
-
-            {/* Section 4: Explore Programs */}
-            <section>
-                <h2 className="text-3xl font-bold mb-4">Explore Programs</h2>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {PROGRAM_CATEGORIES.map(category => (
-                        <div key={category.name} className="bg-gray-800 p-4 rounded-xl shadow-lg flex flex-col items-center justify-center text-center gap-3 hover:bg-gray-700/80 cursor-pointer transition-colors">
-                            <category.icon className={`w-8 h-8 ${category.color}`} />
-                            <p className="font-semibold text-white text-sm">{category.name}</p>
-                        </div>
-                    ))}
-                </div>
-            </section>
+            
+            <style>{`.scrollbar-hide::-webkit-scrollbar { display: none; } .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }`}</style>
         </div>
     );
 };

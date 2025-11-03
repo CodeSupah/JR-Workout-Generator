@@ -12,23 +12,12 @@ const AchievementBadge: React.FC<AchievementBadgeProps> = ({ achievement, tier, 
   const isUnlocked = userProgress?.unlockedTiers.some(ut => ut.tier === tier.tier) || false;
   const currentProgress = userProgress?.currentProgress || 0;
   
-  const progressPercentage = Math.min((currentProgress / tier.goal) * 100, 100);
-
-  const tooltipContent = (
-    <div className="text-center">
-      <p className="font-bold">{tier.name}</p>
-      <p className="text-xs">{tier.description}</p>
-      {!isUnlocked && (
-        <p className="text-xs mt-1">
-          Progress: {currentProgress} / {tier.goal}
-        </p>
-      )}
-    </div>
-  );
+  const progressPercentage = tier.goal > 0 ? Math.min((currentProgress / tier.goal) * 100, 100) : 0;
   
   return (
-    <div className="relative group flex flex-col items-center gap-2 text-center">
-      <div className={`relative w-16 h-16 flex items-center justify-center rounded-full transition-all duration-300 ${isUnlocked ? 'bg-yellow-500/20' : 'bg-gray-700'}`}>
+    <div className="flex flex-col items-center text-center">
+      {/* Icon with progress ring */}
+      <div className={`relative w-16 h-16 flex-shrink-0 flex items-center justify-center rounded-full transition-all duration-300 ${isUnlocked ? 'bg-yellow-500/20' : 'bg-gray-700'}`}>
         <MedalIcon className={`w-10 h-10 ${isUnlocked ? 'text-yellow-400' : 'text-gray-500'}`} />
         {!isUnlocked && (
           <svg className="absolute w-full h-full" viewBox="0 0 36 36">
@@ -55,11 +44,16 @@ const AchievementBadge: React.FC<AchievementBadgeProps> = ({ achievement, tier, 
           </svg>
         )}
       </div>
-      <span className={`text-xs font-semibold ${isUnlocked ? 'text-white' : 'text-gray-400'}`}>{tier.name}</span>
-      {/* Tooltip */}
-      <div className="absolute bottom-full mb-2 w-48 p-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10">
-        {tooltipContent}
-        <svg className="absolute text-gray-900 h-2 w-full left-0 top-full" x="0px" y="0px" viewBox="0 0 255 255"><polygon className="fill-current" points="0,0 127.5,127.5 255,0"/></svg>
+
+      {/* Text content */}
+      <div className="mt-2 text-center">
+        <p className={`text-xs font-semibold ${isUnlocked ? 'text-white' : 'text-gray-400'}`}>{tier.name}</p>
+        <p className="text-[11px] text-gray-400 leading-tight mt-1">{tier.description}</p>
+        {!isUnlocked && (
+          <p className="text-xs font-mono text-gray-500 mt-1">
+            {currentProgress} / {tier.goal}
+          </p>
+        )}
       </div>
     </div>
   );

@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useWorkoutEditor } from '../hooks/useWorkoutEditor';
+import { EditorWorkoutPreferences } from '../types';
 import StepperInput from './StepperInput';
 import ToggleSwitch from './ToggleSwitch';
-import { toastStore } from '../store/toastStore';
 
 type WorkoutPreferencesModalProps = {
   isOpen: boolean;
@@ -11,9 +11,16 @@ type WorkoutPreferencesModalProps = {
 };
 
 const WorkoutPreferencesModal: React.FC<WorkoutPreferencesModalProps> = ({ isOpen, onClose, editor }) => {
-  const { preferences, updatePreferences, setGlobalRest } = editor;
-  const [localPrefs, setLocalPrefs] = useState(preferences);
-  const [bulkRest, setBulkRest] = useState(30);
+  const { preferences, updatePreferences } = editor;
+  // Initialize local state from the editor's preferences when the modal opens
+  const [localPrefs, setLocalPrefs] = useState<EditorWorkoutPreferences>(preferences);
+  
+  // Resync local state if the modal is reopened and editor prefs have changed
+  useEffect(() => {
+    if (isOpen) {
+      setLocalPrefs(preferences);
+    }
+  }, [isOpen, preferences]);
 
   if (!isOpen) return null;
 
@@ -22,13 +29,9 @@ const WorkoutPreferencesModal: React.FC<WorkoutPreferencesModalProps> = ({ isOpe
   };
 
   const handleSave = () => {
+    // This single call now handles saving defaults and applying all bulk actions to the current plan.
     updatePreferences(localPrefs);
     onClose();
-  };
-
-  const handleApplyBulkRest = () => {
-    setGlobalRest(bulkRest);
-    toastStore.addToast(`All existing exercises updated to ${bulkRest}s rest.`);
   };
 
   return (
@@ -39,46 +42,26 @@ const WorkoutPreferencesModal: React.FC<WorkoutPreferencesModalProps> = ({ isOpe
       >
         <div className="p-6 border-b border-gray-700 flex-shrink-0">
             <h2 className="text-xl font-bold">Workout Settings</h2>
-            <p className="text-sm text-gray-400">Manage defaults and bulk actions for this workout.</p>
+            <p className="text-sm text-gray-400">Manage defaults and apply changes to this workout.</p>
         </div>
         
         <div className="p-6 space-y-6 overflow-y-auto">
             {/* Defaults for New Items */}
             <div className="space-y-4">
-                <h3 className="font-semibold text-lg text-orange-400">Defaults for New Items</h3>
+                <h3 className="font-semibold text-lg text-orange-400">Defaults &amp; Bulk Actions</h3>
                 <div className="form-group">
-                    <label>Universal Rest Timer</label>
-                    <p className="text-xs text-gray-400 mb-2">Default rest duration (in seconds) for all newly added exercises.</p>
+                    <label>Default Rest Between Exercises</label>
+                    <p className="text-xs text-gray-400 mb-2">Applies to new exercises AND updates all existing exercises on save.</p>
                     <StepperInput value={localPrefs.universalRestDuration} onChange={v => handlePrefChange('universalRestDuration', v)} min={0} step={5} />
                 </div>
-                 <div className="form-group">
-                    <label>Default Set/Round Count</label>
-                    <p className="text-xs text-gray-400 mb-2">Default number of sets for a single exercise or rounds for a new superset.</p>
-                    <StepperInput value={localPrefs.defaultSetCount} onChange={v => handlePrefChange('defaultSetCount', v)} min={1} />
-                </div>
-                 <div className="form-group">
-                    <label>Default Rest After Group</label>
-                    <p className="text-xs text-gray-400 mb-2">Default rest time (in seconds) after a completed superset or circuit.</p>
-                    <StepperInput value={localPrefs.defaultRestAfterGroup} onChange={v => handlePrefChange('defaultRestAfterGroup', v)} min={0} step={15} />
+                <div className="form-group">
+                    <label>Default Superset Rounds</label>
+                    <p className="text-xs text-gray-400 mb-2">Applies to new groups AND updates all existing supersets/circuits on save.</p>
+                    <StepperInput value={localPrefs.defaultSupersetRounds} onChange={v => handlePrefChange('defaultSupersetRounds', v)} min={1} step={1} />
                 </div>
             </div>
 
-            {/* Bulk Actions */}
-            <div className="space-y-4">
-                <h3 className="font-semibold text-lg text-orange-400">Bulk Actions</h3>
-                <div className="form-group">
-                    <label>Apply Rest to All Existing Exercises</label>
-                    <p className="text-xs text-gray-400 mb-2">Override the rest period for every exercise currently in your plan.</p>
-                    <div className="flex gap-2">
-                        <div className="flex-1">
-                            <StepperInput value={bulkRest} onChange={setBulkRest} min={0} step={5} />
-                        </div>
-                        <button onClick={handleApplyBulkRest} className="px-4 py-2 rounded-md text-white bg-blue-600 hover:bg-blue-700 text-sm font-semibold">Apply</button>
-                    </div>
-                </div>
-            </div>
-            
-             {/* Device Settings */}
+            {/* Device Settings */}
             <div className="space-y-4">
                 <h3 className="font-semibold text-lg text-orange-400">Device Settings</h3>
                  <ToggleSwitch 
@@ -100,7 +83,7 @@ const WorkoutPreferencesModal: React.FC<WorkoutPreferencesModalProps> = ({ isOpe
             onClick={handleSave}
             className="py-2 px-4 rounded-md text-white bg-orange-600 hover:bg-orange-700 font-semibold"
           >
-            Save Preferences
+            Apply Settings
           </button>
         </div>
       </div>

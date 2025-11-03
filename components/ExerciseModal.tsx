@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Exercise, ExerciseDetails, WorkoutPreferences, SkillLevel, Equipment, WorkoutType } from '../types';
+import { Exercise, ExerciseDetails, WorkoutPreferences, SkillLevel, WorkoutType, WorkoutEnvironment } from '../types';
 import { EXERCISE_DATABASE } from '../data/exerciseDatabase';
 import { SparklesIcon, DumbbellIcon, RunIcon } from './icons/Icons';
 
@@ -79,31 +79,20 @@ const ExerciseModal: React.FC<ExerciseModalProps> = ({ isOpen, onClose, onSelect
         };
         if (!skillMap[prefs.skillLevel].includes(ex.difficulty)) return false;
 
-        const userEquipmentLower = prefs.availableEquipment.map(e => e.toLowerCase().replace(/ /g, '-'));
-        const ropeTypeToEquipmentMap: { [key in Equipment]: 'rope' | 'weighted-rope' } = {
-            [Equipment.Regular]: 'rope',
-            [Equipment.Speed]: 'rope',
-            [Equipment.Weighted]: 'weighted-rope',
-        };
-        const availableRopeEquipment = [...new Set(prefs.equipment.map(r => ropeTypeToEquipmentMap[r]))];
-
         let equipmentMatch = false;
-        switch (prefs.mode) {
-            case 'jump-rope':
-                if (availableRopeEquipment.includes(ex.equipment as any)) equipmentMatch = true;
+        switch (prefs.environment) {
+            case WorkoutEnvironment.Gym:
+                const gymEquipmentTypes = ['dumbbell', 'resistance-band', 'kettlebell', 'barbell', 'cable-machine', 'leg-press-machine', 'pull-up-bar', 'rope', 'weighted-rope'];
+                if (gymEquipmentTypes.includes(ex.equipment) || ex.equipment === 'bodyweight') equipmentMatch = true;
                 break;
-            case 'equipment':
-                const gymEquipmentTypes = ['dumbbell', 'resistance-band', 'kettlebell', 'barbell', 'cable-machine', 'leg-press-machine'];
-                if (userEquipmentLower.includes('gym')) {
-                    if (gymEquipmentTypes.includes(ex.equipment) || ex.equipment === 'bodyweight') equipmentMatch = true;
-                } else {
-                    if (userEquipmentLower.includes(ex.equipment) || ex.equipment === 'bodyweight') equipmentMatch = true;
-                }
-                if (prefs.includeJumpRopeIntervals && ex.equipment === 'rope') equipmentMatch = true;
+            case WorkoutEnvironment.HomeLimited:
+                const homeEquipmentLower = prefs.homeEquipment.map(e => e.toLowerCase().replace(/ /g, '-'));
+                 const equipmentMap = { 'jump-rope': 'rope' };
+                 const mappedHomeEquipment = homeEquipmentLower.map(e => equipmentMap[e as keyof typeof equipmentMap] || e);
+                if (mappedHomeEquipment.includes(ex.equipment) || ex.equipment === 'bodyweight') equipmentMatch = true;
                 break;
-            case 'no-equipment':
+            case WorkoutEnvironment.HomeBodyweight:
                 if (ex.equipment === 'bodyweight') equipmentMatch = true;
-                if (prefs.includeJumpRopeIntervals && ex.equipment === 'rope') equipmentMatch = true;
                 break;
         }
         if (!equipmentMatch) return false;
@@ -124,7 +113,7 @@ const ExerciseModal: React.FC<ExerciseModalProps> = ({ isOpen, onClose, onSelect
   const handleSetViewMode = (mode: 'equipment' | 'muscleGroup') => {
       if (viewMode !== mode) {
           setViewMode(mode);
-          setSearchTerm(''); // Fix: Reset search term on view change
+          setSearchTerm('');
           setSelectedEquipment([]);
           setSelectedMuscleGroup('All Muscles');
           setSelectedDifficulties([]);

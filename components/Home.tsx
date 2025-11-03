@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { WorkoutStats, WorkoutPlan, WorkoutGoal, SkillLevel, Equipment, Achievement, AchievementTier, WorkoutPreferences } from '../types';
+import { WorkoutStats, WorkoutPlan, WorkoutGoal, SkillLevel, Achievement, AchievementTier, WorkoutPreferences, WorkoutEnvironment } from '../types';
 import { getWorkoutStats, loadCustomWorkouts } from '../services/workoutService';
 import { getNextChallenge } from '../services/achievementService';
 import { generateWorkoutPlan } from '../services/geminiService';
@@ -67,26 +67,27 @@ const Home: React.FC = () => {
         else if (hours < 18) setGreeting('Good Afternoon');
         else setGreeting('Good Evening');
 
-        // Mock a suggested workout
+        // Create a suggested workout
         const goals = Object.values(WorkoutGoal);
         const randomGoal = goals[Math.floor(Math.random() * goals.length)];
         const duration = [15, 20, 25][Math.floor(Math.random() * 3)];
         setSuggestedWorkout({
-            title: `Your Daily ${randomGoal} Jump`,
+            title: `Your Daily ${randomGoal} Session`,
             duration,
             preferences: {
                 duration,
                 skillLevel: SkillLevel.Intermediate,
                 goal: randomGoal,
-                equipment: [Equipment.Regular],
-                mode: 'jump-rope',
-                includeJumpRopeIntervals: false,
+                environment: WorkoutEnvironment.HomeLimited,
+                homeEquipment: ['Dumbbells', 'Jump Rope'],
                 rounds: 3,
-                availableEquipment: [],
                 includeWarmUp: true,
                 warmUpDuration: 3,
                 includeCoolDown: true,
                 coolDownDuration: 2,
+                // FIX: Added missing properties to conform to WorkoutPreferences type
+                defaultRestDuration: 60,
+                restBetweenRounds: 120,
             }
         });
 

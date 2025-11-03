@@ -10,14 +10,14 @@ export const ACHIEVEMENTS: Achievement[] = [
     title: 'Workout Volume',
     icon: DumbbellIcon,
     tiers: [
-      { tier: 1, name: 'First Skip', description: 'Complete your first workout.', goal: 1 },
-      { tier: 2, name: 'Consistent Jumper', description: 'Complete 5 workouts.', goal: 5 },
-      { tier: 3, name: 'Jump Regular', description: 'Complete 10 workouts.', goal: 10 },
-      { tier: 4, name: 'Jump Master', description: 'Complete 25 workouts.', goal: 25 },
-      { tier: 5, name: 'Workout Warrior', description: 'Complete 50 workouts.', goal: 50 },
-      { tier: 6, name: 'Jump Legend', description: 'Complete 100 workouts.', goal: 100 },
-      { tier: 7, name: 'Centurion', description: 'Complete 250 workouts.', goal: 250 },
-      { tier: 8, name: 'Elite Skipper', description: 'Complete 500 workouts.', goal: 500 },
+      { tier: 1, name: 'Workout Starter', description: 'Complete your first workout.', goal: 1 },
+      { tier: 2, name: 'Five Finisher', description: 'Complete 5 workouts.', goal: 5 },
+      { tier: 3, name: 'Ten Timer', description: 'Complete 10 workouts.', goal: 10 },
+      { tier: 4, name: 'Reps Specialist', description: 'Complete 25 workouts.', goal: 25 },
+      { tier: 5, name: 'Half-Century Hitter', description: 'Complete 50 workouts.', goal: 50 },
+      { tier: 6, name: 'The Centurion', description: 'Complete 100 workouts.', goal: 100 },
+      { tier: 7, name: 'Silver Centurion', description: 'Complete 250 workouts.', goal: 250 },
+      { tier: 8, name: 'Workout Titan', description: 'Complete 500 workouts.', goal: 500 },
     ]
   },
   {
@@ -26,13 +26,13 @@ export const ACHIEVEMENTS: Achievement[] = [
     title: 'Total Time',
     icon: ClockIcon,
     tiers: [
-        { tier: 1, name: 'Minute Mover', description: 'Accumulate 15 total minutes of jumping.', goal: 15 },
-        { tier: 2, name: 'Half-Hour Hustler', description: 'Accumulate 30 total minutes of jumping.', goal: 30 },
-        { tier: 3, name: 'Hour Hoarder', description: 'Accumulate 1 hour (60 minutes) of jumping.', goal: 60 },
-        { tier: 4, name: 'Endurance Builder', description: 'Accumulate 5 hours (300 minutes) of jumping.', goal: 300 },
-        { tier: 5, name: 'Time Titan', description: 'Accumulate 10 hours (600 minutes) of jumping.', goal: 600 },
-        { tier: 6, name: 'Cardio King', description: 'Accumulate 25 hours (1500 minutes) of jumping.', goal: 1500 },
-        { tier: 7, name: 'Marathoner', description: 'Accumulate 50 hours (3000 minutes) of jumping.', goal: 3000 },
+        { tier: 1, name: 'Minute Mover', description: 'Log 15 total minutes of training.', goal: 15 },
+        { tier: 2, name: 'Half-Hour Hustler', description: 'Log 30 total minutes of training.', goal: 30 },
+        { tier: 3, name: 'Hour Hoarder', description: 'Log 1 hour (60 minutes) of training time.', goal: 60 },
+        { tier: 4, name: 'Endurance Builder', description: 'Log 5 hours (300 minutes) of training.', goal: 300 },
+        { tier: 5, name: 'Time Titan', description: 'Log 10 hours (600 minutes) of training.', goal: 600 },
+        { tier: 6, name: 'Endurance Engine', description: 'Log 25 hours (1500 minutes) of training.', goal: 1500 },
+        { tier: 7, name: 'Marathoner', description: 'Log 50 hours (3000 minutes) of training.', goal: 3000 },
     ]
   },
   {
@@ -43,10 +43,10 @@ export const ACHIEVEMENTS: Achievement[] = [
     tiers: [
         { tier: 1, name: 'Streak Starter', description: 'Complete a workout for 3 consecutive days.', goal: 3 },
         { tier: 2, name: 'Weekly Warrior', description: 'Complete a workout for 7 consecutive days.', goal: 7 },
-        { tier: 3, name: 'Fortnight Fire', description: 'Complete a workout for 14 consecutive days.', goal: 14 },
+        { tier: 3, name: 'Two Week Triumph', description: 'Complete a workout for 14 consecutive days.', goal: 14 },
         { tier: 4, name: 'Monthly Milestone', description: 'Complete a workout for 30 consecutive days.', goal: 30 },
-        { tier: 5, name: 'Two-Month Triumph', description: 'Complete a workout for 60 consecutive days.', goal: 60 },
-        { tier: 6, name: 'Quarterly Quest', description: 'Complete a workout for 90 consecutive days.', goal: 90 },
+        { tier: 5, name: 'Sixty Day Soldier', description: 'Complete a workout for 60 consecutive days.', goal: 60 },
+        { tier: 6, name: 'The 90 Day Club', description: 'Complete a workout for 90 consecutive days.', goal: 90 },
     ]
   },
   {

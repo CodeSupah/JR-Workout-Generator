@@ -1,12 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { SkillLevel, WorkoutGoal, Equipment, WorkoutPreferences, WorkoutPlan, Exercise, WorkoutMode } from '../types';
+import { SkillLevel, WorkoutGoal, WorkoutPreferences, WorkoutPlan, Exercise, WorkoutEnvironment } from '../types';
 import { generateWorkoutPlan } from '../services/geminiService';
-import { DumbbellIcon, FlameIcon, RunIcon, StarIcon, TargetIcon, ZapIcon, EditIcon, RopeIcon, SparklesIcon, CogIcon } from './icons/Icons';
+import { DumbbellIcon, FlameIcon, RunIcon, StarIcon, TargetIcon, ZapIcon, EditIcon, RopeIcon, SparklesIcon, CogIcon, BuildingOfficeIcon, HomeIcon, ChevronDownIcon, StretchIcon } from './icons/Icons';
 import { useWorkoutEditor } from '../hooks/useWorkoutEditor';
 import EditableWorkoutPlan from './EditableWorkoutPlan';
-import WorkoutModeToggle from './WorkoutModeToggle';
-import EquipmentSelector from './EquipmentSelector';
 import { toastStore } from '../store/toastStore';
 import StepperInput from './StepperInput';
 import ToggleSwitch from './ToggleSwitch';
@@ -24,18 +22,45 @@ const formatTime = (totalSeconds: number): string => {
   return `${minutes}m ${seconds}s`;
 };
 
+// New component for selecting available equipment in 'Home Limited' mode
+const HOME_EQUIPMENT_LIST = ['Dumbbells', 'Kettlebell', 'Resistance Bands', 'Jump Rope', 'Pull-up Bar'];
+
+const HomeEquipmentSelector: React.FC<{ selected: string[], onChange: (selected: string[]) => void }> = ({ selected, onChange }) => {
+  const handleToggle = (item: string) => {
+    onChange(selected.includes(item) ? selected.filter(i => i !== item) : [...selected, item]);
+  };
+
+  return (
+    <div className="space-y-2 animate-fade-in">
+      <label className="text-lg font-semibold">Available Equipment (Select all that apply)</label>
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+        {HOME_EQUIPMENT_LIST.map(item => (
+          <label key={item} className={`flex items-center gap-2 p-3 rounded-lg cursor-pointer transition-all ${selected.includes(item) ? 'bg-orange-500 text-white shadow-md' : 'bg-gray-700 hover:bg-gray-600'}`}>
+            <input
+              type="checkbox"
+              checked={selected.includes(item)}
+              onChange={() => handleToggle(item)}
+              className="w-4 h-4 rounded bg-gray-600 border-gray-500 text-orange-600 focus:ring-orange-500/50"
+            />
+            <span className="text-sm font-medium">{item}</span>
+          </label>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 
 const WorkoutGenerator: React.FC = () => {
-  const [preferences, setPreferences] = useState<Omit<WorkoutPreferences, 'mode' | 'includeJumpRopeIntervals' | 'rounds' | 'availableEquipment' | 'includeWarmUp' | 'warmUpDuration' | 'includeCoolDown' | 'coolDownDuration' | 'defaultRestDuration' | 'restBetweenRounds'>>({
-    duration: 15,
+  // Refactored state to align with new preference structure
+  const [preferences, setPreferences] = useState<{ duration: number; skillLevel: SkillLevel; goal: WorkoutGoal; }>({
+    duration: 20,
     skillLevel: SkillLevel.Beginner,
-    goal: WorkoutGoal.FullBody,
-    equipment: [Equipment.Regular],
+    goal: WorkoutGoal.GeneralFitness,
   });
-  const [mode, setMode] = useState<WorkoutMode>('jump-rope');
-  const [includeIntervals, setIncludeIntervals] = useState(false);
+  const [environment, setEnvironment] = useState<WorkoutEnvironment>(WorkoutEnvironment.Gym);
+  const [homeEquipment, setHomeEquipment] = useState<string[]>(['Dumbbells', 'Jump Rope']);
   const [rounds, setRounds] = useState(3);
-  const [availableEquipment, setAvailableEquipment] = useState<string[]>(['Dumbbell']);
   const [includeWarmUp, setIncludeWarmUp] = useState(true);
   const [warmUpDuration, setWarmUpDuration] = useState(3);
   const [includeCoolDown, setIncludeCoolDown] = useState(true);
@@ -53,36 +78,33 @@ const WorkoutGenerator: React.FC = () => {
   
   const editor = useWorkoutEditor();
   
-  const getFullPreferencesForSaving = () => ({
+  // Helper to gather all state into the full preferences object for saving
+  const getFullPreferencesForSaving = (): WorkoutPreferences => ({
       ...preferences,
-      mode,
-      includeJumpRopeIntervals: includeIntervals,
+      environment,
+      homeEquipment,
       rounds,
-      availableEquipment,
       includeWarmUp,
       warmUpDuration,
       includeCoolDown,
       coolDownDuration,
       defaultRestDuration,
       restBetweenRounds,
-      useGlobalExerciseRest,
-      useGlobalRoundRest,
   });
 
+  // Load preferences from localStorage on mount
   useEffect(() => {
     const savedPrefs = localStorage.getItem('workoutPreferences');
     if (savedPrefs) {
       const parsedPrefs = JSON.parse(savedPrefs);
       setPreferences({
-          duration: parsedPrefs.duration || 15,
+          duration: parsedPrefs.duration || 20,
           skillLevel: parsedPrefs.skillLevel || SkillLevel.Beginner,
-          goal: parsedPrefs.goal || WorkoutGoal.FullBody,
-          equipment: parsedPrefs.equipment || [Equipment.Regular],
+          goal: parsedPrefs.goal || WorkoutGoal.GeneralFitness,
       });
-      setMode(parsedPrefs.mode || 'jump-rope');
-      setIncludeIntervals(parsedPrefs.includeJumpRopeIntervals || false);
+      setEnvironment(parsedPrefs.environment || WorkoutEnvironment.Gym);
+      setHomeEquipment(parsedPrefs.homeEquipment || ['Dumbbells', 'Jump Rope']);
       setRounds(parsedPrefs.rounds || 3);
-      setAvailableEquipment(parsedPrefs.availableEquipment || ['Dumbbell']);
       setIncludeWarmUp(parsedPrefs.includeWarmUp !== undefined ? parsedPrefs.includeWarmUp : true);
       setWarmUpDuration(parsedPrefs.warmUpDuration || 3);
       setIncludeCoolDown(parsedPrefs.includeCoolDown !== undefined ? parsedPrefs.includeCoolDown : true);
@@ -94,13 +116,14 @@ const WorkoutGenerator: React.FC = () => {
     }
   }, []);
 
+  // Save preferences to localStorage whenever they change
   useEffect(() => {
     localStorage.setItem('workoutPreferences', JSON.stringify(getFullPreferencesForSaving()));
-  }, [preferences, mode, includeIntervals, rounds, availableEquipment, includeWarmUp, warmUpDuration, includeCoolDown, coolDownDuration, defaultRestDuration, restBetweenRounds, useGlobalExerciseRest, useGlobalRoundRest]);
+  }, [preferences, environment, homeEquipment, rounds, includeWarmUp, warmUpDuration, includeCoolDown, coolDownDuration, defaultRestDuration, restBetweenRounds, useGlobalExerciseRest, useGlobalRoundRest]);
 
 
+  // Load a suggested plan from sessionStorage if available
   useEffect(() => {
-    // Only run if no workout is currently being edited.
     if (!editor.plan) {
       const savedSuggestedPlan = sessionStorage.getItem('suggestedWorkoutPlan');
       if (savedSuggestedPlan) {
@@ -111,30 +134,24 @@ const WorkoutGenerator: React.FC = () => {
           if (date === today) {
             editor.setExercises(plan);
             
-            // Update the generator's form state to match the loaded plan's preferences
             setPreferences({
               duration: savedPrefs.duration,
               skillLevel: savedPrefs.skillLevel,
               goal: savedPrefs.goal,
-              equipment: savedPrefs.equipment,
             });
-            setMode(savedPrefs.mode);
-            setIncludeIntervals(savedPrefs.includeJumpRopeIntervals);
+            setEnvironment(savedPrefs.environment);
+            setHomeEquipment(savedPrefs.homeEquipment);
             setRounds(savedPrefs.rounds);
-            setAvailableEquipment(savedPrefs.availableEquipment);
             setIncludeWarmUp(savedPrefs.includeWarmUp);
             setWarmUpDuration(savedPrefs.warmUpDuration);
             setIncludeCoolDown(savedPrefs.includeCoolDown);
             setCoolDownDuration(savedPrefs.coolDownDuration);
             setDefaultRestDuration(savedPrefs.defaultRestDuration);
             setRestBetweenRounds(savedPrefs.restBetweenRounds);
-
-            // Set original preferences to prevent "Update Workout" button from being active immediately
             setOriginalPreferences(savedPrefs as WorkoutPreferences);
             
             setIsEditing(true);
           } else {
-            // Plan is from a previous day, remove it.
             sessionStorage.removeItem('suggestedWorkoutPlan');
           }
         } catch (e) {
@@ -143,15 +160,15 @@ const WorkoutGenerator: React.FC = () => {
         }
       }
     }
-  }, []); // Run only on mount.
+  }, []); 
 
 
+  // Gathers all state for AI generation, applying logic for global rest toggles
   const getFullPreferencesForGeneration = (): WorkoutPreferences => ({
       ...preferences,
-      mode,
-      includeJumpRopeIntervals: includeIntervals,
+      environment,
+      homeEquipment: environment === WorkoutEnvironment.HomeLimited ? homeEquipment : [],
       rounds,
-      availableEquipment,
       includeWarmUp,
       warmUpDuration,
       includeCoolDown,
@@ -163,27 +180,16 @@ const WorkoutGenerator: React.FC = () => {
   const hasChanges = useMemo(() => {
     if (!originalPreferences) return false;
     return JSON.stringify(getFullPreferencesForGeneration()) !== JSON.stringify(originalPreferences);
-  }, [preferences, mode, includeIntervals, rounds, availableEquipment, includeWarmUp, warmUpDuration, includeCoolDown, coolDownDuration, defaultRestDuration, restBetweenRounds, useGlobalExerciseRest, useGlobalRoundRest, originalPreferences]);
+  }, [preferences, environment, homeEquipment, rounds, includeWarmUp, warmUpDuration, includeCoolDown, coolDownDuration, defaultRestDuration, restBetweenRounds, useGlobalExerciseRest, useGlobalRoundRest, originalPreferences]);
 
 
-  const handlePreferenceChange = <K extends keyof Omit<WorkoutPreferences, 'mode' | 'includeJumpRopeIntervals' | 'rounds' | 'availableEquipment' | 'includeWarmUp' | 'warmUpDuration' | 'includeCoolDown' | 'coolDownDuration' | 'defaultRestDuration' | 'restBetweenRounds'>>(
+  const handlePreferenceChange = <K extends keyof typeof preferences>(
     key: K,
-    value: Omit<WorkoutPreferences, 'mode' | 'includeJumpRopeIntervals' | 'rounds' | 'availableEquipment' | 'includeWarmUp' | 'warmUpDuration' | 'includeCoolDown' | 'coolDownDuration' | 'defaultRestDuration' | 'restBetweenRounds'>[K]
+    value: (typeof preferences)[K]
   ) => {
     setPreferences(prev => ({ ...prev, [key]: value }));
   };
   
-  const handleRopeTypeChange = (rope: Equipment) => {
-      setPreferences(prev => {
-          const newEquipment = prev.equipment.includes(rope)
-            ? prev.equipment.filter(r => r !== rope)
-            : [...prev.equipment, rope];
-          // Ensure at least one rope is selected
-          if (newEquipment.length === 0) newEquipment.push(rope);
-          return { ...prev, equipment: newEquipment };
-      })
-  }
-
   const handleGenerate = async () => {
     setIsLoading(true);
     setError(null);
@@ -206,6 +212,12 @@ const WorkoutGenerator: React.FC = () => {
 
   const isUpdating = editor.plan && !isEditing;
   
+  const environmentOptions = [
+    { id: WorkoutEnvironment.Gym, label: 'Full Gym / Weights', icon: <BuildingOfficeIcon className="w-5 h-5" /> },
+    { id: WorkoutEnvironment.HomeLimited, label: 'Home Limited Equipment', icon: <HomeIcon className="w-5 h-5" /> },
+    { id: WorkoutEnvironment.HomeBodyweight, label: 'Home Bodyweight Only', icon: <RunIcon className="w-5 h-5" /> },
+  ];
+  
   return (
     <div className={`max-w-4xl mx-auto ${isEditing ? 'pb-40' : 'pb-28'}`}>
       <div className={`bg-gray-800/50 p-6 md:p-8 rounded-2xl shadow-2xl backdrop-blur-sm transition-all duration-500 ${isEditing ? 'mb-8' : ''}`}>
@@ -214,57 +226,113 @@ const WorkoutGenerator: React.FC = () => {
               <h2 className="text-3xl font-bold mb-1">Let's build your workout</h2>
               <p className="text-gray-400 mb-6">Customize your session and let AI do the rest.</p>
             </div>
-            {isEditing && (
-              <button onClick={() => setIsEditing(false)} className="flex items-center gap-2 text-sm bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded-lg">
-                <EditIcon className="w-4 h-4" />
-                Edit Preferences
-              </button>
-            )}
+            {/* The 'Regenerate' button has been moved to EditableWorkoutPlan for better UX context */}
         </div>
 
         {/* Hide form when editing to focus on the plan */}
         <div className={`${isEditing ? 'hidden' : 'animate-fade-in'}`}>
+            {/* REORDERED LAYOUT as per request */}
             <div className="space-y-6">
-                <WorkoutModeToggle selectedMode={mode} onModeChange={setMode} />
                 
-                {mode === 'jump-rope' && (
-                    <div className="space-y-2 animate-fade-in">
-                        <label className="text-lg font-semibold">Rope Type (select multiple)</label>
-                        <div className="grid grid-cols-3 gap-2">
-                        {(Object.values(Equipment)).map(equip => (
+                {/* 1. Workout Environment */}
+                <div>
+                  <label className="text-lg font-semibold mb-2 block">Workout Environment</label>
+                  <div className="grid grid-cols-3 gap-2 bg-gray-900/50 p-1 rounded-xl">
+                    {environmentOptions.map(env => (
+                      <button
+                        key={env.id}
+                        onClick={() => setEnvironment(env.id)}
+                        className={`flex flex-col sm:flex-row items-center justify-center gap-2 py-3 px-2 rounded-lg text-sm font-medium transition-all ${
+                          environment === env.id
+                            ? 'bg-orange-500 text-white shadow-md'
+                            : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
+                        }`}
+                      >
+                        {env.icon}
+                        <span className="text-xs sm:text-sm text-center sm:text-left">{env.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 2. Skill Level */}
+                <div className="space-y-2">
+                    <label className="text-lg font-semibold">Skill Level</label>
+                    <div className="grid grid-cols-3 gap-2">
+                    {(Object.values(SkillLevel)).map(level => (
+                        <button
+                        key={level}
+                        onClick={() => handlePreferenceChange('skillLevel', level)}
+                        className={`py-3 px-2 rounded-lg text-sm font-medium transition-all ${preferences.skillLevel === level ? 'bg-orange-500 text-white shadow-md' : 'bg-gray-700 hover:bg-gray-600'}`}
+                        >
+                        {level}
+                        </button>
+                    ))}
+                    </div>
+                </div>
+                
+                {/* 3. Primary Goal */}
+                <div className="space-y-2">
+                    <label className="text-lg font-semibold">Primary Goal</label>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+                    {(Object.values(WorkoutGoal)).map(goal => {
+                        const icons: {[key in WorkoutGoal]: React.ReactNode} = {
+                            [WorkoutGoal.MuscleGain]: <DumbbellIcon className="w-5 h-5"/>,
+                            [WorkoutGoal.StrengthPower]: <ZapIcon className="w-5 h-5"/>,
+                            [WorkoutGoal.FatLoss]: <FlameIcon className="w-5 h-5"/>,
+                            [WorkoutGoal.GeneralFitness]: <RunIcon className="w-5 h-5"/>,
+                            [WorkoutGoal.RecoveryMobility]: <StretchIcon className="w-5 h-5"/>,
+                        }
+                        return (
                             <button
-                            key={equip}
-                            onClick={() => handleRopeTypeChange(equip)}
-                            className={`py-3 px-2 rounded-lg text-sm font-medium transition-all ${preferences.equipment.includes(equip) ? 'bg-orange-500 text-white shadow-md' : 'bg-gray-700 hover:bg-gray-600'}`}
+                            key={goal}
+                            onClick={() => handlePreferenceChange('goal', goal)}
+                            className={`flex flex-col items-center justify-center gap-2 p-3 rounded-lg transition-all ${preferences.goal === goal ? 'bg-orange-500 text-white shadow-md' : 'bg-gray-700 hover:bg-gray-600'}`}
                             >
-                            {equip}
+                            {icons[goal]}
+                            <span className="text-xs font-semibold text-center">{goal}</span>
                             </button>
-                        ))}
-                        </div>
+                        )
+                    })}
                     </div>
-                )}
-                
-                {mode === 'equipment' && (
+                </div>
+
+                {/* 4. Conditional Equipment Selector */}
+                {environment === WorkoutEnvironment.HomeLimited && (
                     <div className="animate-fade-in">
-                        <EquipmentSelector selectedEquipment={availableEquipment} onChange={setAvailableEquipment} />
+                        <HomeEquipmentSelector selected={homeEquipment} onChange={setHomeEquipment} />
                     </div>
                 )}
-                
-                {(mode === 'equipment' || mode === 'no-equipment') && (
-                     <div className="bg-gray-900/50 p-4 rounded-lg flex items-center justify-between animate-fade-in">
-                        <div className="flex items-center gap-3">
-                            <RopeIcon className="w-6 h-6 text-orange-400" />
-                            <div>
-                                <label htmlFor="include-intervals" className="font-semibold text-white">Include Jump Rope Intervals</label>
-                                <p className="text-xs text-gray-400">Add cardio bursts between sets.</p>
-                            </div>
-                        </div>
-                        <label htmlFor="include-intervals" className="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" id="include-intervals" className="sr-only peer" checked={includeIntervals} onChange={(e) => setIncludeIntervals(e.target.checked)} />
-                            <div className="w-11 h-6 bg-gray-600 rounded-full peer peer-focus:ring-2 peer-focus:ring-orange-500/50 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
-                        </label>
-                    </div>
-                )}
+               
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* Duration Slider */}
+                <div className="space-y-2">
+                    <label className="text-lg font-semibold">Duration: <span className="text-orange-400">{preferences.duration} mins</span></label>
+                    <input
+                    type="range"
+                    min="5"
+                    max="60"
+                    step="5"
+                    value={preferences.duration}
+                    onChange={(e) => handlePreferenceChange('duration', parseInt(e.target.value))}
+                    className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer range-lg accent-orange-500"
+                    />
+                </div>
+
+                {/* Rounds Slider */}
+                <div className="space-y-2">
+                    <label className="text-lg font-semibold">Rounds / Circuits: <span className="text-orange-400">{rounds}</span></label>
+                    <input
+                    type="range"
+                    min="1"
+                    max="5"
+                    step="1"
+                    value={rounds}
+                    onChange={(e) => setRounds(parseInt(e.target.value))}
+                    className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer range-lg accent-orange-500"
+                    />
+                </div>
+                </div>
 
                 {/* Warm-up & Cool-down Settings */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -309,120 +377,55 @@ const WorkoutGenerator: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Rest Settings */}
-                <div className="bg-gray-900/50 p-4 rounded-lg animate-fade-in space-y-4">
-                    <h3 className="font-semibold text-white">Rest Settings</h3>
-                     <div className="space-y-2">
-                        <ToggleSwitch
-                            label="Global Rest Between Exercises"
-                            checked={useGlobalExerciseRest}
-                            onChange={setUseGlobalExerciseRest}
-                        />
-                        {useGlobalExerciseRest && (
-                            <div className="pl-4 border-l-2 border-gray-700 ml-2 animate-fade-in space-y-2">
-                                <label className="text-sm font-medium">Duration: <span className="text-orange-400">{formatTime(defaultRestDuration)}</span></label>
-                                <StepperInput
-                                    value={defaultRestDuration}
-                                    onChange={setDefaultRestDuration}
-                                    step={5}
-                                    min={0}
-                                    aria-label="Rest between exercises in seconds"
-                                />
-                            </div>
-                        )}
+                {/* Advanced Timing Settings (Collapsible) */}
+                <details className="bg-gray-900/50 p-4 rounded-lg animate-fade-in group">
+                    <summary className="font-semibold text-white cursor-pointer flex justify-between items-center list-none">
+                        Advanced Timing Settings
+                        <ChevronDownIcon className="w-5 h-5 transition-transform duration-300 transform group-open:rotate-180" />
+                    </summary>
+                    <div className="pt-4 mt-4 border-t border-gray-700/50 space-y-4">
+                         <div className="space-y-2">
+                            <ToggleSwitch
+                                label="Global Rest Between Exercises"
+                                description="Let AI decide if unchecked."
+                                checked={useGlobalExerciseRest}
+                                onChange={setUseGlobalExerciseRest}
+                            />
+                            {useGlobalExerciseRest && (
+                                <div className="pl-4 border-l-2 border-gray-700 ml-2 animate-fade-in space-y-2">
+                                    <label className="text-sm font-medium">Duration: <span className="text-orange-400">{formatTime(defaultRestDuration)}</span></label>
+                                    <StepperInput
+                                        value={defaultRestDuration}
+                                        onChange={setDefaultRestDuration}
+                                        step={5}
+                                        min={0}
+                                        aria-label="Rest between exercises in seconds"
+                                    />
+                                </div>
+                            )}
+                        </div>
+                         <div className="space-y-2">
+                            <ToggleSwitch
+                                label="Global Rest Between Rounds"
+                                checked={useGlobalRoundRest}
+                                onChange={setUseGlobalRoundRest}
+                            />
+                            {useGlobalRoundRest && (
+                                 <div className="pl-4 border-l-2 border-gray-700 ml-2 animate-fade-in space-y-2">
+                                    <label className="text-sm font-medium">Duration: <span className="text-orange-400">{formatTime(restBetweenRounds)}</span></label>
+                                    <StepperInput
+                                        value={restBetweenRounds}
+                                        onChange={setRestBetweenRounds}
+                                        step={15}
+                                        min={0}
+                                        aria-label="Rest between rounds in seconds"
+                                    />
+                                </div>
+                            )}
+                        </div>
                     </div>
-                     <div className="space-y-2">
-                        <ToggleSwitch
-                            label="Global Rest Between Rounds"
-                            checked={useGlobalRoundRest}
-                            onChange={setUseGlobalRoundRest}
-                        />
-                        {useGlobalRoundRest && (
-                             <div className="pl-4 border-l-2 border-gray-700 ml-2 animate-fade-in space-y-2">
-                                <label className="text-sm font-medium">Duration: <span className="text-orange-400">{formatTime(restBetweenRounds)}</span></label>
-                                <StepperInput
-                                    value={restBetweenRounds}
-                                    onChange={setRestBetweenRounds}
-                                    step={15}
-                                    min={0}
-                                    aria-label="Rest between rounds in seconds"
-                                />
-                            </div>
-                        )}
-                    </div>
-                </div>
-               
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* Duration Slider */}
-                <div className="space-y-2">
-                    <label className="text-lg font-semibold">Duration: <span className="text-orange-400">{preferences.duration} mins</span></label>
-                    <input
-                    type="range"
-                    min="5"
-                    max="60"
-                    step="5"
-                    value={preferences.duration}
-                    onChange={(e) => handlePreferenceChange('duration', parseInt(e.target.value))}
-                    className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer range-lg accent-orange-500"
-                    />
-                </div>
+                </details>
 
-                {/* Rounds Slider */}
-                <div className="space-y-2">
-                    <label className="text-lg font-semibold">Rounds / Sets: <span className="text-orange-400">{rounds}</span></label>
-                    <input
-                    type="range"
-                    min="1"
-                    max="5"
-                    step="1"
-                    value={rounds}
-                    onChange={(e) => setRounds(parseInt(e.target.value))}
-                    className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer range-lg accent-orange-500"
-                    />
-                </div>
-
-                {/* Skill Level */}
-                <div className="md:col-span-2 space-y-2">
-                    <label className="text-lg font-semibold">Skill Level</label>
-                    <div className="grid grid-cols-3 gap-2">
-                    {(Object.values(SkillLevel)).map(level => (
-                        <button
-                        key={level}
-                        onClick={() => handlePreferenceChange('skillLevel', level)}
-                        className={`py-3 px-2 rounded-lg text-sm font-medium transition-all ${preferences.skillLevel === level ? 'bg-orange-500 text-white shadow-md' : 'bg-gray-700 hover:bg-gray-600'}`}
-                        >
-                        {level}
-                        </button>
-                    ))}
-                    </div>
-                </div>
-                
-                {/* Goal */}
-                <div className="md:col-span-2 space-y-2">
-                    <label className="text-lg font-semibold">Primary Goal</label>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
-                    {(Object.values(WorkoutGoal)).map(goal => {
-                        const icons: {[key in WorkoutGoal]: React.ReactNode} = {
-                            [WorkoutGoal.FullBody]: <RunIcon className="w-5 h-5"/>,
-                            [WorkoutGoal.CardioEndurance]: <FlameIcon className="w-5 h-5"/>,
-                            [WorkoutGoal.Power]: <ZapIcon className="w-5 h-5"/>,
-                            [WorkoutGoal.CoreStrength]: <TargetIcon className="w-5 h-5"/>,
-                            [WorkoutGoal.Freestyle]: <StarIcon className="w-5 h-5"/>,
-                        }
-                        return (
-                            <button
-                            key={goal}
-                            onClick={() => handlePreferenceChange('goal', goal)}
-                            className={`flex flex-col items-center justify-center gap-2 p-3 rounded-lg transition-all ${preferences.goal === goal ? 'bg-orange-500 text-white shadow-md' : 'bg-gray-700 hover:bg-gray-600'}`}
-                            >
-                            {icons[goal]}
-                            <span className="text-xs font-semibold">{goal}</span>
-                            </button>
-                        )
-                    })}
-                    </div>
-                </div>
-                </div>
             </div>
             
             <div className="mt-10 flex gap-4">
@@ -460,7 +463,7 @@ const WorkoutGenerator: React.FC = () => {
         {error && <p className="text-red-400 text-center mt-4">{error}</p>}
       </div>
 
-      {isEditing && <EditableWorkoutPlan editor={editor} originalPreferences={originalPreferences} />}
+      {isEditing && <EditableWorkoutPlan editor={editor} originalPreferences={originalPreferences} onRegenerate={() => setIsEditing(false)} />}
     </div>
   );
 };

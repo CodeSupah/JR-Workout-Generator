@@ -6,16 +6,18 @@ import { loadCustomWorkouts, deleteCustomWorkout } from '../services/workoutServ
 import { generateWorkoutPlan } from '../services/geminiService';
 import { toastStore } from '../store/toastStore';
 import { profileStore } from '../store/profileStore';
-import { WorkoutPlan, WorkoutPreferences, SkillLevel, WorkoutGoal, Equipment, UserProfile } from '../types';
+// FIX: Removed non-existent 'Equipment' type.
+import { WorkoutPlan, WorkoutPreferences, SkillLevel, WorkoutGoal, UserProfile, WorkoutEnvironment } from '../types';
 import { PROGRAM_CATEGORIES } from '../data/programs';
 import { PlusIcon, FolderOpenIcon, CogIcon, SparklesIcon } from './icons/Icons';
 
+// FIX: Updated goalToTitleMap to use current WorkoutGoal enum values.
 const goalToTitleMap: Record<WorkoutGoal, string> = {
-    [WorkoutGoal.FullBody]: "Full Body Strength Builder",
-    [WorkoutGoal.CardioEndurance]: "Fat Burner HIIT Blast",
-    [WorkoutGoal.Power]: "Explosive Power Session",
-    [WorkoutGoal.CoreStrength]: "Quick Core & Cardio",
-    [WorkoutGoal.Freestyle]: "Freestyle Skills Flow",
+    [WorkoutGoal.MuscleGain]: "Muscle Gain Focus",
+    [WorkoutGoal.StrengthPower]: "Strength & Power",
+    [WorkoutGoal.FatLoss]: "Fat Loss & Conditioning",
+    [WorkoutGoal.GeneralFitness]: "General Fitness",
+    [WorkoutGoal.RecoveryMobility]: "Recovery & Mobility",
 };
 
 const WorkoutHub: React.FC = () => {
@@ -52,15 +54,14 @@ const WorkoutHub: React.FC = () => {
         const duration = [15, 20, 25][Math.floor(Math.random() * 3)];
         setSuggestedWorkout({
             title: `Your Daily ${randomGoal} Jump`,
+            // FIX: Updated preferences object to match current type definition.
             preferences: {
                 duration,
                 skillLevel: SkillLevel.Intermediate,
                 goal: randomGoal,
-                equipment: [Equipment.Regular],
-                mode: 'jump-rope',
-                includeJumpRopeIntervals: false,
+                environment: WorkoutEnvironment.HomeLimited,
+                homeEquipment: ['Jump Rope'],
                 rounds: 3,
-                availableEquipment: [],
                 includeWarmUp: true,
                 warmUpDuration: 3,
                 includeCoolDown: true,
@@ -75,14 +76,14 @@ const WorkoutHub: React.FC = () => {
         return () => unsubscribe();
     }, []);
 
-
+    // FIX: Updated getComplementaryGoal to use current WorkoutGoal enum values.
     const getComplementaryGoal = (primary: WorkoutGoal): WorkoutGoal => {
         const map: Record<WorkoutGoal, WorkoutGoal> = {
-            [WorkoutGoal.FullBody]: WorkoutGoal.CardioEndurance,
-            [WorkoutGoal.CardioEndurance]: WorkoutGoal.CoreStrength,
-            [WorkoutGoal.Power]: WorkoutGoal.FullBody,
-            [WorkoutGoal.CoreStrength]: WorkoutGoal.CardioEndurance,
-            [WorkoutGoal.Freestyle]: WorkoutGoal.FullBody,
+            [WorkoutGoal.MuscleGain]: WorkoutGoal.FatLoss,
+            [WorkoutGoal.StrengthPower]: WorkoutGoal.GeneralFitness,
+            [WorkoutGoal.FatLoss]: WorkoutGoal.MuscleGain,
+            [WorkoutGoal.GeneralFitness]: WorkoutGoal.RecoveryMobility,
+            [WorkoutGoal.RecoveryMobility]: WorkoutGoal.GeneralFitness,
         };
         return map[primary];
     };
@@ -94,15 +95,14 @@ const WorkoutHub: React.FC = () => {
 
             setPrimaryGoalWorkout({
                 title: primaryTitle,
+                // FIX: Updated preferences object to match current type definition.
                 preferences: {
                     duration: 20,
                     skillLevel: SkillLevel.Intermediate,
                     goal: primaryGoal,
-                    equipment: [Equipment.Regular],
-                    mode: primaryGoal === WorkoutGoal.FullBody || primaryGoal === WorkoutGoal.Power ? 'equipment' : 'jump-rope',
-                    includeJumpRopeIntervals: true,
+                    environment: WorkoutEnvironment.Gym,
+                    homeEquipment: [],
                     rounds: 3,
-                    availableEquipment: ['Dumbbell'],
                     includeWarmUp: true,
                     warmUpDuration: 3,
                     includeCoolDown: true,
@@ -115,15 +115,14 @@ const WorkoutHub: React.FC = () => {
 
             setSecondaryGoalWorkout({
                 title: secondaryTitle,
+                // FIX: Updated preferences object to match current type definition.
                 preferences: {
                     duration: 20,
                     skillLevel: SkillLevel.Intermediate,
                     goal: secondaryGoal,
-                    equipment: [Equipment.Regular],
-                    mode: 'no-equipment',
-                    includeJumpRopeIntervals: true,
+                    environment: WorkoutEnvironment.HomeBodyweight,
+                    homeEquipment: [],
                     rounds: 4,
-                    availableEquipment: [],
                     includeWarmUp: true,
                     warmUpDuration: 3,
                     includeCoolDown: true,

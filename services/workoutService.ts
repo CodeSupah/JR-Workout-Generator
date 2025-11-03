@@ -1,4 +1,4 @@
-import { WorkoutStats, WorkoutPlan, SessionSummary } from '../types';
+import { WorkoutStats, WorkoutPlan, SessionSummary, ExerciseDetails } from '../types';
 
 const CUSTOM_WORKOUTS_KEY = 'jump-custom-workouts';
 const WORKOUT_HISTORY_KEY = 'jump-workout-history';
@@ -149,6 +149,39 @@ export const saveWorkoutSummary = (summary: SessionSummary): Promise<SessionSumm
     resolve(summary);
   });
 };
+
+export const getRecentExercises = (count: number): Promise<string[]> => {
+    return new Promise((resolve) => {
+      const history = getWorkoutHistory().reverse(); // most recent first
+      if (history.length === 0) {
+        resolve([]);
+        return;
+      }
+  
+      const recentExerciseNames = new Set<string>();
+      
+      for (const session of history) {
+        const allExercises = [
+          ...session.workoutPlan.warmUp,
+          ...session.workoutPlan.rounds,
+          ...session.workoutPlan.coolDown,
+        ];
+        
+        for (const exercise of allExercises) {
+          if (recentExerciseNames.size < count) {
+            recentExerciseNames.add(exercise.exercise);
+          } else {
+            break;
+          }
+        }
+        if (recentExerciseNames.size >= count) {
+          break;
+        }
+      }
+      
+      resolve(Array.from(recentExerciseNames));
+    });
+  };
 
 const calculateStreak = (history: SessionSummary[]): number => {
     if (history.length === 0) return 0;

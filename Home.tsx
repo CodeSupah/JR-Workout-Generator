@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { WorkoutStats, WorkoutPlan, WorkoutGoal, SkillLevel, Equipment, Achievement, AchievementTier, WorkoutPreferences } from '../types';
+// FIX: Removed non-existent 'Equipment' type and added 'WorkoutEnvironment'.
+import { WorkoutStats, WorkoutPlan, WorkoutGoal, SkillLevel, Achievement, AchievementTier, WorkoutPreferences, WorkoutEnvironment } from '../types';
 import { getWorkoutStats, loadCustomWorkouts } from '../services/workoutService';
 import { getNextChallenge } from '../services/achievementService';
 import { generateWorkoutPlan } from '../services/geminiService';
@@ -72,17 +73,16 @@ const Home: React.FC = () => {
         const randomGoal = goals[Math.floor(Math.random() * goals.length)];
         const duration = [15, 20, 25][Math.floor(Math.random() * 3)];
         setSuggestedWorkout({
-            title: `Your Daily ${randomGoal} Jump`,
+            title: `Your Daily ${randomGoal} Session`,
             duration,
+            // FIX: Updated preferences to match the current WorkoutPreferences interface.
             preferences: {
                 duration,
                 skillLevel: SkillLevel.Intermediate,
                 goal: randomGoal,
-                equipment: [Equipment.Regular],
-                mode: 'jump-rope',
-                includeJumpRopeIntervals: false,
+                environment: WorkoutEnvironment.HomeLimited,
+                homeEquipment: ['Jump Rope'],
                 rounds: 3,
-                availableEquipment: [],
                 includeWarmUp: true,
                 warmUpDuration: 3,
                 includeCoolDown: true,
@@ -98,6 +98,11 @@ const Home: React.FC = () => {
         try {
             const plan = await generateWorkoutPlan(suggestedWorkout.preferences as WorkoutPreferences);
             
+            // Data Validation: Check for object and array integrity.
+            if (!plan || !Array.isArray(plan.warmUp) || !Array.isArray(plan.rounds) || !Array.isArray(plan.coolDown)) {
+                throw new Error("AI returned an invalid workout structure.");
+            }
+            
             // Store plan and the preferences used to generate it.
             const storageObject = {
                 plan,
@@ -108,9 +113,11 @@ const Home: React.FC = () => {
 
             navigate('/workout', { state: { autoShowGenerator: true } });
         } catch (error: any) {
-            toastStore.addToast(error.message || 'Failed to generate workout', 'error');
-            console.error(error);
+            // Error Handling: Log for debugging and show user-friendly message.
+            console.error("Failed to generate suggested workout:", error);
+            toastStore.addToast('Could not generate a workout. Please try again or build one manually.', 'error');
         } finally {
+            // Loading State Management: Always reset the loading state.
             setIsGenerating(false);
         }
     }
@@ -144,7 +151,15 @@ const Home: React.FC = () => {
                     onClick={handleStartSuggestedWorkout}
                     disabled={isGenerating}
                     className="w-full flex flex-col items-center justify-center gap-1 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-800 text-white font-bold py-4 px-6 rounded-lg text-lg transition-transform transform hover:scale-105 shadow-lg shadow-orange-500/30">
-                    {isGenerating ? 'Building your workout...' : (
+                    {isGenerating ? (
+                        <div className="flex items-center justify-center">
+                            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span>Generating...</span>
+                        </div>
+                    ) : (
                         <>
                             <span>{suggestedWorkout.title}</span>
                             <span className="text-sm font-normal text-orange-200">{suggestedWorkout.duration} min • Suggested</span>
