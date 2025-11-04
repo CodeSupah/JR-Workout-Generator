@@ -210,8 +210,9 @@ export interface ExerciseDetails {
   name: string;
   category: 'Jump Rope' | 'Upper Body' | 'Lower Body' | 'Core' | 'Full Body' | 'Cardio' | 'Flexibility & Mobility';
   purpose: 'warmup' | 'cooldown' | 'main';
-  difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
-  equipment: ExerciseEquipment;
+  skillLevels: ('Beginner' | 'Intermediate' | 'Advanced')[];
+  equipment: ExerciseEquipment[];
+  goals: WorkoutGoal[];
   workoutType: WorkoutType;
   description: string;
   instructions: string[];

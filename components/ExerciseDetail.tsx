@@ -59,10 +59,10 @@ const ExerciseDetail: React.FC = () => {
         );
     }
 
-    const difficultyColors = {
-        Beginner: 'text-green-400',
-        Intermediate: 'text-yellow-400',
-        Advanced: 'text-red-400',
+    const skillLevelColors: Record<string, string> = {
+        Beginner: 'bg-green-500/20 text-green-300',
+        Intermediate: 'bg-yellow-500/20 text-yellow-300',
+        Advanced: 'bg-red-500/20 text-red-300',
     };
 
     return (
@@ -72,11 +72,7 @@ const ExerciseDetail: React.FC = () => {
                     &larr; Back to Library
                 </Link>
                 <h1 className="text-4xl font-bold text-white">{exercise.name}</h1>
-                <div className="flex items-center gap-4 text-gray-400 mt-2">
-                    <span>{exercise.category}</span>
-                    <span className="w-1.5 h-1.5 bg-gray-600 rounded-full"></span>
-                    <span className={difficultyColors[exercise.difficulty]}>{exercise.difficulty}</span>
-                </div>
+                <p className="text-gray-400 mt-2">{exercise.category}</p>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -109,6 +105,38 @@ const ExerciseDetail: React.FC = () => {
                 </div>
 
                 <div className="space-y-6">
+                    <div className="bg-gray-800/50 p-6 rounded-2xl space-y-4">
+                        <div>
+                            <h3 className="font-semibold text-gray-300 mb-2">Skill Level</h3>
+                            <div className="flex flex-wrap gap-2">
+                                {exercise.skillLevels.map(level => (
+                                    <span key={level} className={`text-xs font-semibold px-2.5 py-1 rounded-full ${skillLevelColors[level]}`}>
+                                        {level}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                         <div>
+                            <h3 className="font-semibold text-gray-300 mb-2">Equipment</h3>
+                            <div className="flex flex-wrap gap-2">
+                                {exercise.equipment.map(item => (
+                                    <span key={item} className="bg-gray-700 text-gray-300 text-xs font-semibold px-2.5 py-1 rounded-full capitalize">
+                                        {item.replace(/-/g, ' ')}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                        <div>
+                            <h3 className="font-semibold text-gray-300 mb-2">Primary Goals</h3>
+                            <div className="flex flex-wrap gap-2">
+                                {exercise.goals.map(goal => (
+                                    <span key={goal} className="bg-indigo-500/20 text-indigo-300 text-xs font-semibold px-2.5 py-1 rounded-full">
+                                        {goal}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
                     <div className="bg-gray-800/50 p-6 rounded-2xl">
                         <h2 className="text-xl font-bold mb-3">Muscle Groups</h2>
                         <div className="flex flex-wrap gap-2">

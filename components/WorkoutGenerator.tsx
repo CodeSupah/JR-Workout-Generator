@@ -66,9 +66,7 @@ const WorkoutGenerator: React.FC = () => {
   const [includeCoolDown, setIncludeCoolDown] = useState(true);
   const [coolDownDuration, setCoolDownDuration] = useState(2);
   const [defaultRestDuration, setDefaultRestDuration] = useState(60);
-  const [restBetweenRounds, setRestBetweenRounds] = useState(120);
   const [useGlobalExerciseRest, setUseGlobalExerciseRest] = useState(true);
-  const [useGlobalRoundRest, setUseGlobalRoundRest] = useState(true);
   
   const [originalPreferences, setOriginalPreferences] = useState<WorkoutPreferences | null>(null);
 
@@ -79,7 +77,7 @@ const WorkoutGenerator: React.FC = () => {
   const editor = useWorkoutEditor();
   
   // Helper to gather all state into the full preferences object for saving
-  const getFullPreferencesForSaving = (): WorkoutPreferences => ({
+  const getFullPreferencesForSaving = (): Omit<WorkoutPreferences, 'restBetweenRounds'> => ({
       ...preferences,
       environment,
       homeEquipment,
@@ -89,7 +87,6 @@ const WorkoutGenerator: React.FC = () => {
       includeCoolDown,
       coolDownDuration,
       defaultRestDuration,
-      restBetweenRounds,
   });
 
   // Load preferences from localStorage on mount
@@ -110,16 +107,14 @@ const WorkoutGenerator: React.FC = () => {
       setIncludeCoolDown(parsedPrefs.includeCoolDown !== undefined ? parsedPrefs.includeCoolDown : true);
       setCoolDownDuration(parsedPrefs.coolDownDuration || 2);
       setDefaultRestDuration(parsedPrefs.defaultRestDuration || 60);
-      setRestBetweenRounds(parsedPrefs.restBetweenRounds || 120);
       setUseGlobalExerciseRest(parsedPrefs.useGlobalExerciseRest !== undefined ? parsedPrefs.useGlobalExerciseRest : true);
-      setUseGlobalRoundRest(parsedPrefs.useGlobalRoundRest !== undefined ? parsedPrefs.useGlobalRoundRest : true);
     }
   }, []);
 
   // Save preferences to localStorage whenever they change
   useEffect(() => {
     localStorage.setItem('workoutPreferences', JSON.stringify(getFullPreferencesForSaving()));
-  }, [preferences, environment, homeEquipment, rounds, includeWarmUp, warmUpDuration, includeCoolDown, coolDownDuration, defaultRestDuration, restBetweenRounds, useGlobalExerciseRest, useGlobalRoundRest]);
+  }, [preferences, environment, homeEquipment, rounds, includeWarmUp, warmUpDuration, includeCoolDown, coolDownDuration, defaultRestDuration, useGlobalExerciseRest]);
 
 
   // Load a suggested plan from sessionStorage if available
@@ -147,7 +142,6 @@ const WorkoutGenerator: React.FC = () => {
             setIncludeCoolDown(savedPrefs.includeCoolDown);
             setCoolDownDuration(savedPrefs.coolDownDuration);
             setDefaultRestDuration(savedPrefs.defaultRestDuration);
-            setRestBetweenRounds(savedPrefs.restBetweenRounds);
             setOriginalPreferences(savedPrefs as WorkoutPreferences);
             
             setIsEditing(true);
@@ -174,13 +168,13 @@ const WorkoutGenerator: React.FC = () => {
       includeCoolDown,
       coolDownDuration,
       defaultRestDuration: useGlobalExerciseRest ? defaultRestDuration : 0,
-      restBetweenRounds: useGlobalRoundRest ? restBetweenRounds : 0,
+      restBetweenRounds: 0, // Let AI decide
   });
   
   const hasChanges = useMemo(() => {
     if (!originalPreferences) return false;
     return JSON.stringify(getFullPreferencesForGeneration()) !== JSON.stringify(originalPreferences);
-  }, [preferences, environment, homeEquipment, rounds, includeWarmUp, warmUpDuration, includeCoolDown, coolDownDuration, defaultRestDuration, restBetweenRounds, useGlobalExerciseRest, useGlobalRoundRest, originalPreferences]);
+  }, [preferences, environment, homeEquipment, rounds, includeWarmUp, warmUpDuration, includeCoolDown, coolDownDuration, defaultRestDuration, useGlobalExerciseRest, originalPreferences]);
 
 
   const handlePreferenceChange = <K extends keyof typeof preferences>(
@@ -334,6 +328,30 @@ const WorkoutGenerator: React.FC = () => {
                 </div>
                 </div>
 
+                {/* Rest Settings */}
+                <div className="bg-gray-900/50 p-4 rounded-lg animate-fade-in">
+                    <div className="space-y-3">
+                        <ToggleSwitch
+                            label="Global Rest Between Exercises"
+                            description="Let AI decide if unchecked."
+                            checked={useGlobalExerciseRest}
+                            onChange={setUseGlobalExerciseRest}
+                        />
+                        {useGlobalExerciseRest && (
+                            <div className="space-y-2 animate-fade-in pl-4 border-l-2 border-gray-700 ml-2">
+                                <label className="text-sm font-medium">Duration: <span className="text-orange-400">{formatTime(defaultRestDuration)}</span></label>
+                                <StepperInput
+                                    value={defaultRestDuration}
+                                    onChange={setDefaultRestDuration}
+                                    step={5}
+                                    min={0}
+                                    aria-label="Rest between exercises in seconds"
+                                />
+                            </div>
+                        )}
+                    </div>
+                </div>
+
                 {/* Warm-up & Cool-down Settings */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="bg-gray-900/50 p-4 rounded-lg animate-fade-in space-y-3">
@@ -376,56 +394,6 @@ const WorkoutGenerator: React.FC = () => {
                         )}
                     </div>
                 </div>
-
-                {/* Advanced Timing Settings (Collapsible) */}
-                <details className="bg-gray-900/50 p-4 rounded-lg animate-fade-in group">
-                    <summary className="font-semibold text-white cursor-pointer flex justify-between items-center list-none">
-                        Advanced Timing Settings
-                        <ChevronDownIcon className="w-5 h-5 transition-transform duration-300 transform group-open:rotate-180" />
-                    </summary>
-                    <div className="pt-4 mt-4 border-t border-gray-700/50 space-y-4">
-                         <div className="space-y-2">
-                            <ToggleSwitch
-                                label="Global Rest Between Exercises"
-                                description="Let AI decide if unchecked."
-                                checked={useGlobalExerciseRest}
-                                onChange={setUseGlobalExerciseRest}
-                            />
-                            {useGlobalExerciseRest && (
-                                <div className="pl-4 border-l-2 border-gray-700 ml-2 animate-fade-in space-y-2">
-                                    <label className="text-sm font-medium">Duration: <span className="text-orange-400">{formatTime(defaultRestDuration)}</span></label>
-                                    <StepperInput
-                                        value={defaultRestDuration}
-                                        onChange={setDefaultRestDuration}
-                                        step={5}
-                                        min={0}
-                                        aria-label="Rest between exercises in seconds"
-                                    />
-                                </div>
-                            )}
-                        </div>
-                         <div className="space-y-2">
-                            <ToggleSwitch
-                                label="Global Rest Between Rounds"
-                                checked={useGlobalRoundRest}
-                                onChange={setUseGlobalRoundRest}
-                            />
-                            {useGlobalRoundRest && (
-                                 <div className="pl-4 border-l-2 border-gray-700 ml-2 animate-fade-in space-y-2">
-                                    <label className="text-sm font-medium">Duration: <span className="text-orange-400">{formatTime(restBetweenRounds)}</span></label>
-                                    <StepperInput
-                                        value={restBetweenRounds}
-                                        onChange={setRestBetweenRounds}
-                                        step={15}
-                                        min={0}
-                                        aria-label="Rest between rounds in seconds"
-                                    />
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </details>
-
             </div>
             
             <div className="mt-10 flex gap-4">

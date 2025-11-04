@@ -19,6 +19,12 @@ export const getExerciseById = (id: string): Promise<ExerciseDetails | undefined
   return new Promise(resolve => resolve(EXERCISE_DATABASE.find(ex => ex.id === id)));
 };
 
+const skillToDifficulty: Record<string, ExerciseDifficulty> = {
+    'Beginner': 'Easy',
+    'Intermediate': 'Medium',
+    'Advanced': 'Hard',
+};
+
 export const getSuggestedMainExercise = (currentExercises: Exercise[]): Omit<Exercise, 'id' | 'status'> | null => {
     const mainExercisesFromDB = EXERCISE_DATABASE.filter(ex => ex.purpose === 'main');
     const currentExerciseNames = new Set(currentExercises.map(ex => ex.exercise));
@@ -71,8 +77,8 @@ export const getSuggestedMainExercise = (currentExercises: Exercise[]): Omit<Exe
         reps: 10,
         sets: 3,
         rest: 60, // A sensible default, can be overridden by universal rest
-        difficulty: selectedEx.difficulty as ExerciseDifficulty,
-        equipment: selectedEx.equipment,
+        difficulty: skillToDifficulty[selectedEx.skillLevels[0]] || 'Medium',
+        equipment: selectedEx.equipment[0] || 'bodyweight',
     };
 
     return newExercise;
@@ -90,8 +96,8 @@ export const getSingleSuggestedExercise = (type: 'warmup' | 'cooldown'): Omit<Ex
             exercise: selectedEx.name,
             duration: 60,
             rest: 0,
-            difficulty: selectedEx.difficulty as ExerciseDifficulty,
-            equipment: selectedEx.equipment,
+            difficulty: skillToDifficulty[selectedEx.skillLevels[0]] || 'Easy',
+            equipment: selectedEx.equipment[0] || 'bodyweight',
             unit: 'seconds',
             reps: 10,
             sets: 1,

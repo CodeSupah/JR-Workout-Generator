@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Exercise, ExerciseDetails, WorkoutPreferences, SkillLevel, WorkoutType, WorkoutEnvironment } from '../types';
+import { Exercise, ExerciseDetails, WorkoutPreferences, SkillLevel, WorkoutType, WorkoutEnvironment, ExerciseDifficulty, ExerciseEquipment, WorkoutGoal } from '../types';
 import { EXERCISE_DATABASE } from '../data/exerciseDatabase';
 import { SparklesIcon, DumbbellIcon, RunIcon } from './icons/Icons';
 
@@ -12,6 +12,12 @@ type ExerciseModalProps = {
   purposeFilter?: 'warmup' | 'cooldown' | 'main';
   originalPreferences?: WorkoutPreferences | null;
   defaultRest?: number;
+};
+
+const skillToDifficulty: Record<string, ExerciseDifficulty> = {
+    'Beginner': 'Easy',
+    'Intermediate': 'Medium',
+    'Advanced': 'Hard',
 };
 
 const ExerciseModal: React.FC<ExerciseModalProps> = ({ isOpen, onClose, onSelectExercise, mode, exerciseToEdit, purposeFilter, originalPreferences, defaultRest = 15 }) => {
@@ -30,7 +36,7 @@ const ExerciseModal: React.FC<ExerciseModalProps> = ({ isOpen, onClose, onSelect
     const equipmentSet = new Set(
       EXERCISE_DATABASE
         .filter(ex => purposeFilter ? ex.purpose === purposeFilter : true)
-        .map(ex => ex.equipment)
+        .flatMap(ex => ex.equipment)
     );
     // A bit of custom logic to group similar equipment for a cleaner filter UI
     const mapped = Array.from(equipmentSet).map(e => {
@@ -72,27 +78,29 @@ const ExerciseModal: React.FC<ExerciseModalProps> = ({ isOpen, onClose, onSelect
     return EXERCISE_DATABASE.filter(ex => {
         if (ex.purpose !== 'main') return false;
 
-        const skillMap: Record<SkillLevel, ExerciseDetails['difficulty'][]> = {
-            [SkillLevel.Beginner]: ['Beginner'],
-            [SkillLevel.Intermediate]: ['Beginner', 'Intermediate'],
-            [SkillLevel.Advanced]: ['Beginner', 'Intermediate', 'Advanced'],
-        };
-        if (!skillMap[prefs.skillLevel].includes(ex.difficulty)) return false;
+        if (!ex.skillLevels.includes(prefs.skillLevel)) return false;
+
+        if (!ex.goals.includes(prefs.goal)) return false;
 
         let equipmentMatch = false;
         switch (prefs.environment) {
             case WorkoutEnvironment.Gym:
-                const gymEquipmentTypes = ['dumbbell', 'resistance-band', 'kettlebell', 'barbell', 'cable-machine', 'leg-press-machine', 'pull-up-bar', 'rope', 'weighted-rope'];
-                if (gymEquipmentTypes.includes(ex.equipment) || ex.equipment === 'bodyweight') equipmentMatch = true;
+                const gymEquipmentTypes: ExerciseEquipment[] = ['dumbbell', 'resistance-band', 'kettlebell', 'barbell', 'cable-machine', 'leg-press-machine', 'pull-up-bar', 'rope', 'weighted-rope', 'bodyweight'];
+                if (ex.equipment.every(req => gymEquipmentTypes.includes(req))) equipmentMatch = true;
                 break;
             case WorkoutEnvironment.HomeLimited:
-                const homeEquipmentLower = prefs.homeEquipment.map(e => e.toLowerCase().replace(/ /g, '-'));
-                 const equipmentMap = { 'jump-rope': 'rope' };
-                 const mappedHomeEquipment = homeEquipmentLower.map(e => equipmentMap[e as keyof typeof equipmentMap] || e);
-                if (mappedHomeEquipment.includes(ex.equipment) || ex.equipment === 'bodyweight') equipmentMatch = true;
+                 const homeEquipmentMap: { [key: string]: ExerciseEquipment[] } = {
+                    'Dumbbells': ['dumbbell'],
+                    'Kettlebell': ['kettlebell'],
+                    'Resistance Bands': ['resistance-band'],
+                    'Jump Rope': ['rope', 'weighted-rope'],
+                    'Pull-up Bar': ['pull-up-bar']
+                  };
+                  const availableDBEquipment = ['bodyweight', ...prefs.homeEquipment.flatMap(item => homeEquipmentMap[item] || [])];
+                if (ex.equipment.every(req => availableDBEquipment.includes(req))) equipmentMatch = true;
                 break;
             case WorkoutEnvironment.HomeBodyweight:
-                if (ex.equipment === 'bodyweight') equipmentMatch = true;
+                if (ex.equipment.length === 1 && ex.equipment[0] === 'bodyweight') equipmentMatch = true;
                 break;
         }
         if (!equipmentMatch) return false;
@@ -135,7 +143,7 @@ const ExerciseModal: React.FC<ExerciseModalProps> = ({ isOpen, onClose, onSelect
   
       if (!viewMode) return true; // Only purpose and search matter if no view mode
   
-      const difficultyMatch = selectedDifficulties.length === 0 || selectedDifficulties.includes(ex.difficulty);
+      const difficultyMatch = selectedDifficulties.length === 0 || ex.skillLevels.some(level => selectedDifficulties.includes(level));
       if (!difficultyMatch) return false;
 
       const workoutTypeMatch = selectedWorkoutTypes.length === 0 || selectedWorkoutTypes.includes(ex.workoutType);
@@ -146,9 +154,9 @@ const ExerciseModal: React.FC<ExerciseModalProps> = ({ isOpen, onClose, onSelect
           selectedEquipment.length === 0 ||
           selectedEquipment.some(selected => {
             const selectedFormatted = selected.toLowerCase().replace(/ /g, '-');
-            if (selected === 'Jump Rope') return ['rope', 'weighted-rope'].includes(ex.equipment);
-            if (selected === 'Machine') return ['cable-machine', 'leg-press-machine'].includes(ex.equipment);
-            return ex.equipment === selectedFormatted;
+            if (selected === 'Jump Rope') return ex.equipment.includes('rope') || ex.equipment.includes('weighted-rope');
+            if (selected === 'Machine') return ex.equipment.includes('cable-machine') || ex.equipment.includes('leg-press-machine');
+            return ex.equipment.includes(selectedFormatted as ExerciseEquipment);
           })
         );
       }
@@ -172,7 +180,8 @@ const ExerciseModal: React.FC<ExerciseModalProps> = ({ isOpen, onClose, onSelect
         if (filteredExercises.length > 0) grouped['All Exercises'] = filteredExercises;
     } else if (viewMode === 'equipment') {
         filteredExercises.forEach(ex => {
-            let key = ex.equipment.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            const mainEquipment = ex.equipment[0] || 'bodyweight';
+            let key = mainEquipment.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
             if (['Rope', 'Weighted Rope'].includes(key)) key = 'Jump Rope';
             if (['Cable Machine', 'Leg Press Machine'].includes(key)) key = 'Machine';
             if (!grouped[key]) grouped[key] = [];
@@ -220,19 +229,13 @@ const ExerciseModal: React.FC<ExerciseModalProps> = ({ isOpen, onClose, onSelect
   const handleSelect = (exerciseName: string) => {
     const selectedExercise = EXERCISE_DATABASE.find(ex => ex.name === exerciseName);
     if (!selectedExercise) return;
-    
-    const difficultyMap: Record<ExerciseDetails['difficulty'], Exercise['difficulty']> = {
-        'Beginner': 'Easy',
-        'Intermediate': 'Medium',
-        'Advanced': 'Hard'
-    };
 
     const fullExerciseData: Omit<Exercise, 'id' | 'status'> = {
         exercise: selectedExercise.name,
         duration: 45, // Default for new exercises
         rest: defaultRest, // Default for new exercises
-        equipment: selectedExercise.equipment,
-        difficulty: difficultyMap[selectedExercise.difficulty],
+        equipment: selectedExercise.equipment[0] || 'bodyweight',
+        difficulty: skillToDifficulty[selectedExercise.skillLevels[0]] || 'Medium',
     };
     onSelectExercise(fullExerciseData);
     onClose();

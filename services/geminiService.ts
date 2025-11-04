@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type } from '@google/genai';
-import { WorkoutPreferences, WorkoutPlan, Exercise, WorkoutEnvironment, ExerciseDifficulty, WorkoutGoal } from '../types';
+import { WorkoutPreferences, WorkoutPlan, Exercise, WorkoutEnvironment, ExerciseDifficulty, WorkoutGoal, SkillLevel, ExerciseEquipment } from '../types';
 import { EXERCISE_DATABASE } from '../data/exerciseDatabase';
 
 const API_KEY = process.env.API_KEY;
@@ -55,22 +55,6 @@ const workoutSchema = {
   required: ['warmUp', 'rounds', 'coolDown', 'estimatedCalories', 'difficultyScore', 'motivationalQuote'],
 };
 
-const getEnvironmentInstructions = (prefs: WorkoutPreferences): string => {
-    let baseInstruction = '';
-    switch (prefs.environment) {
-        case WorkoutEnvironment.Gym:
-            baseInstruction = `The user is at a 'Full Gym / Weights' environment. Create a varied workout using common gym equipment like barbells, dumbbells, kettlebells, cable machines, leg press, etc. The 'equipment' for these exercises must be one of the valid equipment types. Bodyweight exercises are also acceptable.`;
-            break;
-        case WorkoutEnvironment.HomeLimited:
-             baseInstruction = `The user is at home with limited equipment. You MUST create a workout using ONLY the following items: ${prefs.homeEquipment.join(', ')}. Bodyweight exercises are also allowed. The 'equipment' for each exercise must be 'bodyweight' or one of the user's available items. If 'Jump Rope' is available, you can include jump rope exercises as cardio intervals or main exercises.`;
-            break;
-        case WorkoutEnvironment.HomeBodyweight:
-            baseInstruction = "The user is at 'Home Bodyweight Only'. Design a workout using exclusively bodyweight exercises. The 'equipment' for all exercises MUST be 'bodyweight'.";
-            break;
-    }
-    return baseInstruction;
-}
-
 
 export const generateWorkoutPlan = async (prefs: WorkoutPreferences): Promise<WorkoutPlan> => {
   const warmUpMinutes = prefs.includeWarmUp ? prefs.warmUpDuration : 0;
@@ -90,93 +74,80 @@ export const generateWorkoutPlan = async (prefs: WorkoutPreferences): Promise<Wo
     .map(ex => `'${ex.name}'`)
     .join(', ');
 
-  let mainExercises: string[];
-  const userHomeEquipment = prefs.homeEquipment.map(e => e.toLowerCase().replace(/ /g, '-'));
+  const homeEquipmentMap: { [key: string]: ExerciseEquipment[] } = {
+    'Dumbbells': ['dumbbell'],
+    'Kettlebell': ['kettlebell'],
+    'Resistance Bands': ['resistance-band'],
+    'Jump Rope': ['rope', 'weighted-rope'],
+    'Pull-up Bar': ['pull-up-bar']
+  };
 
-  switch (prefs.environment) {
-      case WorkoutEnvironment.Gym:
-          const gymEquipmentTypes = ['dumbbell', 'resistance-band', 'kettlebell', 'barbell', 'cable-machine', 'leg-press-machine', 'pull-up-bar'];
-          mainExercises = EXERCISE_DATABASE
-              .filter(ex => ex.purpose === 'main' && (gymEquipmentTypes.includes(ex.equipment) || ex.equipment === 'bodyweight' || ['rope', 'weighted-rope'].includes(ex.equipment)))
-              .map(ex => ex.name);
-          break;
-      case WorkoutEnvironment.HomeLimited:
-          const equipmentMap = { 'jump-rope': 'rope' };
-          const mappedHomeEquipment = userHomeEquipment.map(e => equipmentMap[e as keyof typeof equipmentMap] || e);
-          mainExercises = EXERCISE_DATABASE
-              .filter(ex => ex.purpose === 'main' && (mappedHomeEquipment.includes(ex.equipment) || ex.equipment === 'bodyweight'))
-              .map(ex => ex.name);
-          break;
-      case WorkoutEnvironment.HomeBodyweight:
-      default:
-          mainExercises = EXERCISE_DATABASE
-              .filter(ex => ex.purpose === 'main' && ex.equipment === 'bodyweight')
-              .map(ex => ex.name);
-          break;
+  const getAvailableEquipmentForEnv = (): ExerciseEquipment[] => {
+      switch (prefs.environment) {
+          case WorkoutEnvironment.Gym:
+              return ['dumbbell', 'resistance-band', 'kettlebell', 'barbell', 'cable-machine', 'leg-press-machine', 'pull-up-bar', 'rope', 'weighted-rope', 'bodyweight'];
+          case WorkoutEnvironment.HomeLimited:
+              return ['bodyweight', ...prefs.homeEquipment.flatMap(item => homeEquipmentMap[item] || [])];
+          case WorkoutEnvironment.HomeBodyweight:
+              return ['bodyweight'];
+          default:
+              return ['bodyweight'];
+      }
   }
 
-  const availableMainExercises = [...new Set(mainExercises)].map(name => `'${name}'`).join(', ');
+  const availableEquipment = getAvailableEquipmentForEnv();
 
+  const mainExercises = EXERCISE_DATABASE
+      .filter(ex => 
+          ex.purpose === 'main' &&
+          ex.skillLevels.includes(prefs.skillLevel) &&
+          ex.goals.includes(prefs.goal) &&
+          // Exercise is valid if all its required equipment is available to the user
+          ex.equipment.every(req => availableEquipment.includes(req))
+      )
+      .map(ex => ex.name);
+
+
+  const availableMainExercises = [...new Set(mainExercises)].map(name => `'${name}'`).join(', ');
+  
+  if (!availableMainExercises || availableMainExercises.trim() === '') {
+    throw new Error("No exercises match your specific criteria. Please broaden your selections (e.g., add more equipment, change your goal) and try again.");
+  }
+
+  let availableEquipmentText: string;
+  if (prefs.environment === WorkoutEnvironment.HomeLimited && prefs.homeEquipment.length > 0) {
+      availableEquipmentText = prefs.homeEquipment.join(', ');
+  } else if (prefs.environment === WorkoutEnvironment.Gym) {
+      availableEquipmentText = 'a full gym with various weights and machines';
+  } else {
+      availableEquipmentText = 'bodyweight only. You MUST NOT use any equipment.';
+  }
 
   const prompt = `
-    You are an expert fitness AI. Your MOST IMPORTANT task is to create a workout plan that precisely matches a specific duration.
+    You are an expert fitness AI.
 
-    **PRIMARY GOAL: HIT THE TARGET TIME (NON-NEGOTIABLE)**
-    - The user wants a total workout of **${prefs.duration} minutes**.
-    - We have allocated **${warmUpMinutes} minutes for warm-up** and **${coolDownMinutes} minutes for cool-down**.
-    - This leaves **${targetExerciseMinutes} minutes** for the main workout (all rounds combined).
-    - The user will perform **${prefs.rounds} rounds** of the circuit you create.
-    - Therefore, the SINGLE circuit of exercises you generate in the 'rounds' array **MUST** have a total duration (sum of all exercise \`duration\` + \`rest\` fields) of **EXACTLY ${targetSecondsPerCircuit} seconds**.
-    - **THIS IS NOT A GUIDELINE, IT IS A STRICT REQUIREMENT.** You MUST use **${prefs.defaultRestDuration} seconds** as the 'rest' value for every exercise in the 'rounds' array. You must adjust exercise 'duration' values and the number of exercises in the circuit to hit the target time. **DO NOT change the 'rest' value.** All other preferences (skill, goal) must be met *within* this exact time constraint.
+    **--- URGENT PRIORITY FIX: The generated workout MUST strictly adhere to the user's selected equipment and should NOT default to bodyweight exercises when equipment is available. ---**
 
-    **SECONDARY GOAL: USER PREFERENCES**
-    *Now, considering the strict time and rest constraints above, apply these user preferences:*
-    - Skill Level: ${prefs.skillLevel}
-    - Goal: ${prefs.goal}
-    - Workout Environment: ${prefs.environment}
-    - User's Available Home Equipment: ${prefs.environment === WorkoutEnvironment.HomeLimited ? prefs.homeEquipment.join(', ') : 'N/A'}
-    - Include Warm-up: ${prefs.includeWarmUp}
-    - Include Cool-down: ${prefs.includeCoolDown}
-    - Rest Between Exercises: ${prefs.defaultRestDuration} seconds (This is the value you MUST use for the 'rest' field in the 'rounds' array)
-    - Rest Between Rounds: ${prefs.restBetweenRounds} seconds (This is for user info; you do not need to include it in your calculation for the single circuit's duration)
+    The user has provided the following available equipment: **${availableEquipmentText}**.
 
-    ---
+    You MUST prioritize the creation of a diverse workout plan that utilizes the explicitly provided equipment. Do not include bodyweight-only exercises unless no equipment-specific exercises are available, or they are essential for transitions/warm-ups.
 
-    **RULE 2: WARM-UP & COOL-DOWN**
-    - If 'Include Warm-up' is 'true', create a list of dynamic stretch exercises for the 'warmUp' array.
-        - The total duration (sum of all 'duration' fields) MUST EXACTLY equal ${warmUpMinutes * 60} seconds.
-        - Each individual exercise should have a 'duration' of approximately 60 seconds. This means you should generate ${warmUpMinutes} distinct exercises.
-        - The 'rest' property for all warm-up exercises MUST be 0.
-        - The 'warmUp' array MUST be empty if 'includeWarmUp' is false.
-    - If 'Include Cool-down' is 'true', create a list of static stretch exercises for the 'coolDown' array.
-        - The total duration (sum of all 'duration' fields) MUST EXACTLY equal ${coolDownMinutes * 60} seconds.
-        - Each individual exercise should have a 'duration' of approximately 60 seconds. This means you should generate ${coolDownMinutes} distinct exercises.
-        - The 'rest' property for all cool-down exercises MUST be 0.
-        - The 'coolDown' array MUST be empty if 'includeCoolDown' is false.
+    **Rule of Adherence (Non-Negotiable):**
 
-    **RULE 3: EXERCISE SELECTION & STRUCTURE**
-    - **Exercise Variety:** For the main 'rounds' circuit, include a good variety of exercises related to the user's goal, aiming for 4-6 different exercises. This makes the workout more engaging. You MUST still adhere to the strict total circuit time by adjusting the 'duration' of each exercise.
-    - **Environment Logic:** ${getEnvironmentInstructions(prefs)}
-    - **Goal-Specific Exercises:**
-        - **${WorkoutGoal.MuscleGain}:** Focus on exercises that allow for good mind-muscle connection. Structure the circuit to target complementary muscle groups.
-        - **${WorkoutGoal.StrengthPower}:** Prioritize compound movements and explosive exercises like jumps, swings, or fast concentric phases on lifts.
-        - **${WorkoutGoal.FatLoss}:** Emphasize high-intensity, full-body movements. Can use supersets or shorter rest within the circuit to keep heart rate up.
-        - **${WorkoutGoal.GeneralFitness}:** Create a balanced, varied workout targeting all major muscle groups for overall fitness.
-        - **${WorkoutGoal.RecoveryMobility}:** Focus on light, dynamic movements, and mobility drills. All exercises must be 'Easy' difficulty. Avoid high-impact or heavily-loaded exercises.
-    - **Skill Level Adherence:**
-        - **Beginner:** All exercises must be 'Easy'.
-        - **Intermediate:** Exercises can be 'Easy' or 'Medium'.
-        - **Advanced:** Exercises can be 'Easy', 'Medium', or 'Hard'. Can include complex movements.
-    - **Prevent Repetition:** Do not use the exact same exercise back-to-back within the generated circuit.
+    1.  **Equipment:** The majority of the exercises must require and use the items listed in the available equipment.
+    2.  **Goal & Skill:** The workout plan must align with the user's primary_goal ('${prefs.goal}') and skill_level ('${prefs.skillLevel}').
+    3.  **Approved Exercise List:** You MUST select exercises for the main workout ('rounds' array) EXCLUSIVELY from this pre-filtered list: ${availableMainExercises}. Do not invent exercises. For warm-ups and cool-downs, you MUST use exercises from this list: ${flexibilityExercises}.
 
-    **RULE 4: AVAILABLE EXERCISES (MANDATORY)**
-    You MUST select exercises for the plan exclusively from the lists provided below. Do not invent any exercises or use exercises not on these lists. The 'exercise' field in the JSON response MUST be an exact string match from these lists.
-    - Available Main Workout Exercises for the 'rounds' array: ${availableMainExercises}
-    - Available Warm-up Exercises for the 'warmUp' array: ${flexibilityExercises}
-    - Available Cool-down Exercises for the 'coolDown' array: ${flexibilityExercises}
+    **Secondary Goal (Guideline Only):**
 
+    - The target workout duration is **${prefs.duration} minutes**. Treat this as a strong guideline, not a rigid constraint. Adherence to equipment priority is more important than hitting the exact duration.
 
-    **FINAL CHECK:** Before outputting the JSON, double-check that the sum of 'duration' and 'rest' for all exercises in the generated 'rounds' circuit array equals exactly ${targetSecondsPerCircuit} seconds, and that each 'rest' value is exactly ${prefs.defaultRestDuration}.
+    **Workout Structure Guidance:**
+
+    - **Main Circuit:** Create a single circuit of 4-6 varied exercises. The user will perform this for **${prefs.rounds} rounds**. The total time for ONE circuit (sum of all exercise 'duration' + 'rest') should be about **${targetSecondsPerCircuit} seconds**.
+    - **Rest:** Aim for around **${prefs.defaultRestDuration} seconds** of rest for each main exercise.
+    - **Warm-up:** If 'includeWarmUp' is true, the total 'duration' of warm-up exercises must sum to exactly **${warmUpMinutes * 60} seconds** (with 0 rest between exercises).
+    - **Cool-down:** If 'includeCoolDown' is true, the total 'duration' of cool-down exercises must sum to exactly **${coolDownMinutes * 60} seconds** (with 0 rest between exercises).
   `;
 
   try {
@@ -269,6 +240,9 @@ export const generateWorkoutPlan = async (prefs: WorkoutPreferences): Promise<Wo
 
   } catch (error) {
     console.error("Error generating workout plan from Gemini:", error);
+    if (error instanceof Error && error.message.includes("No exercises match")) {
+        throw error;
+    }
     throw new Error("Failed to generate a valid workout plan. The AI may have struggled with the constraints. Please try adjusting your preferences.");
   }
 };

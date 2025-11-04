@@ -58,7 +58,6 @@ const WorkoutHub: React.FC = () => {
                 warmUpDuration: 3,
                 includeCoolDown: true,
                 coolDownDuration: 2,
-                // FIX: Added missing properties to conform to WorkoutPreferences type
                 defaultRestDuration: 60,
                 restBetweenRounds: 120,
             }
@@ -100,7 +99,6 @@ const WorkoutHub: React.FC = () => {
                     warmUpDuration: 3,
                     includeCoolDown: true,
                     coolDownDuration: 2,
-                    // FIX: Added missing properties to conform to WorkoutPreferences type
                     defaultRestDuration: 60,
                     restBetweenRounds: 120,
                 }
@@ -122,7 +120,6 @@ const WorkoutHub: React.FC = () => {
                     warmUpDuration: 3,
                     includeCoolDown: true,
                     coolDownDuration: 2,
-                    // FIX: Added missing properties to conform to WorkoutPreferences type
                     defaultRestDuration: 60,
                     restBetweenRounds: 120,
                 }

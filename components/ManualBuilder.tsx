@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom';
 import { useWorkoutEditor } from '../hooks/useWorkoutEditor';
 import { EXERCISE_DATABASE } from '../data/exerciseDatabase';
-import { Exercise, WorkoutPlan, ExerciseDetails, ExerciseDifficulty } from '../types';
+import { Exercise, WorkoutPlan, ExerciseDetails, ExerciseDifficulty, ExerciseEquipment } from '../types';
 import { toastStore } from '../store/toastStore';
 import { saveCustomWorkout } from '../services/workoutService';
 import { getSuggestedMainExercise, getSingleSuggestedExercise } from '../services/exerciseService';
@@ -79,14 +79,14 @@ const ExerciseSearchOverlay: React.FC<{
             (ex.keywords && ex.keywords.some(k => k.toLowerCase().includes(searchTermLower)));
 
         // Difficulty Match
-        const difficultyMatch = selectedDifficulties.length === 0 || selectedDifficulties.includes(ex.difficulty);
+        const difficultyMatch = selectedDifficulties.length === 0 || ex.skillLevels.some(l => selectedDifficulties.includes(l));
         
         // Equipment Match
         const equipmentMatch = selectedEquipment.length === 0 || selectedEquipment.some(selected => {
             const selectedFormatted = selected.toLowerCase().replace(/ /g, '-');
-            if (selected === 'Jump Rope') return ['rope', 'weighted-rope'].includes(ex.equipment);
-            if (selected === 'Machine') return ['cable-machine', 'leg-press-machine'].includes(ex.equipment);
-            return ex.equipment === selectedFormatted;
+            if (selected === 'Jump Rope') return ex.equipment.includes('rope') || ex.equipment.includes('weighted-rope');
+            if (selected === 'Machine') return ex.equipment.includes('cable-machine') || ex.equipment.includes('leg-press-machine');
+            return ex.equipment.includes(selectedFormatted as ExerciseEquipment);
         });
         
         // Muscle Group Match
@@ -99,13 +99,13 @@ const ExerciseSearchOverlay: React.FC<{
   const categorizedResults = useMemo(() => {
     const grouped: { [key: string]: ExerciseDetails[] } = {};
 
-    filteredExercises.forEach(ex => {
-        let key = ex.equipment.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    filteredExercises.forEach(exercise => {
+        let key = (exercise.equipment[0] || 'bodyweight').replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
         if (['Rope', 'Weighted Rope'].includes(key)) key = 'Jump Rope';
         if (['Cable Machine', 'Leg Press Machine'].includes(key)) key = 'Machine';
         
         if (!grouped[key]) grouped[key] = [];
-        grouped[key].push(ex);
+        grouped[key].push(exercise);
     });
     
     const sortedEntries = Object.entries(grouped).sort(([categoryA], [categoryB]) => categoryA.localeCompare(categoryB));
@@ -169,7 +169,7 @@ const ExerciseSearchOverlay: React.FC<{
                           className="w-full text-left p-4 hover:bg-orange-500/20 transition-colors"
                         >
                           <p className="font-semibold text-white">{ex.name}</p>
-                          <p className="text-xs text-gray-400 capitalize">{ex.equipment.replace(/-/g, ' ')}</p>
+                          <p className="text-xs text-gray-400 capitalize">{ex.equipment.join(', ').replace(/-/g, ' ')}</p>
                         </button>
                     ))}
                  </div>
@@ -260,6 +260,11 @@ const ManualBuilder: React.FC = () => {
 
 
   const handleAddExercise = useCallback((exerciseDetails: ExerciseDetails) => {
+    const skillToDifficulty: Record<string, ExerciseDifficulty> = {
+        'Beginner': 'Easy',
+        'Intermediate': 'Medium',
+        'Advanced': 'Hard',
+    };
     const newExercise: Omit<Exercise, 'id' | 'status'> = {
       exercise: exerciseDetails.name,
       unit: 'reps',
@@ -267,8 +272,8 @@ const ManualBuilder: React.FC = () => {
       reps: 10,
       sets: 3,
       rest: editor.preferences.universalRestDuration,
-      difficulty: (exerciseDetails.difficulty as ExerciseDifficulty) || 'Medium',
-      equipment: exerciseDetails.equipment,
+      difficulty: skillToDifficulty[exerciseDetails.skillLevels[0]] || 'Medium',
+      equipment: exerciseDetails.equipment[0] || 'bodyweight',
     };
     editor.addExercise(newExercise, 'rounds', { index: editor.plan?.rounds.length });
     setIsSearchOpen(false);

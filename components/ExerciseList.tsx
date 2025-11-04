@@ -76,7 +76,7 @@ const ExerciseList: React.FC = () => {
       
           if (viewMode === null) return true; // Only search matters if no view is selected
       
-          const difficultyMatch = selectedDifficulties.length === 0 || selectedDifficulties.includes(ex.difficulty);
+          const difficultyMatch = selectedDifficulties.length === 0 || ex.skillLevels.some(level => selectedDifficulties.includes(level));
           if (!difficultyMatch) return false;
 
           const workoutTypeMatch = selectedWorkoutTypes.length === 0 || selectedWorkoutTypes.includes(ex.workoutType);
@@ -87,9 +87,9 @@ const ExerciseList: React.FC = () => {
               selectedEquipment.length === 0 ||
               selectedEquipment.some(selected => {
                 const selectedFormatted = selected.toLowerCase().replace(/ /g, '-');
-                if (selected === 'Jump Rope') return ['rope', 'weighted-rope'].includes(ex.equipment);
-                if (selected === 'Machine') return ['cable-machine', 'leg-press-machine'].includes(ex.equipment);
-                return ex.equipment === selectedFormatted;
+                if (selected === 'Jump Rope') return ex.equipment.includes('rope') || ex.equipment.includes('weighted-rope');
+                if (selected === 'Machine') return ex.equipment.includes('cable-machine') || ex.equipment.includes('leg-press-machine');
+                return ex.equipment.includes(selectedFormatted as any);
               })
             );
           }
@@ -111,7 +111,8 @@ const ExerciseList: React.FC = () => {
     
         if (viewMode === 'equipment') {
           filteredExercises.forEach(ex => {
-            let key = ex.equipment.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            const mainEquipment = ex.equipment[0] || 'bodyweight';
+            let key = mainEquipment.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
             if (['Rope', 'Weighted Rope'].includes(key)) key = 'Jump Rope';
             if (['Cable Machine', 'Leg Press Machine'].includes(key)) key = 'Machine';
             if (ex.category === 'Flexibility & Mobility') key = 'Flexibility & Mobility';
@@ -304,7 +305,7 @@ const ExerciseList: React.FC = () => {
                                         className="block bg-gray-700 p-4 rounded-lg hover:bg-gray-600 hover:ring-2 hover:ring-orange-500 transition-all"
                                     >
                                         <h3 className="font-semibold text-white">{ex.name}</h3>
-                                        <p className="text-sm text-gray-400 capitalize">{ex.difficulty} &bull; {ex.category}</p>
+                                        <p className="text-sm text-gray-400 capitalize">{ex.skillLevels[0]}</p>
                                     </Link>
                                 ))}
                             </div>
@@ -324,7 +325,7 @@ const ExerciseList: React.FC = () => {
                                                 className="block bg-gray-700 p-4 rounded-lg hover:bg-gray-600 hover:ring-2 hover:ring-orange-500 transition-all"
                                             >
                                                 <h3 className="font-semibold text-white">{ex.name}</h3>
-                                                <p className="text-sm text-gray-400 capitalize">{ex.difficulty} &bull; {ex.category}</p>
+                                                <p className="text-sm text-gray-400 capitalize">{ex.skillLevels.join(', ')}</p>
                                             </Link>
                                         ))}
                                     </div>

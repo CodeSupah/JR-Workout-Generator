@@ -70,7 +70,6 @@ const ActivityOverview: React.FC = () => {
     const [periodLabel, setPeriodLabel] = useState('');
 
     useEffect(() => {
-        // FIX: getWorkoutHistory is a synchronous function, so we don't need to use .then()
         setHistory(getWorkoutHistory());
     }, []);
 
