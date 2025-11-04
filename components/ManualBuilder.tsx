@@ -84,8 +84,8 @@ const ExerciseSearchOverlay: React.FC<{
         // Equipment Match
         const equipmentMatch = selectedEquipment.length === 0 || selectedEquipment.some(selected => {
             const selectedFormatted = selected.toLowerCase().replace(/ /g, '-');
-            if (selected === 'Jump Rope') return ex.equipment.includes('rope') || ex.equipment.includes('weighted-rope');
-            if (selected === 'Machine') return ex.equipment.includes('cable-machine') || ex.equipment.includes('leg-press-machine');
+            if (selected === 'Jump Rope') return ex.equipment.includes('jump-rope');
+            if (['Machine', 'Barbell', 'Kettlebell', 'Resistance Band'].includes(selected)) return ex.equipment.includes('gym-equipment');
             return ex.equipment.includes(selectedFormatted as ExerciseEquipment);
         });
         
@@ -101,8 +101,8 @@ const ExerciseSearchOverlay: React.FC<{
 
     filteredExercises.forEach(exercise => {
         let key = (exercise.equipment[0] || 'bodyweight').replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-        if (['Rope', 'Weighted Rope'].includes(key)) key = 'Jump Rope';
-        if (['Cable Machine', 'Leg Press Machine'].includes(key)) key = 'Machine';
+        if (['Jump Rope'].includes(key)) key = 'Jump Rope';
+        if (['Gym Equipment'].includes(key)) key = 'Gym Equipment';
         
         if (!grouped[key]) grouped[key] = [];
         grouped[key].push(exercise);
@@ -575,6 +575,7 @@ const ManualBuilder: React.FC = () => {
                                         allowLinking={true}
                                         isInGroup={!!(exercise.sets && exercise.sets > 1)}
                                         isDragging={draggingId === exercise.id}
+// FIX: Corrected typo `ex.id` to `exercise.id`
                                         isExpanded={exercise.id === expandedExerciseId}
                                         onToggleExpand={handleToggleExpand}
                                     />

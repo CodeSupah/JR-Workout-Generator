@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { Exercise, ExerciseDetails, WorkoutPreferences, SkillLevel, WorkoutType, WorkoutEnvironment, ExerciseDifficulty, ExerciseEquipment, WorkoutGoal } from '../types';
+// FIX: Import ExerciseDifficulty to resolve typing error.
+import { Exercise, ExerciseDetails, WorkoutPreferences, SkillLevel, WorkoutType, ExerciseEquipment, WorkoutGoal, ExerciseDifficulty } from '../types';
 import { EXERCISE_DATABASE } from '../data/exerciseDatabase';
 import { SparklesIcon, DumbbellIcon, RunIcon } from './icons/Icons';
 
@@ -40,8 +41,6 @@ const ExerciseModal: React.FC<ExerciseModalProps> = ({ isOpen, onClose, onSelect
     );
     // A bit of custom logic to group similar equipment for a cleaner filter UI
     const mapped = Array.from(equipmentSet).map(e => {
-      if (['rope', 'weighted-rope'].includes(e)) return 'Jump Rope';
-      if (['cable-machine', 'leg-press-machine'].includes(e)) return 'Machine';
       return e.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
     });
     return [...new Set(mapped)].sort();
@@ -77,33 +76,12 @@ const ExerciseModal: React.FC<ExerciseModalProps> = ({ isOpen, onClose, onSelect
     
     return EXERCISE_DATABASE.filter(ex => {
         if (ex.purpose !== 'main') return false;
-
         if (!ex.skillLevels.includes(prefs.skillLevel)) return false;
-
         if (!ex.goals.includes(prefs.goal)) return false;
 
-        let equipmentMatch = false;
-        switch (prefs.environment) {
-            case WorkoutEnvironment.Gym:
-                const gymEquipmentTypes: ExerciseEquipment[] = ['dumbbell', 'resistance-band', 'kettlebell', 'barbell', 'cable-machine', 'leg-press-machine', 'pull-up-bar', 'rope', 'weighted-rope', 'bodyweight'];
-                if (ex.equipment.every(req => gymEquipmentTypes.includes(req))) equipmentMatch = true;
-                break;
-            case WorkoutEnvironment.HomeLimited:
-                 const homeEquipmentMap: { [key: string]: ExerciseEquipment[] } = {
-                    'Dumbbells': ['dumbbell'],
-                    'Kettlebell': ['kettlebell'],
-                    'Resistance Bands': ['resistance-band'],
-                    'Jump Rope': ['rope', 'weighted-rope'],
-                    'Pull-up Bar': ['pull-up-bar']
-                  };
-                  const availableDBEquipment = ['bodyweight', ...prefs.homeEquipment.flatMap(item => homeEquipmentMap[item] || [])];
-                if (ex.equipment.every(req => availableDBEquipment.includes(req))) equipmentMatch = true;
-                break;
-            case WorkoutEnvironment.HomeBodyweight:
-                if (ex.equipment.length === 1 && ex.equipment[0] === 'bodyweight') equipmentMatch = true;
-                break;
-        }
+        const equipmentMatch = ex.equipment.every(req => prefs.availableEquipment.includes(req));
         if (!equipmentMatch) return false;
+        
         if (exerciseToEdit && ex.name === exerciseToEdit.exercise) return false;
 
         return true;
@@ -154,8 +132,6 @@ const ExerciseModal: React.FC<ExerciseModalProps> = ({ isOpen, onClose, onSelect
           selectedEquipment.length === 0 ||
           selectedEquipment.some(selected => {
             const selectedFormatted = selected.toLowerCase().replace(/ /g, '-');
-            if (selected === 'Jump Rope') return ex.equipment.includes('rope') || ex.equipment.includes('weighted-rope');
-            if (selected === 'Machine') return ex.equipment.includes('cable-machine') || ex.equipment.includes('leg-press-machine');
             return ex.equipment.includes(selectedFormatted as ExerciseEquipment);
           })
         );
@@ -182,8 +158,6 @@ const ExerciseModal: React.FC<ExerciseModalProps> = ({ isOpen, onClose, onSelect
         filteredExercises.forEach(ex => {
             const mainEquipment = ex.equipment[0] || 'bodyweight';
             let key = mainEquipment.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-            if (['Rope', 'Weighted Rope'].includes(key)) key = 'Jump Rope';
-            if (['Cable Machine', 'Leg Press Machine'].includes(key)) key = 'Machine';
             if (!grouped[key]) grouped[key] = [];
             grouped[key].push(ex);
         });
@@ -207,7 +181,7 @@ const ExerciseModal: React.FC<ExerciseModalProps> = ({ isOpen, onClose, onSelect
     }
     
     const sortedGrouped: { [key: string]: ExerciseDetails[] } = {};
-    const categoryOrder = ['Bodyweight', 'Jump Rope', 'Resistance Band', 'Dumbbell', 'Kettlebell', 'Barbell', 'Machine'];
+    const categoryOrder = ['Bodyweight', 'Jump Rope', 'Dumbbell', 'Gym Equipment'];
     const sortedKeys = Object.keys(grouped).sort((a, b) => {
         const indexA = categoryOrder.indexOf(a);
         const indexB = categoryOrder.indexOf(b);

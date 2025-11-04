@@ -6,19 +6,14 @@ export enum SkillLevel {
   Advanced = 'Advanced',
 }
 
-export enum WorkoutEnvironment {
-  Gym = 'Full Gym / Weights',
-  HomeBodyweight = 'Home Bodyweight Only',
-  HomeLimited = 'Home Limited Equipment',
+export enum WorkoutGoal {
+    Strength = 'Strength',
+    Cardio = 'Cardio',
+    Mobility = 'Mobility',
+    Core = 'Core',
+    FullBody = 'Full Body',
 }
 
-export enum WorkoutGoal {
-    MuscleGain = 'Muscle Gain / Hypertrophy',
-    StrengthPower = 'Strength / Power',
-    FatLoss = 'Fat Loss / Conditioning',
-    GeneralFitness = 'General Fitness / Maintenance',
-    RecoveryMobility = 'Recovery / Mobility',
-}
 
 export type WorkoutMode = 'jump-rope' | 'equipment' | 'no-equipment';
 
@@ -26,8 +21,7 @@ export interface WorkoutPreferences {
   duration: number;
   skillLevel: SkillLevel;
   goal: WorkoutGoal;
-  environment: WorkoutEnvironment;
-  homeEquipment: string[];
+  availableEquipment: ExerciseEquipment[];
   rounds: number;
   includeWarmUp: boolean;
   warmUpDuration: number;
@@ -45,7 +39,7 @@ export interface EditorWorkoutPreferences {
 
 export type ExerciseDifficulty = 'Easy' | 'Medium' | 'Hard';
 
-export type ExerciseEquipment = 'bodyweight' | 'rope' | 'weighted-rope' | 'dumbbell' | 'resistance-band' | 'kettlebell' | 'barbell' | 'cable-machine' | 'leg-press-machine' | 'pull-up-bar';
+export type ExerciseEquipment = 'bodyweight' | 'jump-rope' | 'dumbbell' | 'gym-equipment';
 
 
 export interface Exercise {

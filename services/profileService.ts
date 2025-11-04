@@ -22,7 +22,7 @@ export const getUserProfile = async (): Promise<UserProfile> => {
     dob: null,
     height: 170, // cm
     weight: 65, // kg
-    primaryGoal: WorkoutGoal.GeneralFitness,
+    primaryGoal: WorkoutGoal.FullBody,
     preferences: {
       units: 'Metric',
       sound: {

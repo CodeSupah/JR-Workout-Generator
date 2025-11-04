@@ -6,16 +6,18 @@ import { loadCustomWorkouts, deleteCustomWorkout } from '../services/workoutServ
 import { generateWorkoutPlan } from '../services/geminiService';
 import { toastStore } from '../store/toastStore';
 import { profileStore } from '../store/profileStore';
-import { WorkoutPlan, WorkoutPreferences, SkillLevel, WorkoutGoal, UserProfile, WorkoutEnvironment } from '../types';
+// FIX: Removed non-existent `WorkoutEnvironment` type.
+import { WorkoutPlan, WorkoutPreferences, SkillLevel, WorkoutGoal, UserProfile } from '../types';
 import { PROGRAM_CATEGORIES } from '../data/programs';
 import { PlusIcon, FolderOpenIcon, CogIcon, SparklesIcon } from './icons/Icons';
 
+// FIX: Updated goalToTitleMap to use current WorkoutGoal enum values.
 const goalToTitleMap: Record<WorkoutGoal, string> = {
-    [WorkoutGoal.MuscleGain]: "Muscle Gain Focus",
-    [WorkoutGoal.StrengthPower]: "Strength & Power",
-    [WorkoutGoal.FatLoss]: "Fat Loss & Conditioning",
-    [WorkoutGoal.GeneralFitness]: "General Fitness",
-    [WorkoutGoal.RecoveryMobility]: "Recovery & Mobility",
+    [WorkoutGoal.Strength]: "Strength Focus",
+    [WorkoutGoal.Cardio]: "Cardio Blast",
+    [WorkoutGoal.Mobility]: "Mobility & Flow",
+    [WorkoutGoal.Core]: "Core Crusher",
+    [WorkoutGoal.FullBody]: "Full Body Burn",
 };
 
 const WorkoutHub: React.FC = () => {
@@ -23,12 +25,14 @@ const WorkoutHub: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
     
+    // State for view management, now initialized based on navigation state
     const [view, setView] = useState<'hub' | 'generator'>(
         location.state?.autoShowGenerator ? 'generator' : 'hub'
     );
     const [isGeneratingSuggested, setIsGeneratingSuggested] = useState(false);
     const [suggestedWorkout, setSuggestedWorkout] = useState({ title: '', preferences: {} as Partial<WorkoutPreferences> });
 
+    // State for user profile and goal-based workouts
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [primaryGoalWorkout, setPrimaryGoalWorkout] = useState<{ title: string; preferences: Partial<WorkoutPreferences> } | null>(null);
     const [secondaryGoalWorkout, setSecondaryGoalWorkout] = useState<{ title: string; preferences: Partial<WorkoutPreferences> } | null>(null);
@@ -36,23 +40,26 @@ const WorkoutHub: React.FC = () => {
     const [isGeneratingSecondary, setIsGeneratingSecondary] = useState(false);
 
     useEffect(() => {
+        // If we were automatically shown the generator from another page,
+        // clear the location state so that a page refresh doesn't bring us back to the generator.
         if (location.state?.autoShowGenerator) {
             navigate(location.pathname, { replace: true, state: {} });
         }
     }, [location.state, location.pathname, navigate]);
 
     useEffect(() => {
+        // This will run once to set up the random suggested workout title and preferences
         const goals = Object.values(WorkoutGoal);
         const randomGoal = goals[Math.floor(Math.random() * goals.length)];
         const duration = [15, 20, 25][Math.floor(Math.random() * 3)];
         setSuggestedWorkout({
             title: `Your Daily ${randomGoal} Focus`,
+            // FIX: Updated preferences object to match current type definition.
             preferences: {
                 duration,
                 skillLevel: SkillLevel.Intermediate,
                 goal: randomGoal,
-                environment: WorkoutEnvironment.HomeLimited,
-                homeEquipment: ['Dumbbells', 'Jump Rope'],
+                availableEquipment: ['jump-rope'],
                 rounds: 3,
                 includeWarmUp: true,
                 warmUpDuration: 3,
@@ -65,18 +72,20 @@ const WorkoutHub: React.FC = () => {
     }, []);
 
     useEffect(() => {
+        // Subscribe to profile changes
         const unsubscribe = profileStore.subscribe(setProfile);
         return () => unsubscribe();
     }, []);
 
 
+    // FIX: Updated getComplementaryGoal to use current WorkoutGoal enum values.
     const getComplementaryGoal = (primary: WorkoutGoal): WorkoutGoal => {
-        const map: Record<string, WorkoutGoal> = {
-            [WorkoutGoal.MuscleGain]: WorkoutGoal.FatLoss,
-            [WorkoutGoal.StrengthPower]: WorkoutGoal.GeneralFitness,
-            [WorkoutGoal.FatLoss]: WorkoutGoal.MuscleGain,
-            [WorkoutGoal.GeneralFitness]: WorkoutGoal.RecoveryMobility,
-            [WorkoutGoal.RecoveryMobility]: WorkoutGoal.GeneralFitness,
+        const map: Record<WorkoutGoal, WorkoutGoal> = {
+            [WorkoutGoal.Strength]: WorkoutGoal.Cardio,
+            [WorkoutGoal.Cardio]: WorkoutGoal.Strength,
+            [WorkoutGoal.Mobility]: WorkoutGoal.FullBody,
+            [WorkoutGoal.Core]: WorkoutGoal.FullBody,
+            [WorkoutGoal.FullBody]: WorkoutGoal.Core,
         };
         return map[primary];
     };
@@ -88,12 +97,12 @@ const WorkoutHub: React.FC = () => {
 
             setPrimaryGoalWorkout({
                 title: primaryTitle,
+                // FIX: Updated preferences object to match current type definition.
                 preferences: {
                     duration: 20,
                     skillLevel: SkillLevel.Intermediate,
                     goal: primaryGoal,
-                    environment: WorkoutEnvironment.Gym,
-                    homeEquipment: [],
+                    availableEquipment: ['gym-equipment'],
                     rounds: 3,
                     includeWarmUp: true,
                     warmUpDuration: 3,
@@ -109,12 +118,12 @@ const WorkoutHub: React.FC = () => {
 
             setSecondaryGoalWorkout({
                 title: secondaryTitle,
+                // FIX: Updated preferences object to match current type definition.
                 preferences: {
                     duration: 20,
                     skillLevel: SkillLevel.Intermediate,
                     goal: secondaryGoal,
-                    environment: WorkoutEnvironment.HomeBodyweight,
-                    homeEquipment: [],
+                    availableEquipment: ['bodyweight'],
                     rounds: 4,
                     includeWarmUp: true,
                     warmUpDuration: 3,
@@ -134,6 +143,7 @@ const WorkoutHub: React.FC = () => {
     };
 
     useEffect(() => {
+        // Fetch routines when in hub view
         if (view === 'hub') {
             fetchRoutines();
         }

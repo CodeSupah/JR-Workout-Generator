@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { SkillLevel, WorkoutGoal, WorkoutPreferences, WorkoutPlan, Exercise, WorkoutEnvironment } from '../types';
+import { SkillLevel, WorkoutGoal, WorkoutPreferences, WorkoutPlan, Exercise, ExerciseEquipment } from '../types';
 import { generateWorkoutPlan } from '../services/geminiService';
-import { DumbbellIcon, FlameIcon, RunIcon, StarIcon, TargetIcon, ZapIcon, EditIcon, RopeIcon, SparklesIcon, CogIcon, BuildingOfficeIcon, HomeIcon, ChevronDownIcon, StretchIcon } from './icons/Icons';
+import { DumbbellIcon, FlameIcon, RunIcon, TargetIcon, CogIcon, BuildingOfficeIcon, RopeIcon, StretchIcon } from './icons/Icons';
 import { useWorkoutEditor } from '../hooks/useWorkoutEditor';
 import EditableWorkoutPlan from './EditableWorkoutPlan';
 import { toastStore } from '../store/toastStore';
@@ -22,28 +22,29 @@ const formatTime = (totalSeconds: number): string => {
   return `${minutes}m ${seconds}s`;
 };
 
-// New component for selecting available equipment in 'Home Limited' mode
-const HOME_EQUIPMENT_LIST = ['Dumbbells', 'Kettlebell', 'Resistance Bands', 'Jump Rope', 'Pull-up Bar'];
 
-const HomeEquipmentSelector: React.FC<{ selected: string[], onChange: (selected: string[]) => void }> = ({ selected, onChange }) => {
-  const handleToggle = (item: string) => {
+const EQUIPMENT_LIST: { id: ExerciseEquipment; label: string; icon: React.ReactNode }[] = [
+    { id: 'bodyweight', label: 'Bodyweight', icon: <RunIcon className="w-5 h-5" /> },
+    { id: 'dumbbell', label: 'Dumbbells', icon: <DumbbellIcon className="w-5 h-5" /> },
+    { id: 'jump-rope', label: 'Jump Rope', icon: <RopeIcon className="w-5 h-5" /> },
+    { id: 'gym-equipment', label: 'Gym Equipment', icon: <BuildingOfficeIcon className="w-5 h-5" /> },
+];
+
+const EquipmentSelector: React.FC<{ selected: ExerciseEquipment[], onChange: (selected: ExerciseEquipment[]) => void }> = ({ selected, onChange }) => {
+  const handleToggle = (item: ExerciseEquipment) => {
+    // Ensure at least one option is always selected
+    if (selected.length === 1 && selected[0] === item) return;
     onChange(selected.includes(item) ? selected.filter(i => i !== item) : [...selected, item]);
   };
-
   return (
-    <div className="space-y-2 animate-fade-in">
+    <div className="space-y-2">
       <label className="text-lg font-semibold">Available Equipment (Select all that apply)</label>
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-        {HOME_EQUIPMENT_LIST.map(item => (
-          <label key={item} className={`flex items-center gap-2 p-3 rounded-lg cursor-pointer transition-all ${selected.includes(item) ? 'bg-orange-500 text-white shadow-md' : 'bg-gray-700 hover:bg-gray-600'}`}>
-            <input
-              type="checkbox"
-              checked={selected.includes(item)}
-              onChange={() => handleToggle(item)}
-              className="w-4 h-4 rounded bg-gray-600 border-gray-500 text-orange-600 focus:ring-orange-500/50"
-            />
-            <span className="text-sm font-medium">{item}</span>
-          </label>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        {EQUIPMENT_LIST.map(item => (
+          <button key={item.id} onClick={() => handleToggle(item.id)} className={`flex flex-col items-center justify-center gap-2 p-3 rounded-lg cursor-pointer transition-all ${selected.includes(item.id) ? 'bg-orange-500 text-white shadow-md' : 'bg-gray-700 hover:bg-gray-600'}`}>
+            {item.icon}
+            <span className="text-sm font-medium text-center">{item.label}</span>
+          </button>
         ))}
       </div>
     </div>
@@ -56,10 +57,9 @@ const WorkoutGenerator: React.FC = () => {
   const [preferences, setPreferences] = useState<{ duration: number; skillLevel: SkillLevel; goal: WorkoutGoal; }>({
     duration: 20,
     skillLevel: SkillLevel.Beginner,
-    goal: WorkoutGoal.GeneralFitness,
+    goal: WorkoutGoal.FullBody,
   });
-  const [environment, setEnvironment] = useState<WorkoutEnvironment>(WorkoutEnvironment.Gym);
-  const [homeEquipment, setHomeEquipment] = useState<string[]>(['Dumbbells', 'Jump Rope']);
+  const [availableEquipment, setAvailableEquipment] = useState<ExerciseEquipment[]>(['bodyweight']);
   const [rounds, setRounds] = useState(3);
   const [includeWarmUp, setIncludeWarmUp] = useState(true);
   const [warmUpDuration, setWarmUpDuration] = useState(3);
@@ -79,8 +79,7 @@ const WorkoutGenerator: React.FC = () => {
   // Helper to gather all state into the full preferences object for saving
   const getFullPreferencesForSaving = (): Omit<WorkoutPreferences, 'restBetweenRounds'> => ({
       ...preferences,
-      environment,
-      homeEquipment,
+      availableEquipment,
       rounds,
       includeWarmUp,
       warmUpDuration,
@@ -97,10 +96,9 @@ const WorkoutGenerator: React.FC = () => {
       setPreferences({
           duration: parsedPrefs.duration || 20,
           skillLevel: parsedPrefs.skillLevel || SkillLevel.Beginner,
-          goal: parsedPrefs.goal || WorkoutGoal.GeneralFitness,
+          goal: parsedPrefs.goal || WorkoutGoal.FullBody,
       });
-      setEnvironment(parsedPrefs.environment || WorkoutEnvironment.Gym);
-      setHomeEquipment(parsedPrefs.homeEquipment || ['Dumbbells', 'Jump Rope']);
+      setAvailableEquipment(parsedPrefs.availableEquipment || ['bodyweight']);
       setRounds(parsedPrefs.rounds || 3);
       setIncludeWarmUp(parsedPrefs.includeWarmUp !== undefined ? parsedPrefs.includeWarmUp : true);
       setWarmUpDuration(parsedPrefs.warmUpDuration || 3);
@@ -114,7 +112,7 @@ const WorkoutGenerator: React.FC = () => {
   // Save preferences to localStorage whenever they change
   useEffect(() => {
     localStorage.setItem('workoutPreferences', JSON.stringify(getFullPreferencesForSaving()));
-  }, [preferences, environment, homeEquipment, rounds, includeWarmUp, warmUpDuration, includeCoolDown, coolDownDuration, defaultRestDuration, useGlobalExerciseRest]);
+  }, [preferences, availableEquipment, rounds, includeWarmUp, warmUpDuration, includeCoolDown, coolDownDuration, defaultRestDuration, useGlobalExerciseRest]);
 
 
   // Load a suggested plan from sessionStorage if available
@@ -134,8 +132,7 @@ const WorkoutGenerator: React.FC = () => {
               skillLevel: savedPrefs.skillLevel,
               goal: savedPrefs.goal,
             });
-            setEnvironment(savedPrefs.environment);
-            setHomeEquipment(savedPrefs.homeEquipment);
+            setAvailableEquipment(savedPrefs.availableEquipment);
             setRounds(savedPrefs.rounds);
             setIncludeWarmUp(savedPrefs.includeWarmUp);
             setWarmUpDuration(savedPrefs.warmUpDuration);
@@ -160,8 +157,7 @@ const WorkoutGenerator: React.FC = () => {
   // Gathers all state for AI generation, applying logic for global rest toggles
   const getFullPreferencesForGeneration = (): WorkoutPreferences => ({
       ...preferences,
-      environment,
-      homeEquipment: environment === WorkoutEnvironment.HomeLimited ? homeEquipment : [],
+      availableEquipment,
       rounds,
       includeWarmUp,
       warmUpDuration,
@@ -174,7 +170,7 @@ const WorkoutGenerator: React.FC = () => {
   const hasChanges = useMemo(() => {
     if (!originalPreferences) return false;
     return JSON.stringify(getFullPreferencesForGeneration()) !== JSON.stringify(originalPreferences);
-  }, [preferences, environment, homeEquipment, rounds, includeWarmUp, warmUpDuration, includeCoolDown, coolDownDuration, defaultRestDuration, useGlobalExerciseRest, originalPreferences]);
+  }, [preferences, availableEquipment, rounds, includeWarmUp, warmUpDuration, includeCoolDown, coolDownDuration, defaultRestDuration, useGlobalExerciseRest, originalPreferences]);
 
 
   const handlePreferenceChange = <K extends keyof typeof preferences>(
@@ -206,12 +202,6 @@ const WorkoutGenerator: React.FC = () => {
 
   const isUpdating = editor.plan && !isEditing;
   
-  const environmentOptions = [
-    { id: WorkoutEnvironment.Gym, label: 'Full Gym / Weights', icon: <BuildingOfficeIcon className="w-5 h-5" /> },
-    { id: WorkoutEnvironment.HomeLimited, label: 'Home Limited Equipment', icon: <HomeIcon className="w-5 h-5" /> },
-    { id: WorkoutEnvironment.HomeBodyweight, label: 'Home Bodyweight Only', icon: <RunIcon className="w-5 h-5" /> },
-  ];
-  
   return (
     <div className={`max-w-4xl mx-auto ${isEditing ? 'pb-40' : 'pb-28'}`}>
       <div className={`bg-gray-800/50 p-6 md:p-8 rounded-2xl shadow-2xl backdrop-blur-sm transition-all duration-500 ${isEditing ? 'mb-8' : ''}`}>
@@ -220,34 +210,14 @@ const WorkoutGenerator: React.FC = () => {
               <h2 className="text-3xl font-bold mb-1">Let's build your workout</h2>
               <p className="text-gray-400 mb-6">Customize your session and let AI do the rest.</p>
             </div>
-            {/* The 'Regenerate' button has been moved to EditableWorkoutPlan for better UX context */}
         </div>
 
         {/* Hide form when editing to focus on the plan */}
         <div className={`${isEditing ? 'hidden' : 'animate-fade-in'}`}>
-            {/* REORDERED LAYOUT as per request */}
             <div className="space-y-6">
                 
-                {/* 1. Workout Environment */}
-                <div>
-                  <label className="text-lg font-semibold mb-2 block">Workout Environment</label>
-                  <div className="grid grid-cols-3 gap-2 bg-gray-900/50 p-1 rounded-xl">
-                    {environmentOptions.map(env => (
-                      <button
-                        key={env.id}
-                        onClick={() => setEnvironment(env.id)}
-                        className={`flex flex-col sm:flex-row items-center justify-center gap-2 py-3 px-2 rounded-lg text-sm font-medium transition-all ${
-                          environment === env.id
-                            ? 'bg-orange-500 text-white shadow-md'
-                            : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
-                        }`}
-                      >
-                        {env.icon}
-                        <span className="text-xs sm:text-sm text-center sm:text-left">{env.label}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                {/* 1. Equipment Selector */}
+                <EquipmentSelector selected={availableEquipment} onChange={setAvailableEquipment} />
 
                 {/* 2. Skill Level */}
                 <div className="space-y-2">
@@ -271,11 +241,11 @@ const WorkoutGenerator: React.FC = () => {
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
                     {(Object.values(WorkoutGoal)).map(goal => {
                         const icons: {[key in WorkoutGoal]: React.ReactNode} = {
-                            [WorkoutGoal.MuscleGain]: <DumbbellIcon className="w-5 h-5"/>,
-                            [WorkoutGoal.StrengthPower]: <ZapIcon className="w-5 h-5"/>,
-                            [WorkoutGoal.FatLoss]: <FlameIcon className="w-5 h-5"/>,
-                            [WorkoutGoal.GeneralFitness]: <RunIcon className="w-5 h-5"/>,
-                            [WorkoutGoal.RecoveryMobility]: <StretchIcon className="w-5 h-5"/>,
+                            [WorkoutGoal.Strength]: <DumbbellIcon className="w-5 h-5"/>,
+                            [WorkoutGoal.Cardio]: <FlameIcon className="w-5 h-5"/>,
+                            [WorkoutGoal.Mobility]: <StretchIcon className="w-5 h-5"/>,
+                            [WorkoutGoal.Core]: <TargetIcon className="w-5 h-5"/>,
+                            [WorkoutGoal.FullBody]: <RunIcon className="w-5 h-5"/>,
                         }
                         return (
                             <button
@@ -290,13 +260,6 @@ const WorkoutGenerator: React.FC = () => {
                     })}
                     </div>
                 </div>
-
-                {/* 4. Conditional Equipment Selector */}
-                {environment === WorkoutEnvironment.HomeLimited && (
-                    <div className="animate-fade-in">
-                        <HomeEquipmentSelector selected={homeEquipment} onChange={setHomeEquipment} />
-                    </div>
-                )}
                
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {/* Duration Slider */}

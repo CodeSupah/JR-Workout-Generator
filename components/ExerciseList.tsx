@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { ExerciseDetails, WorkoutType } from '../types';
+import { ExerciseDetails, WorkoutType, ExerciseEquipment } from '../types';
 import { getAllExercises } from '../services/exerciseService';
 import { BookOpenIcon, DumbbellIcon, RunIcon } from './icons/Icons';
 
@@ -87,8 +87,10 @@ const ExerciseList: React.FC = () => {
               selectedEquipment.length === 0 ||
               selectedEquipment.some(selected => {
                 const selectedFormatted = selected.toLowerCase().replace(/ /g, '-');
-                if (selected === 'Jump Rope') return ex.equipment.includes('rope') || ex.equipment.includes('weighted-rope');
-                if (selected === 'Machine') return ex.equipment.includes('cable-machine') || ex.equipment.includes('leg-press-machine');
+// FIX: Use 'jump-rope' which is a valid ExerciseEquipment type.
+                if (selected === 'Jump Rope') return ex.equipment.includes('jump-rope');
+// FIX: Use 'gym-equipment' which is a valid ExerciseEquipment type for machines.
+                if (selected === 'Machine') return ex.equipment.includes('gym-equipment');
                 return ex.equipment.includes(selectedFormatted as any);
               })
             );
