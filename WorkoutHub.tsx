@@ -6,18 +6,18 @@ import { loadCustomWorkouts, deleteCustomWorkout } from '../services/workoutServ
 import { generateWorkoutPlan } from '../services/geminiService';
 import { toastStore } from '../store/toastStore';
 import { profileStore } from '../store/profileStore';
-// FIX: Removed non-existent 'Equipment' type.
-import { WorkoutPlan, WorkoutPreferences, SkillLevel, WorkoutGoal, UserProfile, WorkoutEnvironment } from '../types';
+import { WorkoutPlan, WorkoutPreferences, SkillLevel, WorkoutGoal, UserProfile } from '../types';
 import { PROGRAM_CATEGORIES } from '../data/programs';
 import { PlusIcon, FolderOpenIcon, CogIcon, SparklesIcon } from './icons/Icons';
 
 // FIX: Updated goalToTitleMap to use current WorkoutGoal enum values.
 const goalToTitleMap: Record<WorkoutGoal, string> = {
-    [WorkoutGoal.MuscleGain]: "Muscle Gain Focus",
-    [WorkoutGoal.StrengthPower]: "Strength & Power",
-    [WorkoutGoal.FatLoss]: "Fat Loss & Conditioning",
-    [WorkoutGoal.GeneralFitness]: "General Fitness",
-    [WorkoutGoal.RecoveryMobility]: "Recovery & Mobility",
+    [WorkoutGoal.Strength]: "Strength Focus",
+    [WorkoutGoal.Cardio]: "Cardio Blast",
+    [WorkoutGoal.Endurance]: "Endurance Challenge",
+    [WorkoutGoal.Mobility]: "Mobility & Flow",
+    [WorkoutGoal.Core]: "Core Crusher",
+    [WorkoutGoal.FullBody]: "Full Body Burn",
 };
 
 const WorkoutHub: React.FC = () => {
@@ -53,19 +53,20 @@ const WorkoutHub: React.FC = () => {
         const randomGoal = goals[Math.floor(Math.random() * goals.length)];
         const duration = [15, 20, 25][Math.floor(Math.random() * 3)];
         setSuggestedWorkout({
-            title: `Your Daily ${randomGoal} Jump`,
+            title: `Your Daily ${randomGoal} Focus`,
             // FIX: Updated preferences object to match current type definition.
             preferences: {
                 duration,
                 skillLevel: SkillLevel.Intermediate,
                 goal: randomGoal,
-                environment: WorkoutEnvironment.HomeLimited,
-                homeEquipment: ['Jump Rope'],
+                availableEquipment: ['jump-rope'],
                 rounds: 3,
                 includeWarmUp: true,
                 warmUpDuration: 3,
                 includeCoolDown: true,
                 coolDownDuration: 2,
+                defaultRestDuration: 60,
+                restBetweenRounds: 120,
             }
         });
     }, []);
@@ -76,16 +77,18 @@ const WorkoutHub: React.FC = () => {
         return () => unsubscribe();
     }, []);
 
+
     // FIX: Updated getComplementaryGoal to use current WorkoutGoal enum values.
     const getComplementaryGoal = (primary: WorkoutGoal): WorkoutGoal => {
-        const map: Record<WorkoutGoal, WorkoutGoal> = {
-            [WorkoutGoal.MuscleGain]: WorkoutGoal.FatLoss,
-            [WorkoutGoal.StrengthPower]: WorkoutGoal.GeneralFitness,
-            [WorkoutGoal.FatLoss]: WorkoutGoal.MuscleGain,
-            [WorkoutGoal.GeneralFitness]: WorkoutGoal.RecoveryMobility,
-            [WorkoutGoal.RecoveryMobility]: WorkoutGoal.GeneralFitness,
+        const map: Record<string, WorkoutGoal> = {
+            [WorkoutGoal.Strength]: WorkoutGoal.Cardio,
+            [WorkoutGoal.Cardio]: WorkoutGoal.Strength,
+            [WorkoutGoal.Endurance]: WorkoutGoal.Strength,
+            [WorkoutGoal.Mobility]: WorkoutGoal.FullBody,
+            [WorkoutGoal.Core]: WorkoutGoal.FullBody,
+            [WorkoutGoal.FullBody]: WorkoutGoal.Core,
         };
-        return map[primary];
+        return map[primary] || WorkoutGoal.FullBody;
     };
 
     useEffect(() => {
@@ -100,13 +103,14 @@ const WorkoutHub: React.FC = () => {
                     duration: 20,
                     skillLevel: SkillLevel.Intermediate,
                     goal: primaryGoal,
-                    environment: WorkoutEnvironment.Gym,
-                    homeEquipment: [],
+                    availableEquipment: ['gym-equipment'],
                     rounds: 3,
                     includeWarmUp: true,
                     warmUpDuration: 3,
                     includeCoolDown: true,
                     coolDownDuration: 2,
+                    defaultRestDuration: 60,
+                    restBetweenRounds: 120,
                 }
             });
 
@@ -120,13 +124,14 @@ const WorkoutHub: React.FC = () => {
                     duration: 20,
                     skillLevel: SkillLevel.Intermediate,
                     goal: secondaryGoal,
-                    environment: WorkoutEnvironment.HomeBodyweight,
-                    homeEquipment: [],
+                    availableEquipment: ['bodyweight'],
                     rounds: 4,
                     includeWarmUp: true,
                     warmUpDuration: 3,
                     includeCoolDown: true,
                     coolDownDuration: 2,
+                    defaultRestDuration: 60,
+                    restBetweenRounds: 120,
                 }
             });
         }
@@ -178,11 +183,6 @@ const WorkoutHub: React.FC = () => {
         }
     };
     
-    // Placeholder function
-    const handleCreateFolder = () => {
-        alert("Folder creation coming soon!");
-    };
-    
     const SuggestedWorkoutButton: React.FC<{
         onClick: () => void;
         disabled: boolean;
@@ -210,6 +210,12 @@ const WorkoutHub: React.FC = () => {
             )}
         </button>
     );
+
+    const placeholderRoutines: Partial<WorkoutPlan>[] = [
+        { id: 'p1', name: 'Full-Body Strength', rounds: Array(8).fill({ duration: 45, rest: 15 }) },
+        { id: 'p2', name: 'Morning Cardio', rounds: Array(10).fill({ duration: 50, rest: 10 }) },
+        { id: 'p3', name: 'Jump Rope HIIT', rounds: Array(12).fill({ duration: 30, rest: 30 }) },
+    ];
     
     if (view === 'generator') {
         return (
@@ -261,34 +267,37 @@ const WorkoutHub: React.FC = () => {
                 </div>
             </section>
             
-            <div className="relative my-12">
-                <div className="absolute inset-0 flex items-center" aria-hidden="true"><div className="w-full border-t border-gray-700" /></div>
-                <div className="relative flex justify-center"><span className="bg-gray-900 px-4 text-lg font-medium text-gray-400">Or</span></div>
-            </div>
-
-            {/* Section 2: Manual Builder */}
+            {/* Section 2: Workout Builder */}
             <section>
-                <h2 className="text-3xl font-bold mb-4">Manual Builder</h2>
-                <div className="bg-gray-800/50 p-6 rounded-2xl shadow-lg">
-                    <Link to="/manual-builder" className="block bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-6 rounded-lg text-lg text-center transition-transform transform hover:scale-105">
-                        Manual Workout Builder
+                <h2 className="text-3xl font-bold mb-4">Workout Builder</h2>
+                <div className="bg-gray-800/50 p-6 rounded-2xl shadow-lg flex flex-col sm:flex-row justify-between items-center gap-4">
+                    <p className="text-gray-400 text-sm max-w-md text-center sm:text-left">Build a workout from scratch, exercise by exercise, with full control over sets, reps, and supersets.</p>
+                    <Link to="/manual-builder" className="flex-shrink-0 w-full sm:w-auto flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg text-md transition-transform transform hover:scale-105">
+                        <PlusIcon className="w-5 h-5"/> Build Custom Workout
                     </Link>
-                    <p className="text-center text-gray-400 mt-3 text-sm">Build a workout from scratch, exercise by exercise.</p>
                 </div>
             </section>
-            
-            {/* Section 3: My Routines */}
+
+             {/* Section 3: Discover Workout Plans */}
+            <section>
+                <h2 className="text-3xl font-bold mb-4">Discover Workout Plans</h2>
+                <div className="flex overflow-x-auto space-x-3 py-2 -mx-6 px-6 scrollbar-hide">
+                    {PROGRAM_CATEGORIES.map(category => (
+                         <div key={category.name} className="flex-shrink-0 bg-gray-800 p-3 rounded-full shadow-lg flex items-center gap-2 hover:bg-gray-700/80 cursor-pointer transition-colors">
+                            <category.icon className={`w-5 h-5 ${category.color}`} />
+                            <span className="font-semibold text-white text-sm whitespace-nowrap">{category.name}</span>
+                        </div>
+                    ))}
+                </div>
+            </section>
+
+            {/* Section 4: My Routines */}
             <section>
                 <div className="flex justify-between items-center mb-4">
                     <h2 className="text-3xl font-bold">My Routines</h2>
-                    <div className="flex gap-2">
-                        <button onClick={handleCreateFolder} className="flex items-center gap-2 text-sm bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded-lg">
-                            <FolderOpenIcon className="w-4 h-4" /> Create Folder
-                        </button>
-                         <Link to="/manual-builder" className="flex items-center gap-2 text-sm bg-orange-500 hover:bg-orange-600 px-3 py-2 rounded-lg">
-                            <PlusIcon className="w-4 h-4" /> New Routine
-                        </Link>
-                    </div>
+                    <Link to="/manual-builder" className="flex items-center gap-2 text-sm bg-orange-500 hover:bg-orange-600 px-4 py-2 rounded-lg font-semibold text-white transition-colors transform hover:scale-105">
+                        <PlusIcon className="w-5 h-5" /> Build Custom Workout
+                    </Link>
                 </div>
                  <div className="bg-gray-800/50 p-6 rounded-2xl shadow-lg">
                     {routines.length > 0 ? (
@@ -303,26 +312,27 @@ const WorkoutHub: React.FC = () => {
                             ))}
                         </div>
                     ) : (
-                        <div className="text-center p-6">
-                            <p className="text-gray-400">You haven't saved any routines yet.</p>
-                            <p className="text-gray-400 mt-1">Generate a workout, customize it, and save it to find it here!</p>
-                        </div>
+                        <>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {placeholderRoutines.map(routine => (
+                                    <SavedRoutineCard
+                                        key={routine.id}
+                                        routine={routine}
+                                        onStart={() => {}}
+                                        onDelete={() => {}}
+                                        isPlaceholder={true}
+                                    />
+                                ))}
+                            </div>
+                             <div className="text-center p-6 mt-4">
+                                <p className="text-gray-400">Your library is empty! Generate a workout, perfect it, and save it here to build your personalized collection.</p>
+                            </div>
+                        </>
                     )}
                  </div>
             </section>
-
-            {/* Section 4: Explore Programs */}
-            <section>
-                <h2 className="text-3xl font-bold mb-4">Explore Programs</h2>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {PROGRAM_CATEGORIES.map(category => (
-                        <div key={category.name} className="bg-gray-800 p-4 rounded-xl shadow-lg flex flex-col items-center justify-center text-center gap-3 hover:bg-gray-700/80 cursor-pointer transition-colors">
-                            <category.icon className={`w-8 h-8 ${category.color}`} />
-                            <p className="font-semibold text-white text-sm">{category.name}</p>
-                        </div>
-                    ))}
-                </div>
-            </section>
+            
+            <style>{`.scrollbar-hide::-webkit-scrollbar { display: none; } .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }`}</style>
         </div>
     );
 };

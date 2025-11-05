@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { WorkoutStats, WorkoutPlan, Achievement, UserAchievementProgress, UserAchievement, AchievementTier, ExerciseDetails, UnlockedAchievementInfoWithId } from '../types';
 import { getWorkoutStats, loadCustomWorkouts, deleteCustomWorkout, getWorkoutHistory, getRecentExercises } from '../services/workoutService';
 import { getAchievements, getUserAchievementProgress } from '../services/achievementService';
-import { EXERCISE_DATABASE } from '../data/exerciseDatabase';
+import { getAllExercises } from '../services/exerciseService';
 import ActivityOverview from './ActivityOverview';
 import SavedRoutineCard from './SavedRoutineCard';
 import AchievementBadge from './AchievementBadge';
@@ -73,7 +73,7 @@ const Dashboard: React.FC = () => {
   const [achievementProgress, setAchievementProgress] = useState<UserAchievementProgress>({});
   const [loading, setLoading] = useState(true);
   const [workoutsThisWeek, setWorkoutsThisWeek] = useState(0);
-  const [recentExercises, setRecentExercises] = useState<ExerciseDetails[]>([]);
+  const [exerciseCount, setExerciseCount] = useState(0);
   const [showAllAchievements, setShowAllAchievements] = useState(false);
   const [previewAchievements, setPreviewAchievements] = useState<{
     recent: UnlockedAchievementInfoWithId[];
@@ -89,16 +89,17 @@ const Dashboard: React.FC = () => {
   const fetchAllData = useCallback(async () => {
     try {
       setLoading(true);
-      const [statsData, achievementsData, progressData, historyData, recentExerciseNames] = await Promise.all([
+      const [statsData, achievementsData, progressData, historyData, allExercises] = await Promise.all([
           getWorkoutStats(),
           getAchievements(),
           getUserAchievementProgress(),
           getWorkoutHistory(),
-          getRecentExercises(3),
+          getAllExercises(),
       ]);
       setStats(statsData);
       setAchievements(achievementsData);
       setAchievementProgress(progressData);
+      setExerciseCount(allExercises.length);
 
       const today = new Date();
       const firstDayOfWeek = new Date(today.setDate(today.getDate() - today.getDay()));
@@ -110,11 +111,6 @@ const Dashboard: React.FC = () => {
           .map(session => new Date(session.date).toDateString())
       );
       setWorkoutsThisWeek(uniqueWorkoutDaysThisWeek.size);
-
-      const recentExDetails = recentExerciseNames
-        .map(name => EXERCISE_DATABASE.find(ex => ex.name === name))
-        .filter((ex): ex is ExerciseDetails => ex !== undefined);
-      setRecentExercises(recentExDetails);
 
       // --- Achievement Preview Logic ---
       const allUnlockedTiers: UnlockedAchievementInfoWithId[] = [];
@@ -311,7 +307,7 @@ const Dashboard: React.FC = () => {
                         </div>
                         <div>
                             <h3 className="text-xl font-bold text-white">Exercise Library</h3>
-                            <p className="text-gray-400">Browse Over {EXERCISE_DATABASE.length} Exercises</p>
+                            <p className="text-gray-400">Browse Over {exerciseCount} Exercises</p>
                         </div>
                         <span className="ml-auto text-indigo-400 group-hover:translate-x-1 transition-transform">&rarr;</span>
                     </div>

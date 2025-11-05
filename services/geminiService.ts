@@ -1,6 +1,6 @@
 import { GoogleGenAI, Type } from '@google/genai';
 import { WorkoutPreferences, WorkoutPlan, Exercise, ExerciseDifficulty, WorkoutGoal, SkillLevel, ExerciseEquipment } from '../types';
-import { EXERCISE_DATABASE } from '../data/exerciseDatabase';
+import { getAllExercises } from './exerciseService';
 
 const API_KEY = process.env.API_KEY;
 if (!API_KEY) {
@@ -16,7 +16,7 @@ const exerciseSchema = {
       duration: { type: Type.INTEGER, description: 'Duration of the exercise in seconds.' },
       rest: { type: Type.INTEGER, description: 'Duration of the rest period in seconds. For warm-up and cool-down exercises, this MUST be 0.' },
       difficulty: { type: Type.STRING, description: "Difficulty of this specific exercise: 'Easy', 'Medium', or 'Hard'."},
-      equipment: { type: Type.STRING, description: "Equipment needed for the exercise, must be one of: 'bodyweight', 'jump-rope', 'dumbbell', 'gym-equipment'. For warm-ups and cool-downs, this is typically 'bodyweight'."}
+      equipment: { type: Type.STRING, description: "Equipment needed for the exercise, must be one of: 'bodyweight', 'dumbbell', 'gym-equipment'. For warm-ups and cool-downs, this is typically 'bodyweight'."}
     },
     required: ['exercise', 'duration', 'rest', 'difficulty', 'equipment'],
 };
@@ -55,8 +55,61 @@ const workoutSchema = {
   required: ['warmUp', 'rounds', 'coolDown', 'estimatedCalories', 'difficultyScore', 'motivationalQuote'],
 };
 
+const instructionsSchema = {
+    type: Type.OBJECT,
+    properties: {
+        description: { type: Type.STRING, description: 'A concise, 1-2 sentence description of the exercise and its primary benefit.' },
+        instructions: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING },
+            description: 'A numbered list of 3-5 clear, step-by-step instructions on how to perform the exercise correctly.'
+        }
+    },
+    required: ['description', 'instructions']
+};
+
+
+export const generateExerciseInstructions = async (name: string, skillLevel: SkillLevel, equipment: ExerciseEquipment[]): Promise<{ description: string, instructions: string[] }> => {
+    const prompt = `
+        Generate a concise description and step-by-step instructions for the following fitness exercise.
+        The response must be a valid JSON object.
+        
+        Exercise Name: "${name}"
+        Target Skill Level: ${skillLevel}
+        Equipment Used: ${equipment.join(', ') || 'bodyweight'}
+
+        The "description" field should be a single, engaging paragraph. 
+        The "instructions" field should be an array of short, clear, actionable strings. Provide 3 to 5 instruction steps.
+    `;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: {
+                responseMimeType: 'application/json',
+                responseSchema: instructionsSchema,
+            },
+        });
+        
+        const jsonText = response.text.trim();
+        const parsed = JSON.parse(jsonText) as { description: string, instructions: string[] };
+
+        if (!parsed.description || !Array.isArray(parsed.instructions) || parsed.instructions.length === 0) {
+            throw new Error("AI returned invalid data structure.");
+        }
+        return parsed;
+
+    } catch (error) {
+        console.error("Error generating exercise instructions from Gemini:", error);
+        throw new Error("Failed to generate instructions. The AI may be experiencing issues. Please try again.");
+    }
+};
+
 
 export const generateWorkoutPlan = async (prefs: WorkoutPreferences): Promise<WorkoutPlan> => {
+  const ALL_EXERCISES = await getAllExercises();
+
   const warmUpMinutes = prefs.includeWarmUp ? prefs.warmUpDuration : 0;
   const coolDownMinutes = prefs.includeCoolDown ? prefs.coolDownDuration : 0;
   const targetExerciseMinutes = prefs.duration - warmUpMinutes - coolDownMinutes;
@@ -69,12 +122,12 @@ export const generateWorkoutPlan = async (prefs: WorkoutPreferences): Promise<Wo
   const targetSecondsPerCircuit = Math.round(targetExerciseSeconds / prefs.rounds);
   
   // --- Filter Exercise Database based on Preferences ---
-  const flexibilityExercises = EXERCISE_DATABASE
+  const flexibilityExercises = ALL_EXERCISES
     .filter(ex => ex.category === 'Flexibility & Mobility')
     .map(ex => `'${ex.name}'`)
     .join(', ');
 
-  const mainExercises = EXERCISE_DATABASE
+  const mainExercises = ALL_EXERCISES
       .filter(ex => 
           ex.purpose === 'main' &&
           ex.skillLevels.includes(prefs.skillLevel) &&
@@ -170,19 +223,9 @@ export const generateWorkoutPlan = async (prefs: WorkoutPreferences): Promise<Wo
             }
         } else if ((parsedPlan.rounds || []).length === 1) { // Single exercise repeated for N rounds/sets
             newEx.sets = prefs.rounds;
-            
-            const geminiDuration = newEx.duration;
-            const geminiRest = newEx.rest;
-            const newRest = prefs.restBetweenRounds;
-            
-            let newDuration = geminiDuration + geminiRest - newRest;
-
-            if (newDuration < 5) {
-                newDuration = 5;
-            }
-            
-            newEx.duration = newDuration;
-            newEx.rest = newRest;
+            // FIX: Simplified logic for single-exercise rounds to prevent type issues.
+            // The rest between sets is simply the 'rest' property for a single exercise group.
+            newEx.rest = prefs.restBetweenRounds;
         }
 
         return newEx;

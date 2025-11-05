@@ -9,6 +9,7 @@ export enum SkillLevel {
 export enum WorkoutGoal {
     Strength = 'Strength',
     Cardio = 'Cardio',
+    Endurance = 'Endurance',
     Mobility = 'Mobility',
     Core = 'Core',
     FullBody = 'Full Body',
@@ -202,7 +203,7 @@ export type WorkoutType = 'Compound' | 'Isolation' | 'Cardio/HIIT' | 'Mobility/S
 export interface ExerciseDetails {
   id: string;
   name: string;
-  category: 'Jump Rope' | 'Upper Body' | 'Lower Body' | 'Core' | 'Full Body' | 'Cardio' | 'Flexibility & Mobility';
+  category: string; // Can be 'Jump Rope', 'Upper Body', 'Custom', etc.
   purpose: 'warmup' | 'cooldown' | 'main';
   skillLevels: ('Beginner' | 'Intermediate' | 'Advanced')[];
   equipment: ExerciseEquipment[];

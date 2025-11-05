@@ -1,7 +1,6 @@
-import React, { useMemo, useState } from 'react';
-// FIX: Import ExerciseDifficulty to resolve typing error.
-import { Exercise, ExerciseDetails, WorkoutPreferences, SkillLevel, WorkoutType, ExerciseEquipment, WorkoutGoal, ExerciseDifficulty } from '../types';
-import { EXERCISE_DATABASE } from '../data/exerciseDatabase';
+import React, { useMemo, useState, useEffect } from 'react';
+import { Exercise, ExerciseDetails, WorkoutPreferences, SkillLevel, ExerciseEquipment, WorkoutGoal, ExerciseDifficulty } from '../types';
+import { getAllExercises } from '../services/exerciseService';
 import { SparklesIcon, DumbbellIcon, RunIcon } from './icons/Icons';
 
 type ExerciseModalProps = {
@@ -22,20 +21,30 @@ const skillToDifficulty: Record<string, ExerciseDifficulty> = {
 };
 
 const ExerciseModal: React.FC<ExerciseModalProps> = ({ isOpen, onClose, onSelectExercise, mode, exerciseToEdit, purposeFilter, originalPreferences, defaultRest = 15 }) => {
+  const [allExercises, setAllExercises] = useState<ExerciseDetails[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDifficulties, setSelectedDifficulties] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<'equipment' | 'muscleGroup' | null>(null);
   const [selectedEquipment, setSelectedEquipment] = useState<string[]>([]);
   const [selectedMuscleGroup, setSelectedMuscleGroup] = useState('All Muscles');
-  const [selectedWorkoutTypes, setSelectedWorkoutTypes] = useState<string[]>([]);
+  const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
 
+  useEffect(() => {
+    if (isOpen) {
+      const fetchExercises = async () => {
+        const data = await getAllExercises();
+        setAllExercises(data);
+      };
+      fetchExercises();
+    }
+  }, [isOpen]);
 
   const availableDifficulties = useMemo(() => ['Beginner', 'Intermediate', 'Advanced'], []);
-  const availableWorkoutTypes = useMemo<WorkoutType[]>(() => ['Compound', 'Isolation', 'Cardio/HIIT', 'Mobility/Stretch', 'Core/Accessory'], []);
+  const availableGoals = useMemo<WorkoutGoal[]>(() => Object.values(WorkoutGoal), []);
   
   const availableEquipment = useMemo(() => {
     const equipmentSet = new Set(
-      EXERCISE_DATABASE
+      allExercises
         .filter(ex => purposeFilter ? ex.purpose === purposeFilter : true)
         .flatMap(ex => ex.equipment)
     );
@@ -44,27 +53,27 @@ const ExerciseModal: React.FC<ExerciseModalProps> = ({ isOpen, onClose, onSelect
       return e.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
     });
     return [...new Set(mapped)].sort();
-  }, [purposeFilter]);
+  }, [purposeFilter, allExercises]);
 
   const muscleGroupCategories = useMemo(() => {
     const muscleSet = new Set<string>();
-    EXERCISE_DATABASE.forEach(ex => {
+    allExercises.forEach(ex => {
         if (purposeFilter && ex.purpose !== purposeFilter) return;
         if (ex.category !== 'Flexibility & Mobility') {
             ex.muscleGroups.forEach(m => muscleSet.add(m));
         }
     });
-    const stretchesAvailable = EXERCISE_DATABASE.some(ex => ex.purpose === purposeFilter && ex.category === 'Flexibility & Mobility');
+    const stretchesAvailable = allExercises.some(ex => ex.purpose === purposeFilter && ex.category === 'Flexibility & Mobility');
     const baseGroups = ['All Muscles'];
     if (stretchesAvailable) baseGroups.push('Stretches');
     return [...baseGroups, ...Array.from(muscleSet).sort()];
-  }, [purposeFilter]);
+  }, [purposeFilter, allExercises]);
 
   const recommendedExercises = useMemo(() => {
     if (!originalPreferences || !purposeFilter) return [];
 
     if (purposeFilter === 'warmup' || purposeFilter === 'cooldown') {
-        return EXERCISE_DATABASE.filter(ex => {
+        return allExercises.filter(ex => {
             if (ex.purpose !== purposeFilter) return false;
             if (ex.category !== 'Flexibility & Mobility') return false;
             if (exerciseToEdit && ex.name === exerciseToEdit.exercise) return false;
@@ -74,7 +83,7 @@ const ExerciseModal: React.FC<ExerciseModalProps> = ({ isOpen, onClose, onSelect
 
     const prefs = originalPreferences;
     
-    return EXERCISE_DATABASE.filter(ex => {
+    return allExercises.filter(ex => {
         if (ex.purpose !== 'main') return false;
         if (!ex.skillLevels.includes(prefs.skillLevel)) return false;
         if (!ex.goals.includes(prefs.goal)) return false;
@@ -86,7 +95,7 @@ const ExerciseModal: React.FC<ExerciseModalProps> = ({ isOpen, onClose, onSelect
 
         return true;
     }).slice(0, 9);
-  }, [originalPreferences, purposeFilter, exerciseToEdit]);
+  }, [originalPreferences, purposeFilter, exerciseToEdit, allExercises]);
 
   const handleToggleFilter = (setter: React.Dispatch<React.SetStateAction<string[]>>, value: string) => {
       setter(prev => 
@@ -103,12 +112,12 @@ const ExerciseModal: React.FC<ExerciseModalProps> = ({ isOpen, onClose, onSelect
           setSelectedEquipment([]);
           setSelectedMuscleGroup('All Muscles');
           setSelectedDifficulties([]);
-          setSelectedWorkoutTypes([]);
+          setSelectedGoals([]);
       }
   };
 
   const filteredExercises = useMemo(() => {
-    return EXERCISE_DATABASE.filter(ex => {
+    return allExercises.filter(ex => {
       const purposeMatch = purposeFilter ? ex.purpose === purposeFilter : true;
       if (!purposeMatch) return false;
   
@@ -124,8 +133,8 @@ const ExerciseModal: React.FC<ExerciseModalProps> = ({ isOpen, onClose, onSelect
       const difficultyMatch = selectedDifficulties.length === 0 || ex.skillLevels.some(level => selectedDifficulties.includes(level));
       if (!difficultyMatch) return false;
 
-      const workoutTypeMatch = selectedWorkoutTypes.length === 0 || selectedWorkoutTypes.includes(ex.workoutType);
-      if (!workoutTypeMatch) return false;
+      const goalMatch = selectedGoals.length === 0 || ex.goals.some(goal => selectedGoals.includes(goal));
+      if (!goalMatch) return false;
   
       if (viewMode === 'equipment') {
         return (
@@ -147,7 +156,7 @@ const ExerciseModal: React.FC<ExerciseModalProps> = ({ isOpen, onClose, onSelect
       }
       return true;
     });
-  }, [purposeFilter, searchTerm, selectedDifficulties, selectedEquipment, selectedMuscleGroup, viewMode, selectedWorkoutTypes]);
+  }, [purposeFilter, searchTerm, selectedDifficulties, selectedEquipment, selectedMuscleGroup, viewMode, selectedGoals, allExercises]);
 
   const categorizedSuggestions = useMemo(() => {
     const grouped: { [key: string]: ExerciseDetails[] } = {};
@@ -201,7 +210,7 @@ const ExerciseModal: React.FC<ExerciseModalProps> = ({ isOpen, onClose, onSelect
   if (!isOpen) return null;
 
   const handleSelect = (exerciseName: string) => {
-    const selectedExercise = EXERCISE_DATABASE.find(ex => ex.name === exerciseName);
+    const selectedExercise = allExercises.find(ex => ex.name === exerciseName);
     if (!selectedExercise) return;
 
     const fullExerciseData: Omit<Exercise, 'id' | 'status'> = {
@@ -303,10 +312,10 @@ const ExerciseModal: React.FC<ExerciseModalProps> = ({ isOpen, onClose, onSelect
                             </div>
                         </div>
                         <div>
-                            <h4 className="font-semibold text-gray-400 mb-2 text-xs">Workout Type</h4>
+                            <h4 className="font-semibold text-gray-400 mb-2 text-xs">Primary Goal</h4>
                             <div className="flex flex-wrap gap-2">
-                                {availableWorkoutTypes.map(type => (
-                                    <FilterButton key={type} label={type} isSelected={selectedWorkoutTypes.includes(type)} onClick={() => handleToggleFilter(setSelectedWorkoutTypes, type)} />
+                                {availableGoals.map(goal => (
+                                    <FilterButton key={goal} label={goal} isSelected={selectedGoals.includes(goal)} onClick={() => handleToggleFilter(setSelectedGoals, goal)} />
                                 ))}
                             </div>
                         </div>

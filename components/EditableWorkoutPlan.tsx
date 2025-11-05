@@ -194,7 +194,7 @@ const EditableWorkoutPlan: React.FC<EditableWorkoutPlanProps> = ({ editor, origi
   const handleTouchMove = useCallback((e: React.TouchEvent) => { if (!isDragging.current) return; if (Math.abs(e.touches[0].clientY - touchStartY.current) > 10) { e.preventDefault(); const dropTarget = document.elementFromPoint(e.touches[0].clientX, e.touches[0].clientY); if (dropTarget) { const dropNodeContainer = dropTarget.closest('[data-draggable-item]') as HTMLElement; if (dropNodeContainer) { const dropIndex = parseInt(dropNodeContainer.dataset.index || '0', 10); const dropSection = dropNodeContainer.dataset.section as WorkoutSection; const rect = dropNodeContainer.getBoundingClientRect(); const isAfter = (e.touches[0].clientY - rect.top) > (rect.height / 2); const targetIndex = isAfter ? dropIndex + 1 : dropIndex; if (dragOverInfo?.index !== targetIndex || dragOverInfo?.section !== dropSection) { setDragOverInfo({ index: targetIndex, section: dropSection }); } } } } }, [dragOverInfo]);
   const handleTouchEnd = useCallback(() => { if (isDragging.current && dragItem.current && dragOverInfo) { moveExercise(dragItem.current, dragOverInfo); } isDragging.current = false; dragItem.current = null; setDragOverInfo(null); setDraggingId(null); }, [dragOverInfo, moveExercise]);
 
-  const handleAddChoice = (options: { type: 'suggestion' | 'library'; groupEndIndex?: number }) => {
+  const handleAddChoice = async (options: { type: 'suggestion' | 'library'; groupEndIndex?: number }) => {
     const { type, groupEndIndex } = options;
     if (!addChoiceSection) return;
 
@@ -202,9 +202,10 @@ const EditableWorkoutPlan: React.FC<EditableWorkoutPlanProps> = ({ editor, origi
     const targetIndex = isIntoGroup ? groupEndIndex + 1 : (plan?.[addChoiceSection]?.length || 0);
 
     if (type === 'suggestion') {
-        const suggestion = addChoiceSection === 'rounds'
+        // FIX: Awaited the async call to ensure suggestion is an object, not a Promise.
+        const suggestion = await (addChoiceSection === 'rounds'
             ? getSuggestedMainExercise(plan?.rounds || [])
-            : getSingleSuggestedExercise(addChoiceSection === 'warmUp' ? 'warmup' : 'cooldown');
+            : getSingleSuggestedExercise(addChoiceSection === 'warmUp' ? 'warmup' : 'cooldown'));
         
         if (suggestion) {
             const exerciseWithRest = { ...suggestion, rest: preferences.universalRestDuration };

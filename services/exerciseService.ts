@@ -1,22 +1,43 @@
 import { EXERCISE_DATABASE } from '../data/exerciseDatabase';
 import { Exercise, ExerciseDetails, ExerciseDifficulty } from '../types';
+import { getCustomExercises } from './customExerciseService';
 
-export const getAllExercises = (): Promise<ExerciseDetails[]> => {
-  return new Promise(resolve => {
-    // Sort exercises alphabetically within each category for consistent display
-    const sorted = [...EXERCISE_DATABASE].sort((a, b) => {
+
+// Caching mechanism to avoid repeated localStorage reads and array merges
+let combinedExerciseDatabase: ExerciseDetails[] | null = null;
+
+// Function to fetch and cache the combined database
+const getCombinedDatabase = async (): Promise<ExerciseDetails[]> => {
+    if (combinedExerciseDatabase) {
+        return combinedExerciseDatabase;
+    }
+    const customExercises = getCustomExercises();
+    const combined = [...EXERCISE_DATABASE, ...customExercises];
+    
+    combined.sort((a, b) => {
         if (a.category < b.category) return -1;
         if (a.category > b.category) return 1;
         if (a.name < b.name) return -1;
         if (a.name > b.name) return 1;
         return 0;
     });
-    resolve(sorted);
-  });
+
+    combinedExerciseDatabase = combined;
+    return combined;
 };
 
-export const getExerciseById = (id: string): Promise<ExerciseDetails | undefined> => {
-  return new Promise(resolve => resolve(EXERCISE_DATABASE.find(ex => ex.id === id)));
+// Function to invalidate the cache, e.g., after adding a new exercise
+export const invalidateExerciseCache = () => {
+    combinedExerciseDatabase = null;
+}
+
+export const getAllExercises = async (): Promise<ExerciseDetails[]> => {
+    return await getCombinedDatabase();
+};
+
+export const getExerciseById = async (id: string): Promise<ExerciseDetails | undefined> => {
+    const db = await getCombinedDatabase();
+    return db.find(ex => ex.id === id);
 };
 
 const skillToDifficulty: Record<string, ExerciseDifficulty> = {
@@ -25,20 +46,21 @@ const skillToDifficulty: Record<string, ExerciseDifficulty> = {
     'Advanced': 'Hard',
 };
 
-export const getSuggestedMainExercise = (currentExercises: Exercise[]): Omit<Exercise, 'id' | 'status'> | null => {
-    const mainExercisesFromDB = EXERCISE_DATABASE.filter(ex => ex.purpose === 'main');
+export const getSuggestedMainExercise = async (currentExercises: Exercise[]): Promise<Omit<Exercise, 'id' | 'status'> | null> => {
+    const ALL_EXERCISES = await getCombinedDatabase();
+    const mainExercisesFromDB = ALL_EXERCISES.filter(ex => ex.purpose === 'main');
     const currentExerciseNames = new Set(currentExercises.map(ex => ex.exercise));
 
     // 1. Tally muscle groups from the current workout
     const muscleGroupCounts = new Map<string, number>();
-    currentExercises.forEach(ex => {
-        const dbEntry = EXERCISE_DATABASE.find(dbEx => dbEx.name === ex.exercise);
+    for (const ex of currentExercises) {
+        const dbEntry = ALL_EXERCISES.find(dbEx => dbEx.name === ex.exercise);
         if (dbEntry) {
             dbEntry.muscleGroups.forEach(group => {
                 muscleGroupCounts.set(group, (muscleGroupCounts.get(group) || 0) + 1);
             });
         }
-    });
+    }
 
     // 2. Find the least worked muscle groups
     let minCount = Infinity;
@@ -84,8 +106,9 @@ export const getSuggestedMainExercise = (currentExercises: Exercise[]): Omit<Exe
     return newExercise;
 };
 
-export const getSingleSuggestedExercise = (type: 'warmup' | 'cooldown'): Omit<Exercise, 'id'> | null => {
-    const suggestions = EXERCISE_DATABASE.filter(ex => ex.purpose === type);
+export const getSingleSuggestedExercise = async (type: 'warmup' | 'cooldown'): Promise<Omit<Exercise, 'id'> | null> => {
+    const ALL_EXERCISES = await getCombinedDatabase();
+    const suggestions = ALL_EXERCISES.filter(ex => ex.purpose === type);
     if (suggestions.length === 0) return null;
 
     const randomIndex = Math.floor(Math.random() * suggestions.length);

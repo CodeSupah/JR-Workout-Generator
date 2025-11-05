@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-// FIX: Removed non-existent 'Equipment' type and added 'WorkoutEnvironment'.
-import { WorkoutStats, WorkoutPlan, WorkoutGoal, SkillLevel, Achievement, AchievementTier, WorkoutPreferences, WorkoutEnvironment } from '../types';
+import { WorkoutStats, WorkoutPlan, WorkoutGoal, SkillLevel, Achievement, AchievementTier, WorkoutPreferences } from '../types';
 import { getWorkoutStats, loadCustomWorkouts } from '../services/workoutService';
 import { getNextChallenge } from '../services/achievementService';
 import { generateWorkoutPlan } from '../services/geminiService';
@@ -80,13 +79,14 @@ const Home: React.FC = () => {
                 duration,
                 skillLevel: SkillLevel.Intermediate,
                 goal: randomGoal,
-                environment: WorkoutEnvironment.HomeLimited,
-                homeEquipment: ['Jump Rope'],
+                availableEquipment: ['jump-rope'],
                 rounds: 3,
                 includeWarmUp: true,
                 warmUpDuration: 3,
                 includeCoolDown: true,
                 coolDownDuration: 2,
+                defaultRestDuration: 60,
+                restBetweenRounds: 120,
             }
         });
 

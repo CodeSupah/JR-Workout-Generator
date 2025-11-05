@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { SkillLevel, WorkoutGoal, WorkoutPreferences, WorkoutPlan, Exercise, ExerciseEquipment } from '../types';
 import { generateWorkoutPlan } from '../services/geminiService';
-import { DumbbellIcon, FlameIcon, RunIcon, TargetIcon, CogIcon, BuildingOfficeIcon, RopeIcon, StretchIcon } from './icons/Icons';
+import { DumbbellIcon, FlameIcon, RunIcon, TargetIcon, CogIcon, BuildingOfficeIcon, RopeIcon, StretchIcon, ClockIcon } from './icons/Icons';
 import { useWorkoutEditor } from '../hooks/useWorkoutEditor';
 import EditableWorkoutPlan from './EditableWorkoutPlan';
 import { toastStore } from '../store/toastStore';
@@ -26,7 +26,6 @@ const formatTime = (totalSeconds: number): string => {
 const EQUIPMENT_LIST: { id: ExerciseEquipment; label: string; icon: React.ReactNode }[] = [
     { id: 'bodyweight', label: 'Bodyweight', icon: <RunIcon className="w-5 h-5" /> },
     { id: 'dumbbell', label: 'Dumbbells', icon: <DumbbellIcon className="w-5 h-5" /> },
-    { id: 'jump-rope', label: 'Jump Rope', icon: <RopeIcon className="w-5 h-5" /> },
     { id: 'gym-equipment', label: 'Gym Equipment', icon: <BuildingOfficeIcon className="w-5 h-5" /> },
 ];
 
@@ -98,7 +97,18 @@ const WorkoutGenerator: React.FC = () => {
           skillLevel: parsedPrefs.skillLevel || SkillLevel.Beginner,
           goal: parsedPrefs.goal || WorkoutGoal.FullBody,
       });
-      setAvailableEquipment(parsedPrefs.availableEquipment || ['bodyweight']);
+      let loadedEquipment = parsedPrefs.availableEquipment || ['bodyweight'];
+      if (loadedEquipment.includes('jump-rope')) {
+          loadedEquipment = loadedEquipment.filter((eq: ExerciseEquipment) => eq !== 'jump-rope');
+          if (!loadedEquipment.includes('gym-equipment')) {
+              loadedEquipment.push('gym-equipment');
+          }
+      }
+      if (loadedEquipment.length === 0) {
+        loadedEquipment = ['bodyweight'];
+      }
+      // FIX: Cast parsed data to the correct type to resolve TypeScript error.
+      setAvailableEquipment([...new Set(loadedEquipment)] as ExerciseEquipment[]);
       setRounds(parsedPrefs.rounds || 3);
       setIncludeWarmUp(parsedPrefs.includeWarmUp !== undefined ? parsedPrefs.includeWarmUp : true);
       setWarmUpDuration(parsedPrefs.warmUpDuration || 3);
@@ -132,7 +142,18 @@ const WorkoutGenerator: React.FC = () => {
               skillLevel: savedPrefs.skillLevel,
               goal: savedPrefs.goal,
             });
-            setAvailableEquipment(savedPrefs.availableEquipment);
+            let loadedEquipment = savedPrefs.availableEquipment || ['bodyweight'];
+            if (loadedEquipment.includes('jump-rope')) {
+                loadedEquipment = loadedEquipment.filter((eq: ExerciseEquipment) => eq !== 'jump-rope');
+                if (!loadedEquipment.includes('gym-equipment')) {
+                    loadedEquipment.push('gym-equipment');
+                }
+            }
+             if (loadedEquipment.length === 0) {
+              loadedEquipment = ['bodyweight'];
+            }
+            // FIX: Cast parsed data to the correct type to resolve TypeScript error.
+            setAvailableEquipment([...new Set(loadedEquipment)] as ExerciseEquipment[]);
             setRounds(savedPrefs.rounds);
             setIncludeWarmUp(savedPrefs.includeWarmUp);
             setWarmUpDuration(savedPrefs.warmUpDuration);
@@ -155,17 +176,20 @@ const WorkoutGenerator: React.FC = () => {
 
 
   // Gathers all state for AI generation, applying logic for global rest toggles
-  const getFullPreferencesForGeneration = (): WorkoutPreferences => ({
-      ...preferences,
-      availableEquipment,
-      rounds,
-      includeWarmUp,
-      warmUpDuration,
-      includeCoolDown,
-      coolDownDuration,
-      defaultRestDuration: useGlobalExerciseRest ? defaultRestDuration : 0,
-      restBetweenRounds: 0, // Let AI decide
-  });
+  const getFullPreferencesForGeneration = (): WorkoutPreferences => {
+      const generationEquipment: ExerciseEquipment[] = [...availableEquipment];
+      return {
+          ...preferences,
+          availableEquipment: [...new Set(generationEquipment)],
+          rounds,
+          includeWarmUp,
+          warmUpDuration,
+          includeCoolDown,
+          coolDownDuration,
+          defaultRestDuration: useGlobalExerciseRest ? defaultRestDuration : 0,
+          restBetweenRounds: 0, // Let AI decide
+      };
+  };
   
   const hasChanges = useMemo(() => {
     if (!originalPreferences) return false;
@@ -238,11 +262,12 @@ const WorkoutGenerator: React.FC = () => {
                 {/* 3. Primary Goal */}
                 <div className="space-y-2">
                     <label className="text-lg font-semibold">Primary Goal</label>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
                     {(Object.values(WorkoutGoal)).map(goal => {
                         const icons: {[key in WorkoutGoal]: React.ReactNode} = {
                             [WorkoutGoal.Strength]: <DumbbellIcon className="w-5 h-5"/>,
                             [WorkoutGoal.Cardio]: <FlameIcon className="w-5 h-5"/>,
+                            [WorkoutGoal.Endurance]: <ClockIcon className="w-5 h-5"/>,
                             [WorkoutGoal.Mobility]: <StretchIcon className="w-5 h-5"/>,
                             [WorkoutGoal.Core]: <TargetIcon className="w-5 h-5"/>,
                             [WorkoutGoal.FullBody]: <RunIcon className="w-5 h-5"/>,

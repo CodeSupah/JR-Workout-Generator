@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { ExerciseDetails, WorkoutType, ExerciseEquipment } from '../types';
-import { getAllExercises } from '../services/exerciseService';
-import { BookOpenIcon, DumbbellIcon, RunIcon } from './icons/Icons';
+import { ExerciseDetails, WorkoutGoal, ExerciseEquipment } from '../types';
+import { getAllExercises, invalidateExerciseCache } from '../services/exerciseService';
+import { BookOpenIcon, DumbbellIcon, RunIcon, PlusIcon } from './icons/Icons';
+import CreateExerciseModal from './CreateExerciseModal';
 
 type ViewMode = 'equipment' | 'muscleGroup';
 
@@ -12,23 +13,30 @@ const ExerciseList: React.FC = () => {
     const [selectedDifficulties, setSelectedDifficulties] = useState<string[]>([]);
     const [selectedEquipment, setSelectedEquipment] = useState<string[]>([]);
     const [selectedMuscleGroup, setSelectedMuscleGroup] = useState('All Muscles');
-    const [selectedWorkoutTypes, setSelectedWorkoutTypes] = useState<string[]>([]);
+    const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
     const [viewMode, setViewMode] = useState<ViewMode | null>(null);
     const [loading, setLoading] = useState(true);
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
+    const fetchExercises = async () => {
+        setLoading(true);
+        const data = await getAllExercises();
+        setExercises(data);
+        setLoading(false);
+    };
 
     useEffect(() => {
-        const fetchExercises = async () => {
-            setLoading(true);
-            const data = await getAllExercises();
-            setExercises(data);
-            setLoading(false);
-        };
         fetchExercises();
     }, []);
 
+    const handleExerciseCreated = () => {
+        invalidateExerciseCache(); // Invalidate cache so new exercise is fetched
+        fetchExercises(); // Re-fetch the list
+    };
+
     const availableDifficulties = useMemo(() => ['Beginner', 'Intermediate', 'Advanced'], []);
     
-    const equipmentCategories = useMemo(() => ['Barbell', 'Bodyweight', 'Dumbbell', 'Jump Rope', 'Kettlebell', 'Machine', 'Plate', 'Resistance Band'], []);
+    const equipmentCategories = useMemo(() => ['Bodyweight', 'Dumbbell', 'Gym Equipment'], []);
     
     const muscleGroupCategories = useMemo(() => {
         const muscleSet = new Set<string>();
@@ -40,7 +48,7 @@ const ExerciseList: React.FC = () => {
         return ['All Muscles', 'Stretches', ...Array.from(muscleSet).sort()];
     }, [exercises]);
     
-    const availableWorkoutTypes = useMemo<WorkoutType[]>(() => ['Compound', 'Isolation', 'Cardio/HIIT', 'Mobility/Stretch', 'Core/Accessory'], []);
+    const availableGoals = useMemo<WorkoutGoal[]>(() => Object.values(WorkoutGoal), []);
 
     const handleToggleFilter = (setter: React.Dispatch<React.SetStateAction<string[]>>, value: string) => {
         setter(prev => 
@@ -58,7 +66,7 @@ const ExerciseList: React.FC = () => {
             setSelectedEquipment([]);
             setSelectedMuscleGroup('All Muscles');
             setSelectedDifficulties([]);
-            setSelectedWorkoutTypes([]);
+            setSelectedGoals([]);
         }
     }
 
@@ -79,21 +87,15 @@ const ExerciseList: React.FC = () => {
           const difficultyMatch = selectedDifficulties.length === 0 || ex.skillLevels.some(level => selectedDifficulties.includes(level));
           if (!difficultyMatch) return false;
 
-          const workoutTypeMatch = selectedWorkoutTypes.length === 0 || selectedWorkoutTypes.includes(ex.workoutType);
-          if (!workoutTypeMatch) return false;
+          const goalMatch = selectedGoals.length === 0 || ex.goals.some(goal => selectedGoals.includes(goal));
+          if (!goalMatch) return false;
       
           if (viewMode === 'equipment') {
-            return (
-              selectedEquipment.length === 0 ||
-              selectedEquipment.some(selected => {
+            if (selectedEquipment.length === 0) return true;
+            return selectedEquipment.some(selected => {
                 const selectedFormatted = selected.toLowerCase().replace(/ /g, '-');
-// FIX: Use 'jump-rope' which is a valid ExerciseEquipment type.
-                if (selected === 'Jump Rope') return ex.equipment.includes('jump-rope');
-// FIX: Use 'gym-equipment' which is a valid ExerciseEquipment type for machines.
-                if (selected === 'Machine') return ex.equipment.includes('gym-equipment');
-                return ex.equipment.includes(selectedFormatted as any);
-              })
-            );
+                return ex.equipment.includes(selectedFormatted as ExerciseEquipment);
+            });
           }
       
           if (viewMode === 'muscleGroup') {
@@ -106,7 +108,7 @@ const ExerciseList: React.FC = () => {
           }
           return true;
         });
-      }, [exercises, searchTerm, selectedDifficulties, selectedEquipment, selectedMuscleGroup, viewMode, selectedWorkoutTypes]);
+      }, [exercises, searchTerm, selectedDifficulties, selectedEquipment, selectedMuscleGroup, viewMode, selectedGoals]);
 
       const groupedExercises = useMemo(() => {
         const grouped: Record<string, ExerciseDetails[]> = {};
@@ -115,9 +117,8 @@ const ExerciseList: React.FC = () => {
           filteredExercises.forEach(ex => {
             const mainEquipment = ex.equipment[0] || 'bodyweight';
             let key = mainEquipment.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-            if (['Rope', 'Weighted Rope'].includes(key)) key = 'Jump Rope';
-            if (['Cable Machine', 'Leg Press Machine'].includes(key)) key = 'Machine';
             if (ex.category === 'Flexibility & Mobility') key = 'Flexibility & Mobility';
+            if (ex.category === 'Custom') key = 'My Custom Exercises';
     
             if (!grouped[key]) grouped[key] = [];
             grouped[key].push(ex);
@@ -127,7 +128,10 @@ const ExerciseList: React.FC = () => {
             if (filteredExercises.length > 0) grouped['Stretches'] = filteredExercises;
           } else {
             filteredExercises.forEach(ex => {
-              if (ex.category !== 'Flexibility & Mobility') {
+              if (ex.category === 'Custom') {
+                  if (!grouped['My Custom Exercises']) grouped['My Custom Exercises'] = [];
+                  grouped['My Custom Exercises'].push(ex);
+              } else if (ex.category !== 'Flexibility & Mobility') {
                 ex.muscleGroups.forEach(muscle => {
                   if (selectedMuscleGroup === 'All Muscles' || selectedMuscleGroup === muscle) {
                     if (!grouped[muscle]) grouped[muscle] = [];
@@ -147,8 +151,15 @@ const ExerciseList: React.FC = () => {
     
         // Sort groups and exercises within groups
         const sortedGrouped: Record<string, ExerciseDetails[]> = {};
+        const groupOrder = ['My Custom Exercises']; // Ensure custom exercises appear first
         Object.keys(grouped)
-          .sort()
+          .sort((a, b) => {
+              const indexA = groupOrder.indexOf(a);
+              const indexB = groupOrder.indexOf(b);
+              if (indexA !== -1 && indexB === -1) return -1;
+              if (indexA === -1 && indexB !== -1) return 1;
+              return a.localeCompare(b);
+          })
           .forEach(key => {
             sortedGrouped[key] = grouped[key].sort((a, b) => a.name.localeCompare(b.name));
           });
@@ -156,7 +167,7 @@ const ExerciseList: React.FC = () => {
         return sortedGrouped;
       }, [filteredExercises, viewMode, selectedMuscleGroup]);
     
-    const hasActiveFilters = searchTerm || selectedDifficulties.length > 0 || selectedEquipment.length > 0 || selectedMuscleGroup !== 'All Muscles' || selectedWorkoutTypes.length > 0;
+    const hasActiveFilters = searchTerm || selectedDifficulties.length > 0 || selectedEquipment.length > 0 || selectedMuscleGroup !== 'All Muscles' || selectedGoals.length > 0;
     const results: [string, ExerciseDetails[]][] = Object.entries(groupedExercises);
     const hasResults = results.length > 0;
 
@@ -178,6 +189,12 @@ const ExerciseList: React.FC = () => {
     );
 
     return (
+        <>
+        <CreateExerciseModal 
+            isOpen={isCreateModalOpen} 
+            onClose={() => setIsCreateModalOpen(false)} 
+            onExerciseCreated={handleExerciseCreated}
+        />
         <div className="space-y-8 animate-fade-in pb-24">
             <div>
                 <Link to="/profile" className="text-sm text-orange-400 hover:underline mb-2 inline-block">
@@ -185,17 +202,22 @@ const ExerciseList: React.FC = () => {
                 </Link>
                 <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
                     <h1 className="text-3xl font-bold text-white">Exercise Library</h1>
-                    <div className="relative w-full sm:w-auto">
-                        <input
-                            type="text"
-                            placeholder="Search exercises..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full sm:w-64 bg-gray-800 border border-gray-700 text-white rounded-lg py-2 pl-10 pr-4 focus:ring-2 focus:ring-orange-500 focus:outline-none"
-                        />
-                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    <div className="flex items-center gap-2">
+                        <div className="relative w-full sm:w-auto">
+                            <input
+                                type="text"
+                                placeholder="Search exercises..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full sm:w-64 bg-gray-800 border border-gray-700 text-white rounded-lg py-2 pl-10 pr-4 focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                            />
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                            </div>
                         </div>
+                        <button onClick={() => setIsCreateModalOpen(true)} className="p-2.5 bg-green-500 hover:bg-green-600 text-white rounded-lg" title="Create New Exercise">
+                            <PlusIcon className="w-5 h-5"/>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -233,14 +255,14 @@ const ExerciseList: React.FC = () => {
                     </div>
                     
                     <div>
-                        <h4 className="font-medium text-gray-400 mb-2 text-xs">Workout Type</h4>
+                        <h4 className="font-medium text-gray-400 mb-2 text-xs">Primary Goal</h4>
                         <div className="flex flex-wrap gap-2">
-                            {availableWorkoutTypes.map(type => (
+                            {availableGoals.map(goal => (
                                 <FilterButton
-                                    key={type}
-                                    label={type}
-                                    isSelected={selectedWorkoutTypes.includes(type)}
-                                    onClick={() => handleToggleFilter(setSelectedWorkoutTypes, type)}
+                                    key={goal}
+                                    label={goal}
+                                    isSelected={selectedGoals.includes(goal)}
+                                    onClick={() => handleToggleFilter(setSelectedGoals, goal)}
                                 />
                             ))}
                         </div>
@@ -285,7 +307,7 @@ const ExerciseList: React.FC = () => {
                                 setSelectedDifficulties([]);
                                 setSelectedEquipment([]);
                                 setSelectedMuscleGroup('All Muscles');
-                                setSelectedWorkoutTypes([]);
+                                setSelectedGoals([]);
                             }}
                             className="text-xs text-orange-400 hover:text-orange-300 font-semibold pt-2"
                         >
@@ -315,7 +337,7 @@ const ExerciseList: React.FC = () => {
                     ) : (
                         results.map(([groupName, exercisesInGroup]) => {
                             if (exercisesInGroup.length === 0) return null;
-                            const groupColor = groupName === 'Stretches' || groupName === 'Flexibility & Mobility' ? 'text-teal-400' : 'text-orange-400';
+                            const groupColor = groupName === 'Stretches' || groupName === 'Flexibility & Mobility' ? 'text-teal-400' : (groupName === 'My Custom Exercises' ? 'text-green-400' : 'text-orange-400');
                             return (
                                 <div key={groupName} className="bg-gray-800/50 p-6 rounded-2xl animate-fade-in">
                                     <h2 className={`text-2xl font-bold ${groupColor} mb-4 border-b border-gray-700 pb-2`}>{groupName}</h2>
@@ -344,6 +366,7 @@ const ExerciseList: React.FC = () => {
                 </div>
             )}
         </div>
+        </>
     );
 };
 

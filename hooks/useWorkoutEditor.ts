@@ -410,9 +410,10 @@ export const useWorkoutEditor = (): WorkoutEditor => {
 
   }, [plan, updateStateAndHistory]);
   
-  const addSection = useCallback((section: 'warmUp' | 'coolDown') => {
+  const addSection = useCallback(async (section: 'warmUp' | 'coolDown') => {
     if (!plan) return;
-    const suggestedExercise = getSingleSuggestedExercise(section === 'warmUp' ? 'warmup' : 'cooldown');
+    // FIX: Awaited the async function call to ensure suggestedExercise is an object, not a Promise.
+    const suggestedExercise = await getSingleSuggestedExercise(section === 'warmUp' ? 'warmup' : 'cooldown');
     if (!suggestedExercise) {
       toastStore.addToast(`Could not find a suggested exercise for ${section}.`, 'error');
       return;

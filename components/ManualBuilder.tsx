@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useWorkoutEditor } from '../hooks/useWorkoutEditor';
-import { EXERCISE_DATABASE } from '../data/exerciseDatabase';
+import { getAllExercises } from '../services/exerciseService';
 import { Exercise, WorkoutPlan, ExerciseDetails, ExerciseDifficulty, ExerciseEquipment } from '../types';
 import { toastStore } from '../store/toastStore';
 import { saveCustomWorkout } from '../services/workoutService';
@@ -18,9 +18,6 @@ import ExerciseDetailModal from './ExerciseDetailModal';
 type WorkoutSectionType = 'warmUp' | 'rounds' | 'coolDown';
 
 const exerciseIdMap = new Map<string, string>();
-EXERCISE_DATABASE.forEach(ex => {
-  exerciseIdMap.set(ex.name, ex.id);
-});
 
 const FilterButton: React.FC<{ label: string; isSelected: boolean; onClick: () => void; }> = ({ label, isSelected, onClick }) => (
     <button
@@ -40,7 +37,8 @@ const ExerciseSearchOverlay: React.FC<{
   isOpen: boolean;
   onClose: () => void;
   onSelect: (exercise: ExerciseDetails) => void;
-}> = ({ isOpen, onClose, onSelect }) => {
+  allExercises: ExerciseDetails[];
+}> = ({ isOpen, onClose, onSelect, allExercises }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDifficulties, setSelectedDifficulties] = useState<string[]>([]);
   const [selectedEquipment, setSelectedEquipment] = useState<string[]>([]);
@@ -48,17 +46,17 @@ const ExerciseSearchOverlay: React.FC<{
   
   const availableDifficulties = useMemo(() => ['Beginner', 'Intermediate', 'Advanced'], []);
   
-  const equipmentCategories = useMemo(() => ['Barbell', 'Bodyweight', 'Dumbbell', 'Jump Rope', 'Kettlebell', 'Machine', 'Resistance Band'], []);
+  const equipmentCategories = useMemo(() => ['Bodyweight', 'Dumbbell', 'Gym Equipment'], []);
   
   const muscleGroupCategories = useMemo(() => {
     const muscleSet = new Set<string>();
-    EXERCISE_DATABASE.forEach(ex => {
+    allExercises.forEach(ex => {
         if (ex.purpose === 'main' && ex.category !== 'Flexibility & Mobility') {
             ex.muscleGroups.forEach(m => muscleSet.add(m));
         }
     });
     return ['All Muscles', ...Array.from(muscleSet).sort()];
-  }, []);
+  }, [allExercises]);
 
   const handleToggleFilter = (setter: React.Dispatch<React.SetStateAction<string[]>>, value: string) => {
       setter(prev => 
@@ -69,7 +67,7 @@ const ExerciseSearchOverlay: React.FC<{
   };
 
   const filteredExercises = useMemo(() => {
-    return EXERCISE_DATABASE.filter(ex => {
+    return allExercises.filter(ex => {
         if (ex.purpose !== 'main') return false;
 
         // Text Search Match
@@ -78,31 +76,32 @@ const ExerciseSearchOverlay: React.FC<{
             ex.name.toLowerCase().includes(searchTermLower) ||
             (ex.keywords && ex.keywords.some(k => k.toLowerCase().includes(searchTermLower)));
 
+        if (!searchMatch) return false;
+
         // Difficulty Match
         const difficultyMatch = selectedDifficulties.length === 0 || ex.skillLevels.some(l => selectedDifficulties.includes(l));
+        if (!difficultyMatch) return false;
         
         // Equipment Match
         const equipmentMatch = selectedEquipment.length === 0 || selectedEquipment.some(selected => {
             const selectedFormatted = selected.toLowerCase().replace(/ /g, '-');
-            if (selected === 'Jump Rope') return ex.equipment.includes('jump-rope');
-            if (['Machine', 'Barbell', 'Kettlebell', 'Resistance Band'].includes(selected)) return ex.equipment.includes('gym-equipment');
             return ex.equipment.includes(selectedFormatted as ExerciseEquipment);
         });
+        if (!equipmentMatch) return false;
         
         // Muscle Group Match
         const muscleGroupMatch = selectedMuscleGroup === 'All Muscles' || ex.muscleGroups.includes(selectedMuscleGroup);
 
-        return searchMatch && difficultyMatch && equipmentMatch && muscleGroupMatch;
+        return muscleGroupMatch;
     });
-  }, [searchTerm, selectedDifficulties, selectedEquipment, selectedMuscleGroup]);
+  }, [searchTerm, selectedDifficulties, selectedEquipment, selectedMuscleGroup, allExercises]);
 
   const categorizedResults = useMemo(() => {
     const grouped: { [key: string]: ExerciseDetails[] } = {};
 
     filteredExercises.forEach(exercise => {
         let key = (exercise.equipment[0] || 'bodyweight').replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-        if (['Jump Rope'].includes(key)) key = 'Jump Rope';
-        if (['Gym Equipment'].includes(key)) key = 'Gym Equipment';
+        if (exercise.category === 'Custom') key = 'My Custom Exercises';
         
         if (!grouped[key]) grouped[key] = [];
         grouped[key].push(exercise);
@@ -187,6 +186,7 @@ const ExerciseSearchOverlay: React.FC<{
 const ManualBuilder: React.FC = () => {
   const editor = useWorkoutEditor();
   const navigate = useNavigate();
+  const [allExercises, setAllExercises] = useState<ExerciseDetails[]>([]);
   const [workoutName, setWorkoutName] = useState('My Custom Routine');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [modalState, setModalState] = useState<{ mode: 'add' | 'replace'; section: WorkoutSectionType, exerciseToEdit?: Exercise, index?: number, intoGroup?: boolean } | null>(null);
@@ -203,8 +203,14 @@ const ManualBuilder: React.FC = () => {
   const touchStartY = useRef(0);
   const isDragging = useRef(false);
 
-
   useEffect(() => {
+    const fetchExercises = async () => {
+        const data = await getAllExercises();
+        setAllExercises(data);
+        data.forEach(ex => exerciseIdMap.set(ex.name, ex.id));
+    };
+    fetchExercises();
+
     if (!editor.plan) {
         editor.setExercises({
           id: crypto.randomUUID(),
@@ -239,16 +245,16 @@ const ManualBuilder: React.FC = () => {
     setExpandedExerciseId(currentId => (currentId === id ? null : id));
   };
 
-  const handleAddSuggestedExercise = (type: 'warmup' | 'cooldown') => {
-    const exercise = getSingleSuggestedExercise(type);
+  const handleAddSuggestedExercise = async (type: 'warmup' | 'cooldown') => {
+    const exercise = await getSingleSuggestedExercise(type);
     if (exercise) {
         const section = type === 'warmup' ? 'warmUp' : 'coolDown';
         editor.addExercise(exercise, section, { index: editor.plan?.[section]?.length });
     }
   };
 
-  const handleAddSuggestedMainExercise = () => {
-    const suggested = getSuggestedMainExercise(editor.plan?.rounds || []);
+  const handleAddSuggestedMainExercise = async () => {
+    const suggested = await getSuggestedMainExercise(editor.plan?.rounds || []);
     if (suggested) {
         const exerciseWithUniversalRest = { ...suggested, rest: editor.preferences.universalRestDuration };
         editor.addExercise(exerciseWithUniversalRest, 'rounds', { index: editor.plan?.rounds.length });
@@ -561,6 +567,7 @@ const ManualBuilder: React.FC = () => {
                             <div key={exercise.id}>
                                 {dragOverInfo?.section === section && dragOverInfo?.index === originalIndex && <div className="h-1.5 my-1 rounded-full bg-orange-500 animate-pulse" />}
                                 <div draggable onDragStart={(e) => handleDragStart(e, originalIndex, section)} onDragEnd={handleDragEnd} onDrop={(e) => handleDrop(e, originalIndex, section)} onDragEnter={() => setDragOverInfo({ index: originalIndex, section: section })} onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverInfo({ index: originalIndex, section: section });}} onTouchStart={(e) => handleTouchStart(e, originalIndex, section)} data-draggable-item data-index={originalIndex} data-section={section}>
+                                    {/* FIX: Corrected variable from 'ex' to 'exercise' to pass the correct data to the component. */}
                                     <ExerciseCard
                                         exercise={exercise}
                                         exerciseDbId={exerciseIdMap.get(exercise.exercise)}
@@ -575,7 +582,6 @@ const ManualBuilder: React.FC = () => {
                                         allowLinking={true}
                                         isInGroup={!!(exercise.sets && exercise.sets > 1)}
                                         isDragging={draggingId === exercise.id}
-// FIX: Corrected typo `ex.id` to `exercise.id`
                                         isExpanded={exercise.id === expandedExerciseId}
                                         onToggleExpand={handleToggleExpand}
                                     />
@@ -607,7 +613,7 @@ const ManualBuilder: React.FC = () => {
   
   return (
     <>
-      <ExerciseSearchOverlay isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} onSelect={handleAddExercise} />
+      <ExerciseSearchOverlay isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} onSelect={handleAddExercise} allExercises={allExercises} />
       {modalState && <ExerciseModal 
             isOpen={!!modalState} 
             onClose={() => setModalState(null)} 
