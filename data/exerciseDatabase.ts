@@ -985,6 +985,44 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
 
   // CARDIO
   {
+    id: 'high-knees-cardio',
+    name: 'High Knees (Cardio)',
+    category: 'Cardio',
+    purpose: 'main',
+    skillLevels: ['Beginner', 'Intermediate'],
+    equipment: ['bodyweight'],
+    goals: [WorkoutGoal.Cardio, WorkoutGoal.FullBody],
+    workoutType: 'Cardio/HIIT',
+    description: 'A high-intensity cardio exercise that raises your heart rate and strengthens your hip flexors, quads, and core.',
+    instructions: [
+      'Stand with your feet hip-width apart.',
+      'Drive your right knee toward your chest, then quickly switch and drive your left knee up.',
+      'Continue alternating at a running pace.',
+      'Use your arms for momentum and keep your core engaged.'
+    ],
+    muscleGroups: ['Quadriceps', 'Calves', 'Abdominals'],
+    videoUrl: 'https://www.youtube.com/embed/D0b016-17vU'
+  },
+  {
+    id: 'butt-kicks-cardio',
+    name: 'Butt Kicks (Cardio)',
+    category: 'Cardio',
+    purpose: 'main',
+    skillLevels: ['Beginner', 'Intermediate'],
+    equipment: ['bodyweight'],
+    goals: [WorkoutGoal.Cardio, WorkoutGoal.FullBody],
+    workoutType: 'Cardio/HIIT',
+    description: 'A dynamic cardio drill that warms up the hamstrings and increases heart rate.',
+    instructions: [
+      'Stand tall and start jogging in place.',
+      'As you jog, alternate kicking your heels up towards your glutes.',
+      'Maintain a quick rhythm and an upright posture.',
+      'The focus is on hamstring contraction and speed.'
+    ],
+    muscleGroups: ['Hamstrings', 'Glutes', 'Quadriceps'],
+    videoUrl: 'https://www.youtube.com/embed/g-i_m8Lg-e4'
+  },
+  {
     id: 'jumping-jacks',
     name: 'Jumping Jacks',
     category: 'Cardio',
@@ -1033,7 +1071,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     skillLevels: ['Beginner'],
     equipment: ['bodyweight'],
-    goals: [WorkoutGoal.Strength],
+    goals: [WorkoutGoal.Strength, WorkoutGoal.FullBody],
     workoutType: 'Compound',
     description: 'A push-up variation performed with hands elevated on a surface like a bench or wall, reducing the weight load and making it easier.',
     instructions: [
@@ -1111,7 +1149,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     skillLevels: ['Beginner'],
     equipment: ['bodyweight'],
-    goals: [WorkoutGoal.Strength, WorkoutGoal.Core],
+    goals: [WorkoutGoal.Strength, WorkoutGoal.Core, WorkoutGoal.FullBody],
     workoutType: 'Core/Accessory',
     description: 'An excellent exercise for strengthening the entire posterior chain, including the lower back, glutes, and hamstrings.',
     instructions: [
@@ -1229,7 +1267,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     skillLevels: ['Beginner'],
     equipment: ['bodyweight'],
-    goals: [WorkoutGoal.Strength, WorkoutGoal.Core],
+    goals: [WorkoutGoal.Strength, WorkoutGoal.Core, WorkoutGoal.FullBody],
     workoutType: 'Core/Accessory',
     description: 'A core stability exercise performed in a plank position that also strengthens the shoulders and improves balance.',
     instructions: [
@@ -1383,7 +1421,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     skillLevels: ['Beginner'],
     equipment: ['bodyweight'],
-    goals: [WorkoutGoal.Strength],
+    goals: [WorkoutGoal.Strength, WorkoutGoal.FullBody],
     workoutType: 'Compound',
     description: 'A modified push-up performed on the knees, making it an excellent starting point for building upper body strength.',
     instructions: [
@@ -1854,7 +1892,7 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     purpose: 'main',
     skillLevels: ['Beginner'],
     equipment: ['bodyweight'],
-    goals: [WorkoutGoal.Strength, WorkoutGoal.Core],
+    goals: [WorkoutGoal.Strength, WorkoutGoal.Core, WorkoutGoal.FullBody],
     workoutType: 'Isolation',
     description: 'A foundational exercise for activating and strengthening the glutes and hamstrings.',
     instructions: [
@@ -2252,5 +2290,155 @@ export const EXERCISE_DATABASE: ExerciseDetails[] = [
     ],
     muscleGroups: ['Abdominals', 'Obliques'],
     videoUrl: 'https://www.youtube.com/embed/NeAtimSCxsY'
+  },
+  
+  // COOL-DOWN
+  {
+    id: 'standing-quad-stretch',
+    name: 'Standing Quad Stretch',
+    category: 'Flexibility & Mobility',
+    purpose: 'cooldown',
+    skillLevels: ['Beginner'],
+    equipment: ['bodyweight'],
+    goals: [WorkoutGoal.Mobility],
+    workoutType: 'Mobility/Stretch',
+    description: 'A static stretch to lengthen the quadriceps muscles in the front of the thigh.',
+    instructions: [
+      'Stand upright, holding onto a wall or chair for balance if needed.',
+      'Grab your right foot and gently pull your heel towards your glute.',
+      'Keep your knees together and stand up straight. Avoid arching your back.',
+      'Hold for 20-30 seconds, then switch legs.'
+    ],
+    muscleGroups: ['Quadriceps'],
+    videoUrl: 'https://www.youtube.com/embed/g-i_m8Lg-e4'
+  },
+  {
+    id: 'standing-hamstring-stretch',
+    name: 'Standing Hamstring Stretch',
+    category: 'Flexibility & Mobility',
+    purpose: 'cooldown',
+    skillLevels: ['Beginner'],
+    equipment: ['bodyweight'],
+    goals: [WorkoutGoal.Mobility],
+    workoutType: 'Mobility/Stretch',
+    description: 'A static stretch to lengthen the hamstrings along the back of the leg.',
+    instructions: [
+      'Stand with your feet hip-width apart.',
+      'Extend one leg forward with your heel on the ground and your toes pointing up.',
+      'Keeping your back straight, hinge at your hips and lean forward until you feel a stretch in the back of your leg.',
+      'Hold for 20-30 seconds, then switch legs.'
+    ],
+    muscleGroups: ['Hamstrings'],
+    videoUrl: 'https://www.youtube.com/embed/d7glR-yE-i0'
+  },
+  {
+    id: 'seated-butterfly-stretch',
+    name: 'Seated Butterfly Stretch',
+    category: 'Flexibility & Mobility',
+    purpose: 'cooldown',
+    skillLevels: ['Beginner'],
+    equipment: ['bodyweight'],
+    goals: [WorkoutGoal.Mobility],
+    workoutType: 'Mobility/Stretch',
+    description: 'A seated stretch that opens up the hips and stretches the inner thighs (adductors).',
+    instructions: [
+      'Sit on the floor with the soles of your feet together and your knees bent out to the sides.',
+      'Hold onto your ankles and gently press your knees toward the floor.',
+      'Sit up tall and hold for 20-30 seconds.'
+    ],
+    muscleGroups: ['Adductors', 'Hips'],
+    videoUrl: 'https://www.youtube.com/embed/5n4045fS_oE'
+  },
+  {
+    id: 'cross-body-shoulder-stretch',
+    name: 'Cross-Body Shoulder Stretch',
+    category: 'Flexibility & Mobility',
+    purpose: 'cooldown',
+    skillLevels: ['Beginner'],
+    equipment: ['bodyweight'],
+    goals: [WorkoutGoal.Mobility],
+    workoutType: 'Mobility/Stretch',
+    description: 'A static stretch that targets the deltoid and upper back muscles.',
+    instructions: [
+      'Bring one arm straight across your chest.',
+      'Use your other hand to gently pull the arm closer to your chest, feeling a stretch in your shoulder.',
+      'Keep your shoulder down and relaxed.',
+      'Hold for 20-30 seconds, then switch arms.'
+    ],
+    muscleGroups: ['Shoulders', 'Upper Back'],
+    videoUrl: 'https://www.youtube.com/embed/6SC-4B33-sY'
+  },
+  {
+    id: 'overhead-triceps-stretch',
+    name: 'Overhead Triceps Stretch',
+    category: 'Flexibility & Mobility',
+    purpose: 'cooldown',
+    skillLevels: ['Beginner'],
+    equipment: ['bodyweight'],
+    goals: [WorkoutGoal.Mobility],
+    workoutType: 'Mobility/Stretch',
+    description: 'Stretches the triceps muscle located on the back of the upper arm.',
+    instructions: [
+      'Reach one arm overhead, then bend your elbow to drop your hand behind your neck.',
+      'Use your other hand to gently pull the elbow, deepening the stretch.',
+      'Hold for 20-30 seconds, then switch arms.'
+    ],
+    muscleGroups: ['Triceps', 'Shoulders'],
+    videoUrl: 'https://www.youtube.com/embed/EKV32b9A6S8'
+  },
+  {
+    id: 'doorway-chest-stretch',
+    name: 'Doorway Chest Stretch',
+    category: 'Flexibility & Mobility',
+    purpose: 'cooldown',
+    skillLevels: ['Beginner'],
+    equipment: ['bodyweight'],
+    goals: [WorkoutGoal.Mobility],
+    workoutType: 'Mobility/Stretch',
+    description: 'An effective stretch to open up the chest muscles after upper body workouts.',
+    instructions: [
+      'Stand in a doorway and place your forearms on the frame with your elbows bent at 90 degrees.',
+      'Step one foot forward until you feel a gentle stretch across your chest.',
+      'Hold for 20-30 seconds.'
+    ],
+    muscleGroups: ['Chest', 'Shoulders'],
+    videoUrl: 'https://www.youtube.com/embed/JG33s2_2e5A'
+  },
+  {
+    id: 'childs-pose',
+    name: 'Child\'s Pose',
+    category: 'Flexibility & Mobility',
+    purpose: 'cooldown',
+    skillLevels: ['Beginner'],
+    equipment: ['bodyweight'],
+    goals: [WorkoutGoal.Mobility],
+    workoutType: 'Mobility/Stretch',
+    description: 'A gentle resting pose that stretches the back, hips, and ankles.',
+    instructions: [
+      'Kneel on the floor, sit back on your heels, and then fold forward.',
+      'Rest your forehead on the floor and extend your arms in front of you or rest them alongside your body.',
+      'Breathe deeply and hold for 30-60 seconds.'
+    ],
+    muscleGroups: ['Lower Back', 'Glutes', 'Hips'],
+    videoUrl: 'https://www.youtube.com/embed/2M-xQy_H1lI'
+  },
+  {
+    id: 'figure-four-stretch',
+    name: 'Figure-Four Stretch',
+    category: 'Flexibility & Mobility',
+    purpose: 'cooldown',
+    skillLevels: ['Beginner'],
+    equipment: ['bodyweight'],
+    goals: [WorkoutGoal.Mobility],
+    workoutType: 'Mobility/Stretch',
+    description: 'A deep stretch for the glutes and piriformis muscles, which can help alleviate hip tightness.',
+    instructions: [
+      'Lie on your back with your knees bent.',
+      'Cross one ankle over the opposite knee, creating a "figure four" shape.',
+      'Reach through your legs and gently pull the bottom thigh towards your chest.',
+      'Hold for 20-30 seconds, then switch sides.'
+    ],
+    muscleGroups: ['Glutes', 'Hips'],
+    videoUrl: 'https://www.youtube.com/embed/5-6-3d3Ynvo'
   }
 ];

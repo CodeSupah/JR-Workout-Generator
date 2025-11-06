@@ -1,6 +1,8 @@
+
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { SkillLevel, WorkoutGoal, WorkoutPreferences, WorkoutPlan, Exercise, ExerciseEquipment } from '../types';
+import { SkillLevel, WorkoutGoal, WorkoutPreferences, WorkoutPlan, Exercise, ExerciseEquipment, UserProfile } from '../types';
 import { generateWorkoutPlan } from '../services/geminiService';
 import { DumbbellIcon, FlameIcon, RunIcon, TargetIcon, CogIcon, BuildingOfficeIcon, RopeIcon, StretchIcon, ClockIcon } from './icons/Icons';
 import { useWorkoutEditor } from '../hooks/useWorkoutEditor';
@@ -8,6 +10,7 @@ import EditableWorkoutPlan from './EditableWorkoutPlan';
 import { toastStore } from '../store/toastStore';
 import StepperInput from './StepperInput';
 import ToggleSwitch from './ToggleSwitch';
+import { profileStore } from '../store/profileStore';
 
 const formatTime = (totalSeconds: number): string => {
   if (totalSeconds < 0) return '0s';
@@ -38,7 +41,7 @@ const EquipmentSelector: React.FC<{ selected: ExerciseEquipment[], onChange: (se
   return (
     <div className="space-y-2">
       <label className="text-lg font-semibold">Available Equipment (Select all that apply)</label>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      <div className="grid grid-cols-3 gap-2">
         {EQUIPMENT_LIST.map(item => (
           <button key={item.id} onClick={() => handleToggle(item.id)} className={`flex flex-col items-center justify-center gap-2 p-3 rounded-lg cursor-pointer transition-all ${selected.includes(item.id) ? 'bg-orange-500 text-white shadow-md' : 'bg-gray-700 hover:bg-gray-600'}`}>
             {item.icon}
@@ -73,8 +76,15 @@ const WorkoutGenerator: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  
   const editor = useWorkoutEditor();
   
+  useEffect(() => {
+    const unsubscribe = profileStore.subscribe(setProfile);
+    return () => unsubscribe();
+  }, []);
+
   // Helper to gather all state into the full preferences object for saving
   const getFullPreferencesForSaving = (): Omit<WorkoutPreferences, 'restBetweenRounds'> => ({
       ...preferences,
@@ -212,7 +222,7 @@ const WorkoutGenerator: React.FC = () => {
 
     try {
       const fullPreferences: WorkoutPreferences = getFullPreferencesForGeneration();
-      const plan = await generateWorkoutPlan(fullPreferences);
+      const plan = await generateWorkoutPlan(fullPreferences, profile);
       editor.setExercises(plan);
       setOriginalPreferences(fullPreferences);
       setIsEditing(true);
@@ -261,7 +271,7 @@ const WorkoutGenerator: React.FC = () => {
                 
                 {/* 3. Primary Goal */}
                 <div className="space-y-2">
-                    <label className="text-lg font-semibold">Primary Goal</label>
+                    <label className="text-lg font-semibold">Primary Workout Goal</label>
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
                     {(Object.values(WorkoutGoal)).map(goal => {
                         const icons: {[key in WorkoutGoal]: React.ReactNode} = {
@@ -287,33 +297,29 @@ const WorkoutGenerator: React.FC = () => {
                 </div>
                
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* Duration Slider */}
-                <div className="space-y-2">
-                    <label className="text-lg font-semibold">Duration: <span className="text-orange-400">{preferences.duration} mins</span></label>
-                    <input
-                    type="range"
-                    min="5"
-                    max="60"
-                    step="5"
-                    value={preferences.duration}
-                    onChange={(e) => handlePreferenceChange('duration', parseInt(e.target.value))}
-                    className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer range-lg accent-orange-500"
-                    />
-                </div>
+                    {/* Duration Stepper */}
+                    <div className="space-y-2">
+                        <label className="text-lg font-semibold">Duration: <span className="text-orange-400">{preferences.duration} mins</span></label>
+                        <StepperInput
+                            value={preferences.duration}
+                            onChange={(val) => handlePreferenceChange('duration', val)}
+                            step={5}
+                            min={5}
+                            aria-label="Workout duration in minutes"
+                        />
+                    </div>
 
-                {/* Rounds Slider */}
-                <div className="space-y-2">
-                    <label className="text-lg font-semibold">Rounds / Circuits: <span className="text-orange-400">{rounds}</span></label>
-                    <input
-                    type="range"
-                    min="1"
-                    max="5"
-                    step="1"
-                    value={rounds}
-                    onChange={(e) => setRounds(parseInt(e.target.value))}
-                    className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer range-lg accent-orange-500"
-                    />
-                </div>
+                    {/* Rounds Stepper */}
+                    <div className="space-y-2">
+                        <label className="text-lg font-semibold">Rounds: <span className="text-orange-400">{rounds}</span></label>
+                        <StepperInput
+                            value={rounds}
+                            onChange={setRounds}
+                            step={1}
+                            min={1}
+                            aria-label="Number of workout rounds"
+                        />
+                    </div>
                 </div>
 
                 {/* Rest Settings */}

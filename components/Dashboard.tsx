@@ -307,7 +307,6 @@ const Dashboard: React.FC = () => {
                         </div>
                         <div>
                             <h3 className="text-xl font-bold text-white">Exercise Library</h3>
-                            <p className="text-gray-400">Browse Over {exerciseCount} Exercises</p>
                         </div>
                         <span className="ml-auto text-indigo-400 group-hover:translate-x-1 transition-transform">&rarr;</span>
                     </div>

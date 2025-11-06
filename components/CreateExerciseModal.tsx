@@ -170,22 +170,20 @@ const CreateExerciseModal: React.FC<CreateExerciseModalProps> = ({ isOpen, onClo
                         <input type="text" value={newExercise.name} onChange={e => handleInputChange('name', e.target.value)} />
                     </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="form-group">
-                            <label>Skill Level*</label>
-                            <div className="flex bg-gray-900/50 p-1 rounded-lg">
-                                {Object.values(SkillLevel).map(level => (
-                                    <button key={level} onClick={() => handleMultiSelectChange('skillLevels', level)} className={`flex-1 py-2 px-4 rounded-md text-sm font-semibold transition-colors ${(newExercise.skillLevels || []).includes(level) ? 'bg-orange-500 text-white' : 'text-gray-300 hover:bg-gray-700'}`}>
-                                        {level}
-                                    </button>
-                                ))}
-                            </div>
+                    <div className="form-group">
+                        <label>Skill Level*</label>
+                        <div className="flex bg-gray-900/50 p-1 rounded-lg">
+                            {Object.values(SkillLevel).map(level => (
+                                <button key={level} onClick={() => handleMultiSelectChange('skillLevels', level)} className={`flex-1 py-2 px-4 rounded-md text-sm font-semibold transition-colors ${(newExercise.skillLevels || []).includes(level) ? 'bg-orange-500 text-white' : 'text-gray-300 hover:bg-gray-700'}`}>
+                                    {level}
+                                </button>
+                            ))}
                         </div>
-                        <div className="form-group">
-                             <label>Equipment*</label>
-                            <div className="flex flex-wrap gap-2">
-                                {['bodyweight', 'dumbbell', 'gym-equipment'].map(e => <MultiSelectPill key={e} label={e} field="equipment" />)}
-                            </div>
+                    </div>
+                    <div className="form-group">
+                         <label>Equipment*</label>
+                        <div className="flex flex-wrap gap-2">
+                            {['bodyweight', 'dumbbell', 'gym-equipment'].map(e => <MultiSelectPill key={e} label={e} field="equipment" />)}
                         </div>
                     </div>
                     

@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type } from '@google/genai';
-import { WorkoutPreferences, WorkoutPlan, Exercise, ExerciseDifficulty, WorkoutGoal, SkillLevel, ExerciseEquipment } from '../types';
+import { WorkoutPreferences, WorkoutPlan, Exercise, ExerciseDifficulty, WorkoutGoal, SkillLevel, ExerciseEquipment, UserProfile, FitnessObjective, fitnessObjectiveToWorkoutGoals } from '../types';
 import { getAllExercises } from './exerciseService';
 
 const API_KEY = process.env.API_KEY;
@@ -107,7 +107,7 @@ export const generateExerciseInstructions = async (name: string, skillLevel: Ski
 };
 
 
-export const generateWorkoutPlan = async (prefs: WorkoutPreferences): Promise<WorkoutPlan> => {
+export const generateWorkoutPlan = async (prefs: WorkoutPreferences, profile: UserProfile | null): Promise<WorkoutPlan> => {
   const ALL_EXERCISES = await getAllExercises();
 
   const warmUpMinutes = prefs.includeWarmUp ? prefs.warmUpDuration : 0;
@@ -122,16 +122,31 @@ export const generateWorkoutPlan = async (prefs: WorkoutPreferences): Promise<Wo
   const targetSecondsPerCircuit = Math.round(targetExerciseSeconds / prefs.rounds);
   
   // --- Filter Exercise Database based on Preferences ---
-  const flexibilityExercises = ALL_EXERCISES
-    .filter(ex => ex.category === 'Flexibility & Mobility')
+  const warmUpExercises = ALL_EXERCISES
+    .filter(ex => ex.purpose === 'warmup')
     .map(ex => `'${ex.name}'`)
     .join(', ');
+
+  const coolDownExercises = ALL_EXERCISES
+    .filter(ex => ex.purpose === 'cooldown')
+    .map(ex => `'${ex.name}'`)
+    .join(', ');
+
+  // --- Expanded Goal Filtering for Variety ---
+  const allowedGoals: WorkoutGoal[] = [prefs.goal];
+  if ([WorkoutGoal.Cardio, WorkoutGoal.Strength, WorkoutGoal.Endurance].includes(prefs.goal)) {
+      allowedGoals.push(WorkoutGoal.FullBody);
+  }
+  if (prefs.goal === WorkoutGoal.FullBody) {
+      allowedGoals.push(WorkoutGoal.Cardio, WorkoutGoal.Strength, WorkoutGoal.Core);
+  }
 
   const mainExercises = ALL_EXERCISES
       .filter(ex => 
           ex.purpose === 'main' &&
           ex.skillLevels.includes(prefs.skillLevel) &&
-          ex.goals.includes(prefs.goal) &&
+          // Use the expanded list of allowed goals for more variety
+          ex.goals.some(g => allowedGoals.includes(g)) &&
           // Exercise is valid if all its required equipment is available to the user
           ex.equipment.every(req => prefs.availableEquipment.includes(req))
       )
@@ -148,28 +163,45 @@ export const generateWorkoutPlan = async (prefs: WorkoutPreferences): Promise<Wo
   if (!availableEquipmentText) {
     availableEquipmentText = 'bodyweight only';
   }
+  
+  let userProfileText = "The user has not provided detailed personal details, so create a general but effective workout.";
+  if (profile) {
+    const age = profile.dob ? new Date().getFullYear() - new Date(profile.dob).getFullYear() : 'not specified';
+    const relevantWorkoutGoals = fitnessObjectiveToWorkoutGoals[profile.primaryGoal].join(', ');
+    userProfileText = `
+      **--- USER PROFILE ---**
+      - **Age:** ${age}
+      - **Gender:** ${profile.gender}
+      - **Height:** ${profile.height > 0 ? profile.height.toFixed(0) + ' cm' : 'not specified'}
+      - **Weight:** ${profile.weight > 0 ? profile.weight.toFixed(0) + ' kg' : 'not specified'}
+      - **User's Stated Primary Goal:** ${profile.primaryGoal}. This means the user is interested in workout styles like: ${relevantWorkoutGoals}.
+
+      **CRITICAL PERSONALIZATION RULE:** You MUST use this profile information to create a more personalized and appropriate workout plan. For example, consider the user's age and weight when determining intensity. The user's stated primary goal should heavily influence the exercise selection and structure, favoring exercises that align with their goal (${relevantWorkoutGoals}).
+    `;
+  }
 
 
   const prompt = `
-    You are an expert fitness AI. Your primary goal is to create a safe, effective, and varied workout plan based on the user's preferences.
+    You are an expert fitness AI. Your primary goal is to create a safe, effective, and highly personalized workout plan based on the user's preferences and profile.
 
-    **--- CRITICAL RULE: EQUIPMENT ADHERENCE ---**
-    The user has specified the following equipment is available: **${availableEquipmentText}**.
-    - You MUST ONLY select exercises that can be performed with this equipment.
-    - If multiple equipment types are listed (e.g., 'bodyweight, dumbbell'), you MUST create a workout that includes a mix of exercises from these categories. Do not default to using only one type.
-    - An exercise requiring 'gym-equipment' is only allowed if 'gym-equipment' is in the available list.
-    
-    **--- WORKOUT GENERATION RULES ---**
+    ${userProfileText}
 
-    1.  **Goal & Skill Alignment:** The workout plan MUST align with the user's primary_goal ('${prefs.goal}') and skill_level ('${prefs.skillLevel}').
-    
-    2.  **Approved Exercise List:** You MUST select exercises for the main workout ('rounds' array) EXCLUSIVELY from this pre-filtered list of valid exercises: ${availableMainExercises}. Do not invent exercises or choose exercises not on this list. For warm-ups and cool-downs, you MUST use exercises from this list: ${flexibilityExercises}.
+    **--- CRITICAL WORKOUT GENERATION RULES ---**
+
+    1.  **STANDARD DURATIONS (MOST IMPORTANT):** Exercise 'duration' values MUST be standard, user-friendly intervals. Use multiples of 5, preferably 30, 45, or 60 seconds. **Avoid strange, specific numbers like 53s or 66s.** To meet the total time goal, you MUST adjust the NUMBER of exercises, NOT the duration of each one.
+
+    2.  **HIGH VARIETY & NO REPETITION:** All sections (warmUp, rounds, coolDown) MUST be composed of **varied** exercises. Do not use the same set of exercises for every generated plan. The main workout circuit ('rounds' array) MUST NOT contain the same exercise twice. A good plan mixes movement patterns (e.g., upper body, lower body, core, cardio bursts) to be engaging and effective. For today's '${prefs.goal}' session, ensure a dynamic and balanced selection.
+
+    3.  **APPROVED EXERCISE LIST:** You MUST select exercises for the main workout ('rounds' array) EXCLUSIVELY from this pre-filtered list of valid exercises: ${availableMainExercises}. For warm-ups, you MUST use exercises from this list: ${warmUpExercises}. For cool-downs, you MUST use exercises from this list: ${coolDownExercises}. Do not invent exercises or choose exercises not on these lists.
+
+    4.  **EQUIPMENT & SKILL ADHERENCE:** The workout must be appropriate for a '${prefs.skillLevel}' user with only the following equipment: **${availableEquipmentText}**.
 
     **--- WORKOUT STRUCTURE GUIDANCE ---**
 
-    - **Main Circuit:** Create a single circuit of 4-6 varied exercises. The user will perform this circuit for **${prefs.rounds} rounds**.
+    - **CRITICAL DURATION RANGE:** Individual 'work' durations for exercises in the main workout circuit MUST be reasonable, between 30 and 75 seconds.
+    - **Main Circuit:** Create a single circuit of varied exercises. The user will perform this circuit for **${prefs.rounds} rounds**. The number of exercises in the circuit should be chosen to meet the timing goal below, while respecting all duration rules above.
     - **Timing:** The total time for ONE circuit (sum of all exercise 'duration' + 'rest') should be approximately **${targetSecondsPerCircuit} seconds**.
-    - **Rest:** If the user specified a global rest duration of '${prefs.defaultRestDuration}' seconds (and it's not 0), use that as the rest time for each main exercise. Otherwise, you can determine an appropriate rest period.
+    - **Rest:** If the user specified a global rest duration of '${prefs.defaultRestDuration}' seconds (and it's not 0), use that as the rest time for each main exercise. Otherwise, you can determine an appropriate rest period that aligns with a '${prefs.goal}' goal (e.g., shorter rests for cardio).
     - **Warm-up:** If 'includeWarmUp' is true, the total 'duration' of warm-up exercises must sum to exactly **${warmUpMinutes * 60} seconds**. Rest between warm-up exercises MUST be 0.
     - **Cool-down:** If 'includeCoolDown' is true, the total 'duration' of cool-down exercises must sum to exactly **${coolDownMinutes * 60} seconds**. Rest between cool-down exercises MUST be 0.
   `;

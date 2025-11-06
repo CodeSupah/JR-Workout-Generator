@@ -1,3 +1,5 @@
+
+
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import WorkoutGenerator from './WorkoutGenerator';
@@ -6,13 +8,12 @@ import { loadCustomWorkouts, deleteCustomWorkout } from '../services/workoutServ
 import { generateWorkoutPlan } from '../services/geminiService';
 import { toastStore } from '../store/toastStore';
 import { profileStore } from '../store/profileStore';
-// FIX: Removed non-existent 'Equipment' type.
-import { WorkoutPlan, WorkoutPreferences, SkillLevel, WorkoutGoal, UserProfile } from '../types';
+// FIX: Import fitnessObjectiveToWorkoutGoals to map user's primary goal to a specific workout goal.
+import { WorkoutPlan, WorkoutPreferences, SkillLevel, WorkoutGoal, UserProfile, fitnessObjectiveToWorkoutGoals } from '../types';
 import { PROGRAM_CATEGORIES } from '../data/programs';
 import { PlusIcon, FolderOpenIcon, CogIcon, SparklesIcon } from './icons/Icons';
 
-// FIX: Updated goalToTitleMap to use current WorkoutGoal enum values.
-// @ts-ignore
+// FIX: Updated goalToTitleMap to use WorkoutGoal enum for keys for better type safety.
 const goalToTitleMap: Record<WorkoutGoal, string> = {
     [WorkoutGoal.Strength]: "Strength Focus",
     [WorkoutGoal.Cardio]: "Cardio Blast",
@@ -56,12 +57,11 @@ const WorkoutHub: React.FC = () => {
         const duration = [15, 20, 25][Math.floor(Math.random() * 3)];
         setSuggestedWorkout({
             title: `Your Daily ${randomGoal} Focus`,
-            // FIX: Updated preferences object to match current type definition.
             preferences: {
                 duration,
                 skillLevel: SkillLevel.Intermediate,
                 goal: randomGoal,
-                availableEquipment: ['jump-rope'],
+                availableEquipment: ['bodyweight'],
                 rounds: 3,
                 includeWarmUp: true,
                 warmUpDuration: 3,
@@ -80,10 +80,8 @@ const WorkoutHub: React.FC = () => {
     }, []);
 
 
-    // FIX: Updated getComplementaryGoal to use current WorkoutGoal enum values.
     const getComplementaryGoal = (primary: WorkoutGoal): WorkoutGoal => {
-        // @ts-ignore
-const map: Record<WorkoutGoal, WorkoutGoal> = {
+        const map: Record<string, WorkoutGoal> = {
             [WorkoutGoal.Strength]: WorkoutGoal.Cardio,
             [WorkoutGoal.Cardio]: WorkoutGoal.Strength,
             [WorkoutGoal.Endurance]: WorkoutGoal.Strength,
@@ -91,22 +89,23 @@ const map: Record<WorkoutGoal, WorkoutGoal> = {
             [WorkoutGoal.Core]: WorkoutGoal.FullBody,
             [WorkoutGoal.FullBody]: WorkoutGoal.Core,
         };
-        return map[primary];
+        return map[primary] || WorkoutGoal.FullBody;
     };
 
     useEffect(() => {
         if (profile) {
-            const primaryGoal = profile.primaryGoal;
-            const primaryTitle = goalToTitleMap[primaryGoal] || `Primary: ${primaryGoal}`;
+            // FIX (line 105, 117): Convert the user's FitnessObjective to a specific WorkoutGoal.
+            const primaryFitnessObjective = profile.primaryGoal;
+            const primaryWorkoutGoal = fitnessObjectiveToWorkoutGoals[primaryFitnessObjective]?.[0] || WorkoutGoal.FullBody;
+            const primaryTitle = goalToTitleMap[primaryWorkoutGoal] || `Primary: ${primaryWorkoutGoal}`;
 
             setPrimaryGoalWorkout({
                 title: primaryTitle,
-                // FIX: Updated preferences object to match current type definition.
                 preferences: {
                     duration: 20,
                     skillLevel: SkillLevel.Intermediate,
-                    goal: primaryGoal,
-                    availableEquipment: ['gym-equipment'],
+                    goal: primaryWorkoutGoal,
+                    availableEquipment: ['bodyweight'],
                     rounds: 3,
                     includeWarmUp: true,
                     warmUpDuration: 3,
@@ -117,12 +116,12 @@ const map: Record<WorkoutGoal, WorkoutGoal> = {
                 }
             });
 
-            const secondaryGoal = getComplementaryGoal(primaryGoal);
+            // Pass the derived WorkoutGoal to get the complementary goal.
+            const secondaryGoal = getComplementaryGoal(primaryWorkoutGoal);
             const secondaryTitle = goalToTitleMap[secondaryGoal] || `Complementary: ${secondaryGoal}`;
 
             setSecondaryGoalWorkout({
                 title: secondaryTitle,
-                // FIX: Updated preferences object to match current type definition.
                 preferences: {
                     duration: 20,
                     skillLevel: SkillLevel.Intermediate,
@@ -171,7 +170,8 @@ const map: Record<WorkoutGoal, WorkoutGoal> = {
         if (!workoutPrefs) return;
         setLoading(true);
         try {
-            const plan = await generateWorkoutPlan(workoutPrefs as WorkoutPreferences);
+            // FIX (line 171): Pass the user profile to `generateWorkoutPlan` as it expects two arguments.
+            const plan = await generateWorkoutPlan(workoutPrefs as WorkoutPreferences, profile);
             const storageObject = {
                 plan,
                 preferences: workoutPrefs,

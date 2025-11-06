@@ -15,6 +15,20 @@ export enum WorkoutGoal {
     FullBody = 'Full Body',
 }
 
+export enum FitnessObjective {
+  LoseWeight = 'Lose weight',
+  BuildMuscle = 'Build Muscle',
+  BuildFlexibility = 'Build Flexibility',
+  FitnessMaintenance = 'Fitness Maintenance',
+}
+
+export const fitnessObjectiveToWorkoutGoals: Record<FitnessObjective, WorkoutGoal[]> = {
+  [FitnessObjective.LoseWeight]: [WorkoutGoal.Cardio, WorkoutGoal.Endurance, WorkoutGoal.FullBody],
+  [FitnessObjective.BuildMuscle]: [WorkoutGoal.Strength, WorkoutGoal.Core],
+  [FitnessObjective.BuildFlexibility]: [WorkoutGoal.Mobility],
+  [FitnessObjective.FitnessMaintenance]: [WorkoutGoal.FullBody],
+};
+
 
 export type WorkoutMode = 'jump-rope' | 'equipment' | 'no-equipment';
 
@@ -179,7 +193,7 @@ export interface UserProfile {
   dob: string | null; // YYYY-MM-DD format
   height: number; // Always stored in cm
   weight: number; // Always stored in kg
-  primaryGoal: WorkoutGoal;
+  primaryGoal: FitnessObjective;
   preferences: {
     units: Units;
     sound: {

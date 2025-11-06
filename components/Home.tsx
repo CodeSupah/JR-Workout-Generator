@@ -1,7 +1,8 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-// FIX: Removed non-existent 'WorkoutEnvironment' type.
-import { WorkoutStats, WorkoutPlan, WorkoutGoal, SkillLevel, Achievement, AchievementTier, WorkoutPreferences } from '../types';
+// FIX: Add UserProfile to import
+import { WorkoutStats, WorkoutPlan, WorkoutGoal, SkillLevel, Achievement, AchievementTier, WorkoutPreferences, UserProfile } from '../types';
 import { getWorkoutStats, loadCustomWorkouts } from '../services/workoutService';
 import { getNextChallenge } from '../services/achievementService';
 import { generateWorkoutPlan } from '../services/geminiService';
@@ -31,12 +32,16 @@ const Home: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [isGenerating, setIsGenerating] = useState(false);
     const [userName, setUserName] = useState('Jumper');
+    // FIX: Add profile state to store user data for API calls.
+    const [profile, setProfile] = useState<UserProfile | null>(null);
     const navigate = useNavigate();
 
     useEffect(() => {
         const unsubscribe = profileStore.subscribe((profile) => {
             if (profile) {
                 setUserName(profile.name);
+                // FIX: Store the full profile object in state.
+                setProfile(profile);
             }
         });
         return () => unsubscribe();
@@ -80,7 +85,7 @@ const Home: React.FC = () => {
                 duration,
                 skillLevel: SkillLevel.Intermediate,
                 goal: randomGoal,
-                availableEquipment: ['jump-rope'],
+                availableEquipment: ['bodyweight', 'jump-rope'],
                 rounds: 3,
                 includeWarmUp: true,
                 warmUpDuration: 3,
@@ -97,7 +102,8 @@ const Home: React.FC = () => {
     const handleStartSuggestedWorkout = async () => {
         setIsGenerating(true);
         try {
-            const plan = await generateWorkoutPlan(suggestedWorkout.preferences as WorkoutPreferences);
+            // FIX: Pass the user profile to the workout generation service.
+            const plan = await generateWorkoutPlan(suggestedWorkout.preferences as WorkoutPreferences, profile);
             
             // Data Validation: Check for object and array integrity.
             if (!plan || !Array.isArray(plan.warmUp) || !Array.isArray(plan.rounds) || !Array.isArray(plan.coolDown)) {

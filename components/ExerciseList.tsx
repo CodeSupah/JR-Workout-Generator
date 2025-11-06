@@ -255,7 +255,7 @@ const ExerciseList: React.FC = () => {
                     </div>
                     
                     <div>
-                        <h4 className="font-medium text-gray-400 mb-2 text-xs">Primary Goal</h4>
+                        <h4 className="font-medium text-gray-400 mb-2 text-xs">Primary Workout Goal</h4>
                         <div className="flex flex-wrap gap-2">
                             {availableGoals.map(goal => (
                                 <FilterButton

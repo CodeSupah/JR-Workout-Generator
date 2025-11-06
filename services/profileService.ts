@@ -1,4 +1,4 @@
-import { UserProfile, WorkoutGoal, Units } from '../types';
+import { UserProfile, FitnessObjective, Units } from '../types';
 
 const PROFILE_KEY = 'jump-user-profile';
 
@@ -22,7 +22,7 @@ export const getUserProfile = async (): Promise<UserProfile> => {
     dob: null,
     height: 170, // cm
     weight: 65, // kg
-    primaryGoal: WorkoutGoal.FullBody,
+    primaryGoal: FitnessObjective.FitnessMaintenance,
     preferences: {
       units: 'Metric',
       sound: {

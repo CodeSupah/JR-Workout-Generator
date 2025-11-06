@@ -312,7 +312,7 @@ const ExerciseModal: React.FC<ExerciseModalProps> = ({ isOpen, onClose, onSelect
                             </div>
                         </div>
                         <div>
-                            <h4 className="font-semibold text-gray-400 mb-2 text-xs">Primary Goal</h4>
+                            <h4 className="font-semibold text-gray-400 mb-2 text-xs">Primary Workout Goal</h4>
                             <div className="flex flex-wrap gap-2">
                                 {availableGoals.map(goal => (
                                     <FilterButton key={goal} label={goal} isSelected={selectedGoals.includes(goal)} onClick={() => handleToggleFilter(setSelectedGoals, goal)} />

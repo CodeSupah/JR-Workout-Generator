@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { UserProfile, WorkoutGoal } from '../types';
+import { UserProfile, FitnessObjective, fitnessObjectiveToWorkoutGoals } from '../types';
 import { profileStore } from '../store/profileStore';
 import { toastStore } from '../store/toastStore';
 import { CameraIcon, ChevronDownIcon, UserIcon } from './icons/Icons';
@@ -115,7 +115,8 @@ const Preferences: React.FC = () => {
         try {
             const savedPrefsRaw = localStorage.getItem('workoutPreferences');
             const savedPrefs = savedPrefsRaw ? JSON.parse(savedPrefsRaw) : {};
-            savedPrefs.goal = profile.primaryGoal;
+            // Get the first associated workout goal as the new default
+            savedPrefs.goal = fitnessObjectiveToWorkoutGoals[profile.primaryGoal][0];
             localStorage.setItem('workoutPreferences', JSON.stringify(savedPrefs));
         } catch(e) { console.error("Could not sync goal to workout prefs", e)}
 
@@ -239,8 +240,8 @@ const Preferences: React.FC = () => {
                     <div className="form-group md:col-span-2">
                         <label>Primary Fitness Goal</label>
                         <div className="select-wrapper">
-                             <select value={profile.primaryGoal} onChange={e => handleInputChange('primaryGoal', e.target.value as WorkoutGoal)}>
-                                {Object.values(WorkoutGoal).map(goal => <option key={goal}>{goal}</option>)}
+                             <select value={profile.primaryGoal} onChange={e => handleInputChange('primaryGoal', e.target.value as FitnessObjective)}>
+                                {Object.values(FitnessObjective).map(goal => <option key={goal}>{goal}</option>)}
                             </select>
                             <ChevronDownIcon className="w-5 h-5 absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                         </div>
