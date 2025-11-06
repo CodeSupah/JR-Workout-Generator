@@ -286,7 +286,7 @@ const Dashboard: React.FC = () => {
                     <SavedRoutineCard
                       key={routine.id}
                       routine={routine}
-                      onStart={() => navigate('/session', { state: { workout: routine } })}
+                      onStart={() => navigate('/workout', { state: { workoutToLoad: routine } })}
                       onDelete={() => handleDeleteRoutine(routine.id)}
                     />
                   ))}

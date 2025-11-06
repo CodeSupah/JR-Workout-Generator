@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import WorkoutGenerator from './WorkoutGenerator';
@@ -23,14 +21,29 @@ const goalToTitleMap: Record<WorkoutGoal, string> = {
     [WorkoutGoal.FullBody]: "Full Body Burn",
 };
 
+const getComplementaryGoal = (primary: WorkoutGoal): WorkoutGoal => {
+    const map: Record<string, WorkoutGoal> = {
+        [WorkoutGoal.Strength]: WorkoutGoal.Cardio,
+        [WorkoutGoal.Cardio]: WorkoutGoal.Strength,
+        [WorkoutGoal.Endurance]: WorkoutGoal.Strength,
+        [WorkoutGoal.Mobility]: WorkoutGoal.FullBody,
+        [WorkoutGoal.Core]: WorkoutGoal.FullBody,
+        [WorkoutGoal.FullBody]: WorkoutGoal.Core,
+    };
+    return map[primary] || WorkoutGoal.FullBody;
+};
+
+
 const WorkoutHub: React.FC = () => {
     const [routines, setRoutines] = useState<WorkoutPlan[]>([]);
     const navigate = useNavigate();
     const location = useLocation();
     
-    // State for view management, now initialized based on navigation state
+    // Determine if the generator should be shown automatically
+    const shouldShowGenerator = location.state?.autoShowGenerator || !!location.state?.workoutToLoad;
+
     const [view, setView] = useState<'hub' | 'generator'>(
-        location.state?.autoShowGenerator ? 'generator' : 'hub'
+        shouldShowGenerator ? 'generator' : 'hub'
     );
     const [isGeneratingSuggested, setIsGeneratingSuggested] = useState(false);
     const [suggestedWorkout, setSuggestedWorkout] = useState({ title: '', preferences: {} as Partial<WorkoutPreferences> });
@@ -41,14 +54,6 @@ const WorkoutHub: React.FC = () => {
     const [secondaryGoalWorkout, setSecondaryGoalWorkout] = useState<{ title: string; preferences: Partial<WorkoutPreferences> } | null>(null);
     const [isGeneratingPrimary, setIsGeneratingPrimary] = useState(false);
     const [isGeneratingSecondary, setIsGeneratingSecondary] = useState(false);
-
-    useEffect(() => {
-        // If we were automatically shown the generator from another page,
-        // clear the location state so that a page refresh doesn't bring us back to the generator.
-        if (location.state?.autoShowGenerator) {
-            navigate(location.pathname, { replace: true, state: {} });
-        }
-    }, [location.state, location.pathname, navigate]);
 
     useEffect(() => {
         // This will run once to set up the random suggested workout title and preferences
@@ -78,19 +83,17 @@ const WorkoutHub: React.FC = () => {
         const unsubscribe = profileStore.subscribe(setProfile);
         return () => unsubscribe();
     }, []);
+    
+    // This effect will sync the view if the location state changes.
+    useEffect(() => {
+        const shouldShowGenerator = location.state?.autoShowGenerator || !!location.state?.workoutToLoad;
+        if (shouldShowGenerator) {
+            setView('generator');
+        } else {
+            setView('hub');
+        }
+    }, [location.state]);
 
-
-    const getComplementaryGoal = (primary: WorkoutGoal): WorkoutGoal => {
-        const map: Record<string, WorkoutGoal> = {
-            [WorkoutGoal.Strength]: WorkoutGoal.Cardio,
-            [WorkoutGoal.Cardio]: WorkoutGoal.Strength,
-            [WorkoutGoal.Endurance]: WorkoutGoal.Strength,
-            [WorkoutGoal.Mobility]: WorkoutGoal.FullBody,
-            [WorkoutGoal.Core]: WorkoutGoal.FullBody,
-            [WorkoutGoal.FullBody]: WorkoutGoal.Core,
-        };
-        return map[primary] || WorkoutGoal.FullBody;
-    };
 
     useEffect(() => {
         if (profile) {
@@ -153,7 +156,7 @@ const WorkoutHub: React.FC = () => {
     }, [view]);
 
     const handleStartRoutine = (routine: WorkoutPlan) => {
-        navigate('/session', { state: { workout: routine } });
+        navigate('/workout', { state: { workoutToLoad: routine } });
     };
 
     const handleDeleteRoutine = async (id: string) => {
@@ -223,7 +226,7 @@ const WorkoutHub: React.FC = () => {
     if (view === 'generator') {
         return (
             <div className="animate-fade-in">
-                <button onClick={() => setView('hub')} className="text-sm text-orange-400 hover:underline mb-4 inline-block">
+                <button onClick={() => navigate('/workout', { replace: true, state: {} })} className="text-sm text-orange-400 hover:underline mb-4 inline-block">
                     &larr; Back to Workout Hub
                 </button>
                 <WorkoutGenerator />

@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 // FIX: Add UserProfile to import
@@ -80,12 +79,11 @@ const Home: React.FC = () => {
         setSuggestedWorkout({
             title: `Your Daily ${randomGoal} Session`,
             duration,
-            // FIX: Updated preferences to match the current WorkoutPreferences interface.
             preferences: {
                 duration,
                 skillLevel: SkillLevel.Intermediate,
                 goal: randomGoal,
-                availableEquipment: ['bodyweight', 'jump-rope'],
+                availableEquipment: ['bodyweight'],
                 rounds: 3,
                 includeWarmUp: true,
                 warmUpDuration: 3,
@@ -220,7 +218,7 @@ const Home: React.FC = () => {
                             <SavedRoutineCard
                                 key={routine.id}
                                 routine={routine}
-                                onStart={() => navigate('/session', { state: { workout: routine } })}
+                                onStart={() => navigate('/workout', { state: { workoutToLoad: routine } })}
                                 onDelete={() => { /* Not implemented on home screen */ }}
                             />
                         ))

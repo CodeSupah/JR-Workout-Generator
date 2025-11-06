@@ -1,7 +1,9 @@
 
 
+
+
 import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { SkillLevel, WorkoutGoal, WorkoutPreferences, WorkoutPlan, Exercise, ExerciseEquipment, UserProfile } from '../types';
 import { generateWorkoutPlan } from '../services/geminiService';
 import { DumbbellIcon, FlameIcon, RunIcon, TargetIcon, CogIcon, BuildingOfficeIcon, RopeIcon, StretchIcon, ClockIcon } from './icons/Icons';
@@ -11,6 +13,7 @@ import { toastStore } from '../store/toastStore';
 import StepperInput from './StepperInput';
 import ToggleSwitch from './ToggleSwitch';
 import { profileStore } from '../store/profileStore';
+import { flattenWorkoutForSession } from '../utils/workoutUtils';
 
 const formatTime = (totalSeconds: number): string => {
   if (totalSeconds < 0) return '0s';
@@ -79,6 +82,8 @@ const WorkoutGenerator: React.FC = () => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   
   const editor = useWorkoutEditor();
+  const location = useLocation();
+  const navigate = useNavigate();
   
   useEffect(() => {
     const unsubscribe = profileStore.subscribe(setProfile);
@@ -135,9 +140,46 @@ const WorkoutGenerator: React.FC = () => {
   }, [preferences, availableEquipment, rounds, includeWarmUp, warmUpDuration, includeCoolDown, coolDownDuration, defaultRestDuration, useGlobalExerciseRest]);
 
 
-  // Load a suggested plan from sessionStorage if available
+  // Load a plan from location state (saved routines) or sessionStorage (newly generated routines)
   useEffect(() => {
-    if (!editor.plan) {
+    if (editor.plan) return; // Don't reload if editor is already active
+    
+    const workoutToLoadFromState = location.state?.workoutToLoad as WorkoutPlan | undefined;
+
+    if (workoutToLoadFromState) {
+      const loadedPlan = workoutToLoadFromState;
+      editor.loadPlan(loadedPlan);
+
+      // Infer preferences from the loaded plan to populate the UI
+      const { sessionItems } = flattenWorkoutForSession(loadedPlan);
+      const totalSeconds = sessionItems.reduce((acc, item) => acc + item.duration, 0);
+      const inferredDuration = Math.round(totalSeconds / 60);
+
+      const equipmentSet = new Set<ExerciseEquipment>();
+      [...loadedPlan.warmUp, ...loadedPlan.rounds, ...loadedPlan.coolDown].forEach(ex => {
+          if (ex.equipment) equipmentSet.add(ex.equipment);
+      });
+      const inferredEquipment = Array.from(equipmentSet).length > 0 ? Array.from(equipmentSet) : ['bodyweight'];
+
+      setPreferences({
+        duration: inferredDuration > 0 ? inferredDuration : 20,
+        skillLevel: SkillLevel.Intermediate, // Cannot be inferred, use default
+        goal: WorkoutGoal.FullBody, // Cannot be inferred, use default
+      });
+      // FIX: Cast inferredEquipment to ExerciseEquipment[] to satisfy TypeScript. The type was being inferred as string[], causing a mismatch.
+      setAvailableEquipment(inferredEquipment as ExerciseEquipment[]);
+      setRounds(loadedPlan.numberOfRounds || 3);
+      setIncludeWarmUp(loadedPlan.warmUp.length > 0);
+      setWarmUpDuration(loadedPlan.warmUpDuration || 3);
+      setIncludeCoolDown(loadedPlan.coolDown.length > 0);
+      setCoolDownDuration(loadedPlan.coolDownDuration || 2);
+      
+      setOriginalPreferences(null); // It's a loaded plan, not a newly generated one
+      setIsEditing(true);
+
+      // Clear the state from location to prevent re-loading on refresh
+      navigate(location.pathname, { replace: true, state: {} });
+    } else {
       const savedSuggestedPlan = sessionStorage.getItem('suggestedWorkoutPlan');
       if (savedSuggestedPlan) {
         try {
@@ -162,7 +204,6 @@ const WorkoutGenerator: React.FC = () => {
              if (loadedEquipment.length === 0) {
               loadedEquipment = ['bodyweight'];
             }
-            // FIX: Cast parsed data to the correct type to resolve TypeScript error.
             setAvailableEquipment([...new Set(loadedEquipment)] as ExerciseEquipment[]);
             setRounds(savedPrefs.rounds);
             setIncludeWarmUp(savedPrefs.includeWarmUp);
@@ -182,7 +223,7 @@ const WorkoutGenerator: React.FC = () => {
         }
       }
     }
-  }, []); 
+  }, [editor, location.state, navigate]); 
 
 
   // Gathers all state for AI generation, applying logic for global rest toggles
